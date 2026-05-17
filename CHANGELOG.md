@@ -9,6 +9,36 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Runtime code rollout (v0.4.0-rc1 -- six new module daemons)
+
+Resolves Gap #5 from the v0.3 installer audit. Six modules now ship full runtime code following the canonical 5-step `install.sh` + `runtime/<bin>.mjs` + `runtime/com.pandoras-box.<name>.plist.template` pattern.
+
+- **`personal-ai` runtime** -- browser-first chat UI on `127.0.0.1:8800`, PBKDF2 passphrase auth (200000 iters / sha256 / 16-byte salt, timing-safe-equal), SQLite memory at `${INSTALL_PATH}/personal-ai/store/memory.db` (conversations / messages / important_facts / drops), Anthropic SDK proxy via `@anthropic-ai/sdk` (sole new external dep, lazy-imported, key resolution: macOS Keychain `pbox-anthropic-key` -> `ANTHROPIC_API_KEY` env -> Claude CLI credentials), optional ElevenLabs TTS server proxy (env-gated). JSONL session log under `store/sessions/YYYY-MM-DD.jsonl` consumed by `self-improvement` GEPA.
+- **`personal-sensor` runtime** -- 10-min ambient signal daemon, SSE endpoint on `127.0.0.1:8489/events`. Signal sources: calendar pull (token-gated by existing `mail-*` module `.env`), free-time gap detection, optional `corelocationcli` geofence. Persistent JSONL log + read-only `/recent?n=N` replay endpoint. Node 22 builtins only -- zero external deps.
+- **`offline-kb` runtime** -- Kiwix-serve wrapper on `127.0.0.1:8090` with branded search UI from `theme.conf`. Generates `docker-compose.yml` with `read_only` / `no-new-privileges` / `tmpfs:/tmp` hardening. `/api/search?q=` JSON envelope + streaming `/proxy/*` pass-through to Kiwix at internal `:8089`. SHA256 verification on ZIM downloads (best-effort).
+- **`media-production` runtime** -- background queue worker polling `${INSTALL_PATH}/media-production/store/queue/*.json` every 30s. Four backends via `fetch` builtin (no SDK deps): Suno (flagged experimental -- unofficial API), ElevenLabs (narration), Google AI Imagen (image), Google AI Veo (video, with long-running-op polling). Operator fills API keys in `.env`; worker keeps running on missing-key jobs (per-job failure mode). Optional `127.0.0.1:8486` HTTP for job submission.
+- **`trading-research` runtime** -- IG demo-only REST client on `127.0.0.1:8490` with mandatory top-of-file `// DEMO-ONLY. NOT FINANCIAL ADVICE.` comment. **Hard gate: refuses to start if `IG_LIVE=true`** (`process.exit(1)`). 50/200 minute-bar MA crossover signals. No order endpoints whatsoever; UI is read-only. `install.sh` step 1 contains static-analysis guard refusing install if the demo-only gate string or demo URL is missing from runtime.
+- **`self-improvement` GEPA optimiser** -- deterministic prompt-edit digest from `personal-ai` JSONL session log. Identifies rejected (rating<3) / regenerated / corrected assistant turns; groups by conversation; emits markdown digest to `output/weekly-YYYY-MM-DD.md`. Operator-gated -- never auto-applies. No LLM call; no network. Skill-suggestion heuristic at >=3 distinct conversations per kind.
+
+### Added
+
+- **Dependabot.** `.github/dependabot.yml` -- weekly Monday 06:00 UK scan of github-actions ecosystem, target `dev`. Npm deferred until repo-level `package.json` exists.
+
+### Fixed
+
+- **Installer: `RECOMMENDED` modules now actually default to install on accept-all.** `lib/setup-modules.sh` `offer_module` calls for `content-classifier` and `self-improvement` were missing the `"yes"` 6th positional arg, so the menu defaulted them to "no" despite the `[RECOMMENDED]` label.
+- **Installer: system-check label cleanup.** `pbox-setup.sh` `run_system_check` was rendering "the Content Classifier content classifier" and "the Self-Improvement Pipeline self-improvement" (double-naming artefact from a Greek-rename sed pass). Cleaned to single-named labels.
+- **Installer: dry-run inline-read in content-classifier fail-mode prompt.** The fail-mode choice (`fail-open` / `fail-closed`) used a bare `read -rp`, bypassing the dry-run shim. Wrapped in `PBOX_DRY_RUN_ACTIVE` check defaulting to `closed` so the dry-run no longer hangs.
+- **Installer: headless `TERM` crash.** `pbox-setup.sh` `print_banner` calls `clear`, which aborts under `set -e` when bash auto-sets `TERM=dumb` (CI runners, cron, `ssh -T`). Forced `TERM=xterm-256color` early if unset/dumb.
+- **Docs: Google AI key placeholder.** `docs/setup/google-ai.md` example `AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX` matched the credential-shape CI regex `AIza[0-9A-Za-z_-]{35}`. Replaced with non-matching descriptive form.
+- **`trading-research`: port collision with `content-classifier`.** Both modules defaulted to `:8487`. `trading-research` moved to `:8490`.
+- **`trading-research`: dry-run staging parity.** Module's `install.sh` short-circuited at steps 2 + 3 in dry-run, leaving target dir + `.env` empty (inconsistent with all other modules). Now always stages files via the sudo shim; writes a placeholder `.env` with `IG_*=dryrun-placeholder` sentinels in dry-run mode.
+
+### CI
+
+- **CodeQL workflow** added then removed -- requires GitHub Advanced Security on private repos, which the AI-PandorasBox account doesn't have. Will reinstate post-public-flip (free for public repos) or post-Advanced-Security purchase.
+- **Sanitize workflow now passes all 4 jobs** -- gate-on-the-gate, generic credential-shape scan, `.sh`/`.mjs` syntax validation, installer dry-run smoke on macOS-14 runner. First all-green run since the repo was rewritten on 2026-05-17.
+
 ### Installer (v0.2.0 -- step-by-step + module pickers + Claude-first)
 
 - **No-liability disclaimer gate.** Installer's first action is a typed-acceptance gate covering: AI agents take real-world actions, the user is responsible for those actions, third-party costs are the user's, pre-release software / no support guarantees, no financial / legal / medical advice, data on the user's machine is the user's responsibility. Any input other than typed `yes` exits the installer cleanly without making any changes.
