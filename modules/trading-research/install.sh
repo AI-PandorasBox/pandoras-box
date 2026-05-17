@@ -30,7 +30,7 @@ RUNTIME_SCRIPT="pbox-trading-research.mjs"
 PLIST_LABEL="${LAUNCHDAEMON_PREFIX}.trading-research"
 PLIST_DIR="${PBOX_PLIST_DIR:-/Library/LaunchDaemons}"
 PLIST_PATH="${PLIST_DIR}/${PLIST_LABEL}.plist"
-TR_PORT="${TRADING_RESEARCH_PORT:-8487}"
+TR_PORT="${TRADING_RESEARCH_PORT:-8490}"
 TR_BIND="127.0.0.1"
 
 echo ""

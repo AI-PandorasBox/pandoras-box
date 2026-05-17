@@ -18,7 +18,7 @@ if (process.env.IG_LIVE === 'true') {
 }
 
 const INSTALL_PATH = process.env.INSTALL_PATH || '/opt/pandoras-box'
-const PORT = parseInt(process.env.TRADING_RESEARCH_PORT || '8487', 10)
+const PORT = parseInt(process.env.TRADING_RESEARCH_PORT || '8490', 10)
 const BIND = '127.0.0.1' // hard-coded; module is localhost-only by design
 
 // Demo subdomain is intentional and cannot be overridden by environment.
