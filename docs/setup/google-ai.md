@@ -21,7 +21,7 @@ Google AI Studio gives Pandora's Box access to:
 
 Sign in at https://aistudio.google.com → **Get API key** → **Create API key in new project** (or pick an existing GCP project if you have one).
 
-Copy the key (looks like `AIzaSyXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`).
+Copy the key (39 characters total — starts with `AIza`, format `AIzaSy<35-char-key-tail>`).
 
 ### 2. Check entitlements
 

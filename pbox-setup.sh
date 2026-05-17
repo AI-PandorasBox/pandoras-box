@@ -7,6 +7,14 @@
 # =============================================================================
 set -euo pipefail
 
+# Survive headless contexts (CI runners, cron, ssh -T). bash auto-sets TERM=dumb
+# when there's no tty, which causes `clear` and `tput` to abort with "TERM
+# environment variable not set." under `set -e`. Force a real terminal type
+# for the installer's lifetime if the current TERM can't service `clear`.
+if [[ -z "${TERM:-}" || "${TERM}" == "dumb" ]]; then
+  export TERM="xterm-256color"
+fi
+
 PBOX_VERSION="0.2.0"
 INSTALL_PATH="/opt/pandoras-box"
 SETUP_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
