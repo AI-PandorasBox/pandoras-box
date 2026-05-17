@@ -61,33 +61,42 @@ fi
 ok "Demo-only static gate present"
 
 step 2 "Staging runtime"
-if [[ "$DRY_RUN" == "1" ]]; then
-  ok "(dry-run) skipping copy of runtime to $TARGET_DIR"
-else
-  sudo mkdir -p "$TARGET_DIR" "$STORE_DIR" "$PUBLIC_DST"
-  sudo cp "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" "$TARGET_DIR/"
-  sudo chmod 755 "$TARGET_DIR/$RUNTIME_SCRIPT"
-  sudo cp "$PUBLIC_SRC/index.html" "$PUBLIC_SRC/app.js" "$PUBLIC_SRC/style.css" "$PUBLIC_DST/"
-  sudo chmod 644 "$PUBLIC_DST/"*
-  ok "Runtime + public/ staged"
-fi
+sudo mkdir -p "$TARGET_DIR" "$STORE_DIR" "$PUBLIC_DST"
+sudo cp "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" "$TARGET_DIR/"
+sudo chmod 755 "$TARGET_DIR/$RUNTIME_SCRIPT"
+sudo cp "$PUBLIC_SRC/index.html" "$PUBLIC_SRC/app.js" "$PUBLIC_SRC/style.css" "$PUBLIC_DST/"
+sudo chmod 644 "$PUBLIC_DST/"*
+ok "Runtime + public/ staged"
 
 step 3 "Writing .env, watchlist + collecting IG demo credentials"
 TR_ENV="$TARGET_DIR/.env"
 WATCHLIST="$STORE_DIR/watchlist.json"
 
-if [[ "$DRY_RUN" == "1" ]]; then
-  ok "(dry-run) skipping .env + watchlist creation; no live login attempted"
+if [[ -f "$TR_ENV" ]]; then
+  ok ".env already present -- preserving operator overrides"
+elif [[ "$DRY_RUN" == "1" ]]; then
+  # Dry-run: write placeholder .env so post-install verification can inspect
+  # shape without prompting. Operator must re-run interactively for real creds.
+  sudo bash -c "cat > '$TR_ENV'" <<ENVEOF
+# trading-research -- DEMO ONLY. NOT FINANCIAL ADVICE.
+# (dry-run placeholder -- re-run install.sh interactively for real creds)
+TRADING_RESEARCH_PORT=$TR_PORT
+INSTALL_PATH=$INSTALL_PATH
+NODE_ENV=production
+IG_USERNAME=dryrun-placeholder
+IG_PASSWORD=dryrun-placeholder
+IG_API_KEY=dryrun-placeholder
+# IG_LIVE intentionally unset. Setting IG_LIVE=true causes the daemon to refuse to start.
+ENVEOF
+  sudo chmod 600 "$TR_ENV"
+  ok "Wrote $TR_ENV (dry-run placeholder, chmod 600)"
 else
-  if [[ -f "$TR_ENV" ]]; then
-    ok ".env already present -- preserving operator overrides"
-  else
-    # Read credentials interactively. We never echo IG_PASSWORD.
-    # We also never attempt an IG login here - the deamon does that at runtime.
-    read -rp "  IG demo username: " IG_USERNAME
-    read -rsp "  IG demo password (hidden): " IG_PASSWORD; echo ""
-    read -rp "  IG demo API key: " IG_API_KEY
-    sudo bash -c "cat > '$TR_ENV'" <<ENVEOF
+  # Read credentials interactively. We never echo IG_PASSWORD.
+  # We also never attempt an IG login here - the daemon does that at runtime.
+  read -rp "  IG demo username: " IG_USERNAME
+  read -rsp "  IG demo password (hidden): " IG_PASSWORD; echo ""
+  read -rp "  IG demo API key: " IG_API_KEY
+  sudo bash -c "cat > '$TR_ENV'" <<ENVEOF
 # trading-research -- DEMO ONLY. NOT FINANCIAL ADVICE.
 TRADING_RESEARCH_PORT=$TR_PORT
 INSTALL_PATH=$INSTALL_PATH
@@ -97,20 +106,19 @@ IG_PASSWORD=$IG_PASSWORD
 IG_API_KEY=$IG_API_KEY
 # IG_LIVE intentionally unset. Setting IG_LIVE=true causes the daemon to refuse to start.
 ENVEOF
-    sudo chmod 600 "$TR_ENV"
-    ok "Wrote $TR_ENV (chmod 600)"
-  fi
+  sudo chmod 600 "$TR_ENV"
+  ok "Wrote $TR_ENV (chmod 600)"
+fi
 
-  if [[ ! -f "$WATCHLIST" ]]; then
-    sudo bash -c "cat > '$WATCHLIST'" <<WEOF
+if [[ ! -f "$WATCHLIST" ]]; then
+  sudo bash -c "cat > '$WATCHLIST'" <<WEOF
 {
   "_comment": "Operator-edited. List IG epics to compute 50/200 MA crossovers for. DEMO data only.",
   "epics": []
 }
 WEOF
-    sudo chmod 644 "$WATCHLIST"
-    ok "Default watchlist created at $WATCHLIST"
-  fi
+  sudo chmod 644 "$WATCHLIST"
+  ok "Default watchlist created at $WATCHLIST"
 fi
 
 step 4 "Rendering + installing LaunchDaemon plist"
