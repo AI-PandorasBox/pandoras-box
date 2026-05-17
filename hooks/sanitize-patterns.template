@@ -1,0 +1,105 @@
+# sanitize-patterns.template -- Local-only pattern template for the pre-push hook.
+#
+# Usage:
+#   mkdir -p ~/.config/pandoras-box
+#   cp hooks/sanitize-patterns.template ~/.config/pandoras-box/sanitize-patterns
+#   chmod 600 ~/.config/pandoras-box/sanitize-patterns
+#   <edit the file with the identifiers from YOUR install>
+#
+# Pattern format: grep -iE syntax. One pattern per line. # comments + blank
+# lines are skipped.
+#
+# This template ships generic credential shapes that catch most common
+# leaks regardless of who is running Pandoras Box. Add operator-specific
+# entries in Section 0 below.
+#
+# IMPORTANT -- this file STAYS LOCAL. It is gitignored at the repo root and
+# is never committed. The reason: a public list of "things that must never
+# leak" is itself a high-value document for an attacker.
+
+# =============================================================================
+# Section 0 -- YOUR OPERATOR-SPECIFIC IDENTIFIERS
+# Fill these in for your install. Each pattern blocks the literal string
+# (or regex) from appearing in any committed file.
+# =============================================================================
+
+# Your real name (uncomment + replace)
+# Your Full Name
+# \bYourFirstName\b
+
+# Your local OS paths
+# /Users/your-username
+# /opt/your-install-dir
+
+# Your Telegram / WhatsApp / messaging IDs
+# 1234567890
+
+# Your Tailscale hostname / tailnet ID
+# yourtailnet
+# yourdevice\.tail[a-z][a-z0-9]+\.ts\.net
+
+# Your tenant company names + agent slugs (one per tenant)
+# Your Company Name
+# your-conductor
+# your-mail
+# your-calendar
+
+# Your agent persona names (if you use named personas)
+# \bYourAgentName\b
+
+# Your real-world locations
+# Your Street
+# \bYourCity\b
+
+# Your email addresses
+# you@yourdomain\.com
+
+# =============================================================================
+# Section 1 -- Generic credential shapes (universally useful)
+# Catches credentials regardless of which provider they came from.
+# =============================================================================
+
+sk-ant-[a-zA-Z0-9_\-]{20,}
+sk_live_[a-zA-Z0-9]{20,}
+ghp_[a-zA-Z0-9]{36,}
+github_pat_[a-zA-Z0-9_]{80,}
+AIza[0-9A-Za-z_\-]{35}
+ya29\.[0-9A-Za-z_\-]{20,}
+[0-9]{12,}-[a-z0-9]+\.apps\.googleusercontent\.com
+xoxb-[0-9]+-[0-9]+-[a-zA-Z0-9]+
+xoxa-[0-9]+-[0-9]+-[a-zA-Z0-9]+
+xoxp-[0-9]+-[0-9]+-[0-9]+-[a-zA-Z0-9]+
+[0-9]{8,12}:AA[a-zA-Z0-9_\-]{33}
+gsk_[a-zA-Z0-9]{40,}
+\bAKIA[0-9A-Z]{16}\b
+"private_key_id"\s*:\s*"[a-f0-9]{40}"
+K00[a-zA-Z0-9_\-]{31}
+\b00[a-f0-9]{31}\b
+
+# =============================================================================
+# Section 2 -- SharePoint / Microsoft Graph identifiers
+# =============================================================================
+
+https://[a-z0-9-]+\.sharepoint\.com/
+https://[a-z0-9-]+-my\.sharepoint\.com/
+\bb![A-Za-z0-9_\-]{40,}
+\b01[A-Z0-9]{50,}
+
+# =============================================================================
+# Section 3 -- Phone numbers + private IP ranges
+# =============================================================================
+
+\+44 ?7\d{9}
+\b07\d{3} ?\d{6}\b
+\+44 ?[12]\d{9}
+\b10\.\d+\.\d+\.\d+\b
+\b172\.(1[6-9]|2[0-9]|3[01])\.\d+\.\d+\b
+\b192\.168\.\d+\.\d+\b
+
+# =============================================================================
+# Section 4 -- Tailscale generic shapes
+# =============================================================================
+
+\b100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\.\d+\.\d+\b
+\bfd7a:115c:a1e0
+\b[a-z0-9-]+\.tail[a-z][a-z0-9]{4,}\.ts\.net

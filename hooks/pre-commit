@@ -1,0 +1,118 @@
+#!/usr/bin/env bash
+# hooks/pre-commit -- gate-on-the-gate layer for sanitization.
+#
+# Runs BEFORE every commit. Mirrors the pre-push scan against the LOCAL-ONLY
+# patterns file at ~/.config/pandoras-box/sanitize-patterns. Catches leaks
+# at commit time, not at push time, so a bad commit never lands in the
+# local history (and so a forgotten push doesn't expose stale local commits
+# if the laptop is later forwarded to a contributor or backed up to a sync
+# provider).
+#
+# Install:
+#   cp hooks/pre-commit .git/hooks/pre-commit && chmod +x .git/hooks/pre-commit
+#
+# Behaviour:
+#   - Refuses to commit if any STAGED line matches a local sanitize pattern.
+#   - Refuses to commit if .sanitize-patterns or .sanitize-allowlist is found
+#     at repo root (gate-on-the-gate -- they must live ONLY at the local
+#     config dir, never inside the working tree).
+#   - Silent pass otherwise.
+
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+CONFIG_DIR="${PBOX_SANITIZE_CONFIG_DIR:-$HOME/.config/pandoras-box}"
+PATTERNS_FILE="$CONFIG_DIR/sanitize-patterns"
+ALLOWLIST_FILE="$CONFIG_DIR/sanitize-allowlist"
+
+# Gate on the gate -- refuse if sensitive files made it back into the repo.
+for legacy in "$ROOT/.sanitize-patterns" "$ROOT/.sanitize-allowlist"; do
+  if [[ -f "$legacy" && ! -L "$legacy" ]]; then
+    echo "[sanitize-precommit] FATAL: $(basename "$legacy") found at repo root."
+    echo "[sanitize-precommit]          The patterns/allowlist files must live"
+    echo "[sanitize-precommit]          ONLY at $CONFIG_DIR/."
+    echo "[sanitize-precommit]          Move them out before committing:"
+    echo "[sanitize-precommit]              mv $legacy $CONFIG_DIR/$(basename "$legacy" | sed 's/^\.//')"
+    exit 1
+  fi
+done
+
+if [[ ! -f "$PATTERNS_FILE" ]]; then
+  # No patterns to check against -- silent pass. (The full file-by-file
+  # audit is on pre-push, this is just an early catch.)
+  exit 0
+fi
+
+# Load patterns
+PATTERNS=()
+while IFS= read -r line; do
+  [[ "$line" =~ ^#.*$ ]] && continue
+  [[ -z "${line// }" ]]  && continue
+  PATTERNS+=("$line")
+done < "$PATTERNS_FILE"
+[[ ${#PATTERNS[@]} -eq 0 ]] && exit 0
+
+# Load allowlist
+ALLOWS=()
+if [[ -f "$ALLOWLIST_FILE" ]]; then
+  while IFS= read -r line; do
+    [[ "$line" =~ ^#.*$ ]] && continue
+    [[ -z "${line// }" ]]  && continue
+    ALLOWS+=("$line")
+  done < "$ALLOWLIST_FILE"
+fi
+
+# Get list of staged files (added, modified, copied, renamed -- not deleted)
+STAGED=$(git diff --cached --name-only --diff-filter=ACMR 2>/dev/null)
+[[ -z "$STAGED" ]] && exit 0
+
+line_allowed() {
+  local line="$1"
+  for a in "${ALLOWS[@]}"; do
+    if [[ "$line" == *"$a"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+FAIL=0
+HITS=()
+
+while IFS= read -r f; do
+  [[ -f "$f" ]] || continue
+  case "$f" in *.bak-*|node_modules/*|staged/*) continue ;; esac
+  if file --mime "$f" 2>/dev/null | grep -q "charset=binary"; then continue; fi
+
+  # Get the staged content only -- avoids false positives on unstaged edits
+  staged_content=$(git show ":$f" 2>/dev/null) || continue
+  for pattern in "${PATTERNS[@]}"; do
+    matches=$(echo "$staged_content" | grep -inE "$pattern" 2>/dev/null || true)
+    [[ -z "$matches" ]] && continue
+    while IFS= read -r match; do
+      content="${match#*:}"
+      if line_allowed "$content"; then continue; fi
+      HITS+=("  $f: $match  [pattern: $pattern]")
+      FAIL=1
+    done <<< "$matches"
+  done
+done <<< "$STAGED"
+
+if [[ $FAIL -eq 1 ]]; then
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════╗"
+  echo "║       SANITIZATION CHECK FAILED -- COMMIT BLOCKED            ║"
+  echo "╚══════════════════════════════════════════════════════════════╝"
+  echo ""
+  echo "Staged content matched a local blocklist pattern and is not"
+  echo "exempted by the local allowlist. Resolve before committing:"
+  echo ""
+  printf '%s\n' "${HITS[@]}"
+  echo ""
+  echo "Either edit the offending lines, or add an exact substring to"
+  echo "$ALLOWLIST_FILE with a justifying comment."
+  echo ""
+  exit 1
+fi
+
+exit 0

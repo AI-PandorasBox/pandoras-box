@@ -1,0 +1,42 @@
+.env
+*.env.*
+**/.token-cache.json
+**/node_modules/
+staged/
+__pycache__/
+*.pyc
+.DS_Store
+*.log
+store/
+*.db
+*.sqlite
+
+# A1 patcher backups
+*.bak-*
+
+# _A3_SANITIZE_AND_CLA_V1 -- memory + audit file defence in depth
+**/memory/MEMORY.md
+**/memory/sessions.md
+**/memory/feedback_*.md
+**/memory/project_*.md
+**/memory/reference_*.md
+**/agent_log
+**/agent_log.jsonl
+**/audit*.log
+**/audit-events.jsonl
+**/*.token*.json
+**/*-cache.json
+**/memory.db
+**/memory.db-*
+**/audit*.db
+**/audit*.db-*
+**/snapshots/
+
+# _A6_2_LOCAL_ONLY_PATTERNS_V1 -- sanitize patterns/allowlist MUST live only
+# at ~/.config/pandoras-box/ (per hooks/pre-push). Belt-and-braces: even if
+# someone tries to drop one at the repo root, this gitignore line ensures
+# it never gets staged or committed.
+.sanitize-patterns
+.sanitize-allowlist
+.sanitize-patterns.*
+.sanitize-allowlist.*

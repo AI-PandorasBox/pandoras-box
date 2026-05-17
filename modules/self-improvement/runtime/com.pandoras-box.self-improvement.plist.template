@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key><string>{{LAUNCHDAEMON_PREFIX}}.self-improvement</string>
+    <key>ProgramArguments</key><array>
+        <string>{{NODE_BIN}}</string>
+        <string>{{INSTALL_PATH}}/self-improvement/weekly-review.mjs</string>
+    </array>
+    <key>EnvironmentVariables</key><dict>
+        <key>INSTALL_PATH</key><string>{{INSTALL_PATH}}</string>
+    </dict>
+    <key>WorkingDirectory</key><string>{{INSTALL_PATH}}/self-improvement</string>
+    <key>StartCalendarInterval</key><dict>
+        <key>Weekday</key><integer>0</integer>
+        <key>Hour</key><integer>8</integer>
+        <key>Minute</key><integer>0</integer>
+    </dict>
+    <key>RunAtLoad</key><false/>
+    <key>StandardOutPath</key><string>/tmp/{{LOG_PREFIX}}-self-improvement.log</string>
+    <key>StandardErrorPath</key><string>/tmp/{{LOG_PREFIX}}-self-improvement.log</string>
+    <key>UserName</key><string>{{USER_NAME}}</string>
+</dict>
+</plist>

@@ -1,0 +1,236 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    
+    <linearGradient id="cg-query" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,180,255,0.14)"/>
+      <stop offset="100%" stop-color="rgba(0,180,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-query" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#00B4FF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00B4FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-embedder" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.14)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-embedder" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-vector" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.14)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-vector" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-retrieval" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.14)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-retrieval" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-context" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-context" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-llm" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-llm" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-answer" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,255,123,0.14)"/>
+      <stop offset="100%" stop-color="rgba(123,255,123,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-answer" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7BFF7B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7BFF7B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-kb" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,140,0,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,140,0,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-kb" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF8C00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF8C00" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1600" height="900" fill="url(#bg)"/><rect width="1600" height="900" fill="url(#grid)"/>
+<g>
+    <text x="800" y="80" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="42" font-weight="700" letter-spacing="7">LLM + RAG</text>
+    
+    <line x1="395" y1="98" x2="525" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="800" y="104" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">RETRIEVAL-AUGMENTED GENERATION · HOW AN LLM ANSWERS FROM YOUR OWN DATA</text>
+    <line x1="1075" y1="98" x2="1205" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<text x="800" y="185" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="600" letter-spacing="5">A.   KNOWLEDGE PREP   ·   indexed once, reused at every query</text>
+<g transform="translate(80, 195)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="280" height="90" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(255,140,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="280" height="90" rx="16" fill="url(#cg-kb)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-kb)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(255,140,0,0.08)" stroke="rgba(255,140,0,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#FF8C00" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">01</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Documents</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">PDFs · pages · notes</text>
+</g>
+<g transform="translate(420, 195)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="280" height="90" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(255,140,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="280" height="90" rx="16" fill="url(#cg-kb)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-kb)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(255,140,0,0.08)" stroke="rgba(255,140,0,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#FF8C00" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">02</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Chunk + Clean</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">split into passages</text>
+</g>
+<g transform="translate(760, 195)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="280" height="90" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="280" height="90" rx="16" fill="url(#cg-embedder)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-embedder)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">03</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Embed</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">vector per chunk</text>
+</g>
+<g transform="translate(1100, 195)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="420" height="90" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="420" height="90" rx="16" fill="url(#cg-vector)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-vector)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">04</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Vector Store</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">indexed for fast similarity search</text>
+</g>
+<line x1="360" y1="240" x2="420" y2="240" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<line x1="700" y1="240" x2="760" y2="240" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<line x1="1040" y1="240" x2="1100" y2="240" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<text x="800" y="410" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="600" letter-spacing="5">B.   QUERY-TIME FLOW   ·   per question</text>
+<g transform="translate(80, 420)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(0,180,255,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="url(#cg-query)"/>
+  <rect x="0" y="0" width="6" height="100" rx="3" fill="url(#strip-query)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(0,180,255,0.08)" stroke="rgba(0,180,255,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#00B4FF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">Q</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">User question</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">"how does X work?"</text>
+</g>
+<g transform="translate(400, 420)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="url(#cg-embedder)"/>
+  <rect x="0" y="0" width="6" height="100" rx="3" fill="url(#strip-embedder)"/>
+  <text x="28" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Embed query</text>
+  <text x="28" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">same model as A.03</text>
+</g>
+<g transform="translate(720, 420)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="url(#cg-retrieval)"/>
+  <rect x="0" y="0" width="6" height="100" rx="3" fill="url(#strip-retrieval)"/>
+  <text x="28" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Top-K retrieval</text>
+  <text x="28" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">cosine match against store</text>
+</g>
+<g transform="translate(1040, 420)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(255,215,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="260" height="100" rx="16" fill="url(#cg-context)"/>
+  <rect x="0" y="0" width="6" height="100" rx="3" fill="url(#strip-context)"/>
+  <text x="28" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Build context</text>
+  <text x="28" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">top-K chunks + question</text>
+</g>
+<line x1="340" y1="470" x2="400" y2="470" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<line x1="660" y1="470" x2="720" y2="470" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<rect x="655" y="458" width="70" height="22" rx="11" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="690" y="474" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="500" font-style="italic" letter-spacing="0.3">vector</text>
+<line x1="980" y1="470" x2="1040" y2="470" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<rect x="979.5" y="458" width="61" height="22" rx="11" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="1010" y="474" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="500" font-style="italic" letter-spacing="0.3">top K</text>
+<line x1="1310" y1="285" x2="850" y2="420" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+<rect x="995.5" y="340.5" width="169" height="22" rx="11" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="1080" y="356.5" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="500" font-style="italic" letter-spacing="0.3">similarity search</text>
+<g transform="translate(720, 620)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="580" height="130" rx="16" fill="rgba(26,26,46,0.7)" stroke="rgba(255,215,0,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="580" height="130" rx="16" fill="url(#cg-llm)"/>
+  <rect x="0" y="0" width="6" height="130" rx="3" fill="url(#strip-llm)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(255,215,0,0.08)" stroke="rgba(255,215,0,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#FFD700" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">LLM</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Language Model</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">prompt = system + context + question</text>
+  <g transform="translate(234, 88)">
+    <rect x="0" y="0" width="80" height="28" rx="14" fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.45)" stroke-width="1"/>
+    <text x="40" y="18.5" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="0.3">Sonnet</text>
+  </g>
+  <g transform="translate(324, 88)">
+    <rect x="0" y="0" width="64" height="28" rx="14" fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.45)" stroke-width="1"/>
+    <text x="32" y="18.5" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="0.3">Opus</text>
+  </g>
+  <g transform="translate(398, 88)">
+    <rect x="0" y="0" width="72" height="28" rx="14" fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.45)" stroke-width="1"/>
+    <text x="36" y="18.5" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="0.3">Haiku</text>
+  </g>
+  <g transform="translate(480, 88)">
+    <rect x="0" y="0" width="72" height="28" rx="14" fill="rgba(255,215,0,0.06)" stroke="rgba(255,215,0,0.45)" stroke-width="1"/>
+    <text x="36" y="18.5" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="0.3">local</text>
+  </g>
+</g>
+<g transform="translate(80, 620)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="560" height="130" rx="16" fill="rgba(26,26,46,0.7)" stroke="rgba(123,255,123,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="560" height="130" rx="16" fill="url(#cg-answer)"/>
+  <rect x="0" y="0" width="6" height="130" rx="3" fill="url(#strip-answer)"/>
+  <text x="28" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Grounded answer</text>
+  <text x="28" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">cites the retrieved passages   ·   stays on-source</text>
+</g>
+<line x1="1170" y1="520" x2="1010" y2="620" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow)"/>
+<rect x="1055" y="558" width="70" height="22" rx="11" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="1090" y="574" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="500" font-style="italic" letter-spacing="0.3">prompt</text>
+<line x1="720" y1="685" x2="640" y2="685" stroke="#7080a0" stroke-width="2" stroke-opacity="0.8"  marker-end="url(#arrow-green)"/>
+<rect x="636" y="673" width="88" height="22" rx="11" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="680" y="689" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="500" font-style="italic" letter-spacing="0.3">response</text>
+<text x="800" y="870" text-anchor="middle" fill="#7080a0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-style="italic">Plain LLM: only its training data. With RAG: also your documents, citations included.</text>
+</svg>

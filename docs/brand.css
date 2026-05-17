@@ -1,0 +1,44 @@
+/**
+ * Pandoras Box -- Brand Tokens
+ *
+ * Use these CSS custom properties to build interfaces and documents
+ * that match the Pandoras Box visual identity.
+ *
+ * Colour palette:
+ *   Background family  -- near-black dark greens
+ *   Teal               -- primary accent
+ *   Copper/gold        -- secondary accent (highlights, warnings)
+ *   Text               -- light green-tinted white
+ *
+ * Usage in HTML:  <link rel="stylesheet" href="docs/brand.css">
+ * Usage in PDF:   See manuals/generate-manuals-pdf.mjs
+ */
+
+:root {
+  /* --- Backgrounds --- */
+  --pb-bg:          #04100e;   /* page / app background         */
+  --pb-surface:     #0b2320;   /* card / panel surface          */
+  --pb-surface-2:   #112e2a;   /* elevated surface              */
+  --pb-border:      #1d4540;   /* border / divider              */
+
+  /* --- Accent: Teal --- */
+  --pb-teal:        #00a09a;   /* primary interactive colour    */
+  --pb-teal-dim:    rgba(0, 160, 154, 0.25);  /* glow / hover  */
+
+  /* --- Accent: Copper --- */
+  --pb-copper:      #c87941;   /* secondary accent / gold tone  */
+  --pb-copper-dim:  #7a4820;   /* muted copper                  */
+
+  /* --- Text --- */
+  --pb-text:        #d8ede8;   /* primary text                  */
+  --pb-text-dim:    #5a9a90;   /* secondary / caption text      */
+
+  /* --- Semantic --- */
+  --pb-success:     #22c55e;
+  --pb-danger:      #ef4444;
+  --pb-warning:     #f59e0b;
+
+  /* --- Typography --- */
+  --pb-font:        'Segoe UI', system-ui, -apple-system, sans-serif;
+  --pb-font-mono:   'Courier New', 'Consolas', monospace;
+}

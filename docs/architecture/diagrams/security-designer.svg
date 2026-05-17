@@ -1,0 +1,284 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 920" width="1400" height="920" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    
+    <linearGradient id="cg-agent" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,180,255,0.12)"/>
+      <stop offset="100%" stop-color="rgba(0,180,255,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-agent" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#00B4FF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00B4FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-queue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-queue" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-oversight" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,107,107,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,107,107,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-oversight" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF6B6B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-approve" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,255,123,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,255,123,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-approve" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7BFF7B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7BFF7B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-block" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,107,107,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,107,107,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-block" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF6B6B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-audit" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-audit" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-content" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,180,255,0.12)"/>
+      <stop offset="100%" stop-color="rgba(0,180,255,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-content" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#00B4FF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00B4FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-classifier" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,107,107,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,107,107,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-classifier" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF6B6B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-axes" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-axes" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-shadow" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-shadow" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-consumer" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,20,147,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,20,147,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-consumer" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF1493" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF1493" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1400" height="920" fill="url(#bg)"/><rect width="1400" height="920" fill="url(#grid)"/>
+<g>
+    <text x="700" y="88" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="40" font-weight="700" letter-spacing="7">SECURITY LAYER</text>
+    
+    <line x1="407" y1="106" x2="537" y2="106" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="700" y="112" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">JOB OVERSIGHT + CONTENT CLASSIFICATION</text>
+    <line x1="863" y1="106" x2="993" y2="106" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<text x="340" y="178" fill="#FF8888" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="700" letter-spacing="4">OVERSIGHT DAEMON · JOB APPROVAL</text>
+<text x="1060" y="178" fill="#FF8888" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="700" letter-spacing="4">CONTENT CLASSIFIER · (shadow)</text>
+<g transform="translate(80, 210)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(0,180,255,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="url(#cg-agent)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-agent)"/>
+  <g transform="translate(40, 24)">
+    <circle cx="0" cy="0" r="17" fill="rgba(0,180,255,0.08)" stroke="rgba(0,180,255,0.7)" stroke-width="1.5"/>
+    <text x="0" y="5" text-anchor="middle" fill="#00B4FF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11" font-weight="700" letter-spacing="1">01</text>
+  </g>
+  <text x="80" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Agent (any layer)</text>
+  <text x="80" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">queues a job for execution</text>
+</g>
+<g transform="translate(80, 310)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="url(#cg-queue)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-queue)"/>
+  <g transform="translate(40, 24)">
+    <circle cx="0" cy="0" r="17" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="5" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11" font-weight="700" letter-spacing="1">02</text>
+  </g>
+  <text x="80" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Job Queue</text>
+  <text x="80" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">shared SQLite store · jobs.db</text>
+</g>
+<g transform="translate(80, 410)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="90" rx="14" fill="rgba(26,26,46,0.7)" stroke="rgba(255,107,107,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="620" height="90" rx="14" fill="url(#cg-oversight)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-oversight)"/>
+  <g transform="translate(40, 32)">
+    <circle cx="0" cy="0" r="22" fill="rgba(255,107,107,0.08)" stroke="rgba(255,107,107,0.7)" stroke-width="1.5"/>
+    <text x="0" y="6" text-anchor="middle" fill="#FF6B6B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="700" letter-spacing="1">03</text>
+  </g>
+  <text x="80" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Oversight Daemon</text>
+  <text x="80" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">60s poll   ·   independent process   ·   approve or block</text>
+</g>
+<g transform="translate(80, 540)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="300" height="60" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,255,123,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="300" height="60" rx="14" fill="url(#cg-approve)"/>
+  <rect x="0" y="0" width="6" height="60" rx="3" fill="url(#strip-approve)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Approved · execute</text>
+</g>
+<g transform="translate(400, 540)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="300" height="60" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,107,107,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="300" height="60" rx="14" fill="url(#cg-block)"/>
+  <rect x="0" y="0" width="6" height="60" rx="3" fill="url(#strip-block)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Blocked · hold</text>
+</g>
+<g transform="translate(80, 630)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="url(#cg-audit)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-audit)"/>
+  <g transform="translate(40, 24)">
+    <circle cx="0" cy="0" r="17" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="5" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11" font-weight="700" letter-spacing="1">04</text>
+  </g>
+  <text x="80" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Audit Log</text>
+  <text x="80" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">append-only · every decision recorded</text>
+</g>
+<line x1="390" y1="280" x2="390" y2="310" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<line x1="390" y1="380" x2="390" y2="410" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<path d="M 390 500 L 390 525 L 230 525 L 230 540" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow-green)"/>
+<path d="M 390 500 L 390 525 L 550 525 L 550 540" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow-red)"/>
+<path d="M 230 600 L 230 615 L 390 615 L 390 630" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<path d="M 550 600 L 550 615 L 390 615 L 390 630" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<g transform="translate(720, 210)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(0,180,255,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="620" height="70" rx="14" fill="url(#cg-content)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-content)"/>
+  <g transform="translate(40, 24)">
+    <circle cx="0" cy="0" r="17" fill="rgba(0,180,255,0.08)" stroke="rgba(0,180,255,0.7)" stroke-width="1.5"/>
+    <text x="0" y="5" text-anchor="middle" fill="#00B4FF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11" font-weight="700" letter-spacing="1">01</text>
+  </g>
+  <text x="80" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Outbound content</text>
+  <text x="80" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">email · chat · voice</text>
+</g>
+<g transform="translate(720, 310)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="90" rx="14" fill="rgba(26,26,46,0.7)" stroke="rgba(255,107,107,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="620" height="90" rx="14" fill="url(#cg-classifier)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-classifier)"/>
+  <g transform="translate(40, 32)">
+    <circle cx="0" cy="0" r="22" fill="rgba(255,107,107,0.08)" stroke="rgba(255,107,107,0.7)" stroke-width="1.5"/>
+    <text x="0" y="6" text-anchor="middle" fill="#FF6B6B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="700" letter-spacing="1">02</text>
+  </g>
+  <text x="80" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Content Classifier · GLiGuard 0.3B</text>
+  <text x="80" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">six-axis classifier   ·   shadow mode until calibrated</text>
+</g>
+<g transform="translate(720, 430)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="110" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="620" height="110" rx="14" fill="url(#cg-axes)"/>
+  <rect x="0" y="0" width="6" height="110" rx="3" fill="url(#strip-axes)"/>
+  <g transform="translate(40, 32)">
+    <circle cx="0" cy="0" r="22" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="6" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="700" letter-spacing="1">03</text>
+  </g>
+  <text x="80" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Six classification axes</text>
+  <g transform="translate(-141, 72)">
+    <rect x="0" y="0" width="129" height="26" rx="13" fill="rgba(123,104,238,0.06)" stroke="rgba(123,104,238,0.45)" stroke-width="1"/>
+    <text x="64.5" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">prompt_safety</text>
+  </g>
+  <g transform="translate(-2, 72)">
+    <rect x="0" y="0" width="145" height="26" rx="13" fill="rgba(123,104,238,0.06)" stroke="rgba(123,104,238,0.45)" stroke-width="1"/>
+    <text x="72.5" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">response_safety</text>
+  </g>
+  <g transform="translate(153, 72)">
+    <rect x="0" y="0" width="83" height="26" rx="13" fill="rgba(123,104,238,0.06)" stroke="rgba(123,104,238,0.45)" stroke-width="1"/>
+    <text x="41.5" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">refusal</text>
+  </g>
+  <g transform="translate(246, 72)">
+    <rect x="0" y="0" width="106" height="26" rx="13" fill="rgba(123,104,238,0.06)" stroke="rgba(123,104,238,0.45)" stroke-width="1"/>
+    <text x="53" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">tox_prompt</text>
+  </g>
+  <g transform="translate(362, 72)">
+    <rect x="0" y="0" width="122" height="26" rx="13" fill="rgba(123,104,238,0.06)" stroke="rgba(123,104,238,0.45)" stroke-width="1"/>
+    <text x="61" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">tox_response</text>
+  </g>
+  <g transform="translate(494, 72)">
+    <rect x="0" y="0" width="98" height="26" rx="13" fill="rgba(123,104,238,0.06)" stroke="rgba(123,104,238,0.45)" stroke-width="1"/>
+    <text x="49" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">jailbreak</text>
+  </g>
+</g>
+<g transform="translate(720, 570)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="620" height="90" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="620" height="90" rx="14" fill="url(#cg-shadow)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-shadow)"/>
+  <g transform="translate(40, 32)">
+    <circle cx="0" cy="0" r="22" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="6" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="700" letter-spacing="1">04</text>
+  </g>
+  <text x="80" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Shadow log</text>
+  <text x="80" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">inert · light-gate after 4 weeks at ≥ 90% per axis</text>
+</g>
+<line x1="1030" y1="280" x2="1030" y2="310" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<line x1="1030" y1="400" x2="1030" y2="430" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<line x1="1030" y1="540" x2="1030" y2="570" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<text x="700" y="755" text-anchor="middle" fill="#FF8888" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="700" letter-spacing="4">CONTENT CLASSIFIER · SHADOW CONSUMERS</text>
+<g transform="translate(140, 780)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="360" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="360" height="80" rx="14" fill="url(#cg-consumer)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-consumer)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Tenant Mail Agent</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">outbound classification</text>
+</g>
+<g transform="translate(540, 780)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="360" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="360" height="80" rx="14" fill="url(#cg-consumer)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-consumer)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Tenant Conductor</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">inbound chat</text>
+</g>
+<g transform="translate(940, 780)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="360" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="360" height="80" rx="14" fill="url(#cg-consumer)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-consumer)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Personal Agent</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">chat + voice</text>
+</g>
+</svg>

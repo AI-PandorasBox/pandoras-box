@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    
+    <linearGradient id="cg-core" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-core" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1600" height="900" fill="url(#bg)"/><rect width="1600" height="900" fill="url(#grid)"/>
+<g>
+    <text x="800" y="80" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="42" font-weight="700" letter-spacing="7">DEFENSE IN DEPTH</text>
+    
+    <line x1="447.5" y1="98" x2="577.5" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="800" y="104" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">SIX INDEPENDENT GATES · BREACH ONE, THE REST STILL HOLD</text>
+    <line x1="1022.5" y1="98" x2="1152.5" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<circle cx="640" cy="490" r="360" fill="rgba(255,107,107,0.05)" stroke="rgba(255,107,107,0.55)" stroke-width="2"/>
+<text x="640" y="152" text-anchor="middle" fill="#FF6B6B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">OS USER ISOLATION</text>
+<circle cx="640" cy="490" r="305" fill="rgba(255,140,0,0.05)" stroke="rgba(255,140,0,0.55)" stroke-width="2"/>
+<text x="640" y="207" text-anchor="middle" fill="#FF8C00" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">CREDENTIAL SCOPING</text>
+<circle cx="640" cy="490" r="250" fill="rgba(255,215,0,0.05)" stroke="rgba(255,215,0,0.55)" stroke-width="2"/>
+<text x="640" y="262" text-anchor="middle" fill="#FFD700" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">TOOL INTERCEPTOR</text>
+<circle cx="640" cy="490" r="195" fill="rgba(123,255,123,0.05)" stroke="rgba(123,255,123,0.55)" stroke-width="2"/>
+<text x="640" y="317" text-anchor="middle" fill="#7BFF7B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">IDENTITY ALLOWLIST</text>
+<circle cx="640" cy="490" r="140" fill="rgba(0,180,255,0.05)" stroke="rgba(0,180,255,0.55)" stroke-width="2"/>
+<text x="640" y="372" text-anchor="middle" fill="#00B4FF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">JOB QUEUE BOUNDARY</text>
+<circle cx="640" cy="490" r="85" fill="rgba(123,104,238,0.05)" stroke="rgba(123,104,238,0.55)" stroke-width="2"/>
+<text x="640" y="427" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">INDEPENDENT OVERSIGHT</text>
+<circle cx="640" cy="490" r="30" fill="rgba(255,215,0,0.4)" stroke="#FFD700" stroke-width="2"/>
+<text x="640" y="496" text-anchor="middle" fill="#0a0a14" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="700" letter-spacing="1">CORE</text>
+<g transform="translate(1140, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="420" height="580" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="420" height="580" rx="16" fill="url(#cg-core)"/>
+  <rect x="0" y="0" width="6" height="580" rx="3" fill="url(#strip-core)"/>
+  <text x="28" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Six independent gates</text>
+  <text x="28" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">each layer enforced in code, not policy</text>
+  <text x="28" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3"></text>
+  <text x="28" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">01.  OS user isolation</text>
+  <text x="28" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       separate UIDs · 750 directories</text>
+  <text x="28" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3"></text>
+  <text x="28" y="204" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">02.  Credential scoping</text>
+  <text x="28" y="228" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       conductor holds no tenant creds</text>
+  <text x="28" y="252" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3"></text>
+  <text x="28" y="276" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">03.  Tool interceptor</text>
+  <text x="28" y="300" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       domain allowlist · secret scanner</text>
+  <text x="28" y="324" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       deletion guard · per-session caps</text>
+  <text x="28" y="348" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3"></text>
+  <text x="28" y="372" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">04.  Identity allowlist</text>
+  <text x="28" y="396" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       only verified user accepted</text>
+  <text x="28" y="420" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3"></text>
+  <text x="28" y="444" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">05.  Job queue boundary</text>
+  <text x="28" y="468" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       agents query WHERE tenant = own</text>
+  <text x="28" y="492" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3"></text>
+  <text x="28" y="516" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">06.  Independent oversight</text>
+  <text x="28" y="540" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">       every queued job approved or blocked</text>
+</g>
+</svg>

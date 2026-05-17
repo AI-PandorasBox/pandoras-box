@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build-release:
+    name: Build and publish release
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building release for $VERSION"
+
+      - name: Build installer tarball
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TARBALL="pandoras-box-installer-${VERSION}.tar.gz"
+          TMPDIR=$(mktemp -d)
+          STAGING="$TMPDIR/pandoras-box-${VERSION}"
+          mkdir -p "$STAGING"
+
+          # Copy installer and supporting files
+          cp install.sh pbox-setup.sh "$STAGING/"
+          cp -r lib config hooks "$STAGING/"
+          [[ -d modules ]] && cp -r modules "$STAGING/"
+          [[ -d manuals ]] && cp -r manuals "$STAGING/"
+          [[ -d docs ]] && cp -r docs "$STAGING/"
+          cp README.md CHANGELOG.md DISCLAIMER.md LICENSE CODE_OF_CONDUCT.md \
+             CONTRIBUTING.md SECURITY.md .sanitize-patterns .gitignore "$STAGING/" 2>/dev/null || true
+
+          tar -czf "$TARBALL" -C "$TMPDIR" "pandoras-box-${VERSION}"
+          echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
+          mv "$TARBALL" .
+          ls -lh "$TARBALL"
+
+      - name: Generate SHA256 checksums
+        id: checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          TARBALL="pandoras-box-installer-${VERSION}.tar.gz"
+          shasum -a 256 "$TARBALL" > SHA256SUMS
+          echo "Checksums:"
+          cat SHA256SUMS
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: false
+          prerelease: false
+          generate_release_notes: false
+          body_path: CHANGELOG.md
+          files: |
+            pandoras-box-installer-${{ steps.version.outputs.version }}.tar.gz
+            SHA256SUMS
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

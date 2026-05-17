@@ -1,0 +1,135 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    
+    <linearGradient id="cg-standard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(100,116,139,0.14)"/>
+      <stop offset="100%" stop-color="rgba(100,116,139,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-standard" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#64748B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#64748B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-intelligent" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.14)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-intelligent" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-narrow" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,180,255,0.14)"/>
+      <stop offset="100%" stop-color="rgba(0,180,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-narrow" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#00B4FF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00B4FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-agentic" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-agentic" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1600" height="900" fill="url(#bg)"/><rect width="1600" height="900" fill="url(#grid)"/>
+<g>
+    <text x="800" y="80" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="42" font-weight="700" letter-spacing="7">AUTOMATION TO AGENCY</text>
+    
+    <line x1="447.5" y1="98" x2="577.5" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="800" y="104" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">FOUR STAGES ALONG ONE AXIS: HOW MUCH THE SYSTEM DECIDES</text>
+    <line x1="1022.5" y1="98" x2="1152.5" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<g transform="translate(58, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(100,116,139,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="url(#cg-standard)"/>
+  <rect x="0" y="0" width="6" height="480" rx="3" fill="url(#strip-standard)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(100,116,139,0.08)" stroke="rgba(100,116,139,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#64748B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">01</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Standard Automation</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">Rule-based · deterministic</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Hand-coded if-this-then-that</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">No learning, no judgement</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Brittle when inputs vary</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Example: cron jobs, RPA bots</text>
+</g>
+<g transform="translate(436, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="url(#cg-intelligent)"/>
+  <rect x="0" y="0" width="6" height="480" rx="3" fill="url(#strip-intelligent)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">02</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Intelligent Automation</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">Rules + classical ML</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Pattern recognition layered on rules</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Trained on labelled data</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Routes / classifies / flags</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Example: spam filter, OCR pipeline</text>
+</g>
+<g transform="translate(814, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(0,180,255,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="url(#cg-narrow)"/>
+  <rect x="0" y="0" width="6" height="480" rx="3" fill="url(#strip-narrow)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(0,180,255,0.08)" stroke="rgba(0,180,255,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#00B4FF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">03</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Narrow AI</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">Single-task deep model</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Neural net trained for one job</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">High accuracy in its lane only</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">No reasoning across domains</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Example: image recogniser, ASR</text>
+</g>
+<g transform="translate(1192, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="rgba(26,26,46,0.7)" stroke="rgba(255,215,0,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="350" height="480" rx="16" fill="url(#cg-agentic)"/>
+  <rect x="0" y="0" width="6" height="480" rx="3" fill="url(#strip-agentic)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(255,215,0,0.08)" stroke="rgba(255,215,0,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#FFD700" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">04</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Agentic AI</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">LLM + tools + memory + autonomy</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Plans multi-step actions</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Uses tools, reads state, decides</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Operates inside a goal, not a script</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Example: this system</text>
+</g>
+<line x1="58" y1="740" x2="1542" y2="740" stroke="rgba(123,104,238,0.6)" stroke-width="2" marker-end="url(#arrow)"/>
+<text x="58" y="768" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="500" letter-spacing="2">LOW AGENCY  ·  HUMAN DECIDES</text>
+<text x="1542" y="768" text-anchor="end" fill="#FFD700" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="600" letter-spacing="2">HIGH AGENCY  ·  AGENT DECIDES</text>
+</svg>

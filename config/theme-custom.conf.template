@@ -1,0 +1,13 @@
+# Custom theme -- copy this file to /opt/pandoras-box/theme.conf and edit
+# Run the installer or: sudo cp theme-custom.conf.template /opt/pandoras-box/theme.conf
+SYSTEM_NAME="Pandoras Box"
+ADMIN_NAME="Your Admin Name"
+PERSONAL_AI_NAME="Your Personal AI Name"
+SECURITY_OVERSEER="Your Security Overseer Name"
+ALERT_RELAY="Your Alert Relay Name"
+COLOR_ACCENT="#6366f1"
+COLOR_BACKGROUND="#0a0a0f"
+COLOR_TEXT="#e0e0f0"
+LAUNCHDAEMON_PREFIX="com.pandoras-box"
+INSTALL_PATH="/opt/pandoras-box"
+LOG_PREFIX="pandoras-box"

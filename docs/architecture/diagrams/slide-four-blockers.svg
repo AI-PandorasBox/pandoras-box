@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 900" width="1600" height="900" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    
+    <linearGradient id="cg-memory" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.14)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-memory" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-security" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,107,107,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,107,107,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-security" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF6B6B" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF6B6B" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-ability" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(0,180,255,0.14)"/>
+      <stop offset="100%" stop-color="rgba(0,180,255,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-ability" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#00B4FF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#00B4FF" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-cost" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.14)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.02)"/>
+    </linearGradient>
+    <linearGradient id="strip-cost" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1600" height="900" fill="url(#bg)"/><rect width="1600" height="900" fill="url(#grid)"/>
+<g>
+    <text x="800" y="80" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="42" font-weight="700" letter-spacing="7">FOUR BLOCKERS</text>
+    
+    <line x1="451" y1="98" x2="581" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="800" y="104" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">WHAT STOPPED EARLY AGENTIC SYSTEMS REACHING PRODUCTION</text>
+    <line x1="1019" y1="98" x2="1149" y2="98" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<g transform="translate(64, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="url(#cg-memory)"/>
+  <rect x="0" y="0" width="6" height="260" rx="3" fill="url(#strip-memory)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">01</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Memory</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">no persistence between sessions</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Frontier LLMs are stateless by default</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Every turn forgets prior context</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Workarounds (vector stores, chat history) bolt on but rarely architected</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Without memory, no continuity, no improvement</text>
+</g>
+<g transform="translate(816, 200)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(255,107,107,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="url(#cg-security)"/>
+  <rect x="0" y="0" width="6" height="260" rx="3" fill="url(#strip-security)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(255,107,107,0.08)" stroke="rgba(255,107,107,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#FF6B6B" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">02</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Security</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">no isolation, no oversight</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Skills/tools can read anything the agent can</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">No independent approver — the agent grades itself</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Prompt injection in user content treated as instruction</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Multi-tenant data bleed by default</text>
+</g>
+<g transform="translate(64, 492)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(0,180,255,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="url(#cg-ability)"/>
+  <rect x="0" y="0" width="6" height="260" rx="3" fill="url(#strip-ability)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(0,180,255,0.08)" stroke="rgba(0,180,255,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#00B4FF" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">03</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Ability</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">tool surface limited and brittle</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Tool definitions stale within weeks of model release</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">No structured way to add/version/retire tools</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Long-running operations time out before completion</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Agents either over-act or refuse</text>
+</g>
+<g transform="translate(816, 492)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="rgba(26,26,46,0.55)" stroke="rgba(255,215,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="720" height="260" rx="16" fill="url(#cg-cost)"/>
+  <rect x="0" y="0" width="6" height="260" rx="3" fill="url(#strip-cost)"/>
+  <g transform="translate(48, 38)">
+    <circle cx="0" cy="0" r="24" fill="rgba(255,215,0,0.08)" stroke="rgba(255,215,0,0.7)" stroke-width="1.5"/>
+    <text x="0" y="7" text-anchor="middle" fill="#FFD700" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="15" font-weight="700" letter-spacing="1">04</text>
+  </g>
+  <text x="90" y="48" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="24" font-weight="600" letter-spacing="0.3">Cost</text>
+  <text x="90" y="74" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13.5" font-weight="400" letter-spacing="0.4">frontier API for every decision</text>
+  <text x="90" y="108" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Routine classification on a frontier LLM is wasteful</text>
+  <text x="90" y="132" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Per-message token costs compound at production volume</text>
+  <text x="90" y="156" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">No cheap fallback for high-frequency low-complexity tasks</text>
+  <text x="90" y="180" fill="#c8c8e0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="400" letter-spacing="0.3">Budgets blow without warning</text>
+</g>
+</svg>

@@ -1,0 +1,206 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 980" width="1400" height="980" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    
+    <linearGradient id="cg-agents" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-agents" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-queue" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-queue" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-governor" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-governor" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-worker" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-worker" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-manifest" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,140,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,140,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-manifest" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF8C00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF8C00" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-library" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,140,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,140,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-library" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF8C00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF8C00" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-cache" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,140,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,140,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-cache" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF8C00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF8C00" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1400" height="980" fill="url(#bg)"/><rect width="1400" height="980" fill="url(#grid)"/>
+<g>
+    <text x="700" y="88" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="40" font-weight="700" letter-spacing="7">SELF-IMPROVEMENT</text>
+    
+    <line x1="466.5" y1="106" x2="596.5" y2="106" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="700" y="112" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">SKILL GOVERNANCE LOOP</text>
+    <line x1="803.5" y1="106" x2="933.5" y2="106" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<g transform="translate(300, 180)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="800" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,215,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="800" height="80" rx="14" fill="url(#cg-agents)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-agents)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Agents</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">all agents log skill usage and outcomes</text>
+</g>
+<g transform="translate(500, 300)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="400" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="400" height="70" rx="14" fill="url(#cg-queue)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-queue)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Skill Queue</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">skill-queue.json</text>
+</g>
+<g transform="translate(500, 410)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="400" height="90" rx="14" fill="rgba(26,26,46,0.7)" stroke="rgba(123,104,238,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="400" height="90" rx="14" fill="url(#cg-governor)"/>
+  <rect x="0" y="0" width="6" height="90" rx="3" fill="url(#strip-governor)"/>
+  <g transform="translate(40, 32)">
+    <circle cx="0" cy="0" r="22" fill="rgba(123,104,238,0.08)" stroke="rgba(123,104,238,0.7)" stroke-width="1.5"/>
+    <text x="0" y="6" text-anchor="middle" fill="#7B68EE" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="700" letter-spacing="1">SG</text>
+  </g>
+  <text x="80" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Skill Governor</text>
+  <text x="80" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">reviews use   ·   proposes versioned revisions</text>
+</g>
+<text x="700" y="546" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="600" letter-spacing="5">SCHEDULED WORKERS</text>
+<g transform="translate(354, 570)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="url(#cg-worker)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-worker)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Reflection</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">hourly · observe only</text>
+</g>
+<g transform="translate(590, 570)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="url(#cg-worker)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-worker)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Calibration</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">Sat 23:00 · skills</text>
+</g>
+<g transform="translate(826, 570)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="url(#cg-worker)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-worker)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Prompt Optimiser</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">Sat 22:00 · GEPA</text>
+</g>
+<g transform="translate(354, 656)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="url(#cg-worker)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-worker)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Upstream Scan</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">weekly · deps · CVEs</text>
+</g>
+<g transform="translate(590, 656)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="url(#cg-worker)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-worker)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Weekly Review</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">Sun 08:00 · proposals</text>
+</g>
+<g transform="translate(826, 656)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="220" height="70" rx="14" fill="url(#cg-worker)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-worker)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Consolidation</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">nightly · digests</text>
+</g>
+<g transform="translate(500, 758)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="400" height="72" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,140,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="400" height="72" rx="14" fill="url(#cg-manifest)"/>
+  <rect x="0" y="0" width="6" height="72" rx="3" fill="url(#strip-manifest)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Signed Manifest</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">manifest.json · ed25519</text>
+</g>
+<g transform="translate(60, 758)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="360" height="72" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,140,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="360" height="72" rx="14" fill="url(#cg-library)"/>
+  <rect x="0" y="0" width="6" height="72" rx="3" fill="url(#strip-library)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Skill Library</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">versioned canonical store</text>
+</g>
+<g transform="translate(980, 758)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="360" height="72" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,140,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="360" height="72" rx="14" fill="url(#cg-cache)"/>
+  <rect x="0" y="0" width="6" height="72" rx="3" fill="url(#strip-cache)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Per-Agent Cache</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">pulled at session start</text>
+</g>
+<line x1="700" y1="260" x2="700" y2="300" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="658" y="270" width="84" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="700" y="283" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">log usage</text>
+<line x1="700" y1="370" x2="700" y2="410" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="678" y="380" width="44" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="700" y="393" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">read</text>
+<line x1="700" y1="500" x2="700" y2="570" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="682" y="525" width="36" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="700" y="538" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">run</text>
+<line x1="700" y1="740" x2="700" y2="758" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="670" y="739" width="60" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="700" y="752" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">update</text>
+<path d="M 500 794 L 420 794" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="426" y="776" width="68" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="460" y="789" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">publish</text>
+<path d="M 420 830 C 600 880, 800 880, 980 830" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="622" y="870" width="156" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="700" y="883" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">hash-verified pull</text>
+<path d="M 1160 758 C 1370 600, 1370 320, 1100 220" fill="none" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow-gold)"/>
+<rect x="1228" y="470" width="124" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="1290" y="483" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">updated skills</text>
+</svg>

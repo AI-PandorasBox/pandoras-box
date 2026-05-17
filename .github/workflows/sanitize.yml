@@ -1,0 +1,161 @@
+name: Sanitize (server-side gate-on-the-gate)
+
+# Third layer of defense. The first two (hooks/pre-commit, hooks/pre-push)
+# run on contributor machines. This workflow runs in GitHub Actions on every
+# push and PR and catches anything that bypassed the local hooks.
+#
+# This workflow contains ONLY GENERIC credential-shape patterns. Operator-
+# specific patterns (real names, paths, tenant slugs, hostnames) live on the
+# maintainer machine at ~/.config/pandoras-box/sanitize-patterns and never
+# appear in any repo file.
+#
+# SECURITY NOTE: No step in this workflow consumes untrusted input
+# (github.event.issue.*, github.event.pull_request.*, etc.). All env vars
+# are static strings declared in the workflow itself.
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+
+permissions:
+  contents: read
+
+jobs:
+  gate-on-the-gate:
+    name: Refuse if patterns/allowlist files reappeared at repo root
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          FAIL=0
+          for legacy in .sanitize-patterns .sanitize-allowlist; do
+            if [[ -e "$legacy" ]]; then
+              echo "::error file=$legacy::This file MUST NOT be in the repo. It lists every operator-specific identifier and must live only at ~/.config/pandoras-box/ on contributor machines."
+              FAIL=1
+            fi
+          done
+          while IFS= read -r f; do
+            echo "::error file=$f::Sanitize files must not be in the repo."
+            FAIL=1
+          done < <(find . -maxdepth 2 -name '.sanitize-*' -not -name '*.template' 2>/dev/null)
+          if [[ "$FAIL" -ne 0 ]]; then exit 1; fi
+          echo "ok: no sanitize files at repo root."
+
+  credential-shapes:
+    name: Generic credential-shape scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+
+      - name: Scan tracked files for generic credential shapes
+        run: |
+          set -uo pipefail
+          PATTERNS_FILE="$RUNNER_TEMP/generic-patterns"
+          cat > "$PATTERNS_FILE" <<'PAT'
+          sk-ant-[a-zA-Z0-9_\-]{20,}
+          sk_live_[a-zA-Z0-9]{20,}
+          ghp_[a-zA-Z0-9]{36,}
+          github_pat_[a-zA-Z0-9_]{80,}
+          AIza[0-9A-Za-z_\-]{35}
+          ya29\.[0-9A-Za-z_\-]{20,}
+          xoxb-[0-9]+-[0-9]+-[a-zA-Z0-9]+
+          xoxa-[0-9]+-[0-9]+-[a-zA-Z0-9]+
+          xoxp-[0-9]+-[0-9]+-[0-9]+-[a-zA-Z0-9]+
+          [0-9]{8,12}:AA[a-zA-Z0-9_\-]{33}
+          gsk_[a-zA-Z0-9]{40,}
+          \bAKIA[0-9A-Z]{16}\b
+          "private_key_id"\s*:\s*"[a-f0-9]{40}"
+          \bsk_live_[a-zA-Z0-9]{24,}\b
+          K00[a-zA-Z0-9_\-]{31}
+          \b00[a-f0-9]{31}\b
+          PAT
+
+          FAIL=0
+          while IFS= read -r f; do
+            [[ -f "$f" ]] || continue
+            case "$f" in
+              .git/*|node_modules/*|staged/*|*.bak-*) continue ;;
+              .github/workflows/sanitize.yml) continue ;;
+              hooks/sanitize-patterns.template) continue ;;
+            esac
+            if file --mime "$f" 2>/dev/null | grep -q "charset=binary"; then continue; fi
+            hits=$(grep -EnH -f "$PATTERNS_FILE" "$f" 2>/dev/null || true)
+            if [[ -n "$hits" ]]; then
+              echo "::error file=$f::Credential shape detected"
+              echo "$hits"
+              FAIL=1
+            fi
+          done < <(git ls-files)
+
+          if [[ "$FAIL" -ne 0 ]]; then
+            echo "::error::Generic credential-shape scan failed. Rotate any real credential immediately."
+            exit 1
+          fi
+          echo "ok: no credential shapes found in tracked files"
+
+  syntax-check:
+    name: Syntax validation (.sh + .mjs)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Node.js syntax check (.mjs)
+        run: |
+          set -uo pipefail
+          FAIL=0
+          while IFS= read -r -d '' file; do
+            if ! node --check "$file" 2>&1; then
+              echo "::error file=$file::Node syntax check failed"
+              FAIL=1
+            fi
+          done < <(find . -name '*.mjs' -not -path '*/node_modules/*' -print0)
+          [[ "$FAIL" -eq 0 ]] || exit 1
+          echo "ok: all .mjs files parse"
+
+      - name: Bash syntax check (.sh)
+        run: |
+          set -uo pipefail
+          FAIL=0
+          while IFS= read -r -d '' file; do
+            if ! bash -n "$file" 2>&1; then
+              echo "::error file=$file::Bash syntax check failed"
+              FAIL=1
+            fi
+          done < <(find . -name '*.sh' -not -path '*/node_modules/*' -print0)
+          [[ "$FAIL" -eq 0 ]] || exit 1
+          echo "ok: all .sh files parse"
+
+  installer-dry-run:
+    name: Installer dry-run smoke (PBOX_DRY_RUN=1)
+    runs-on: macos-14
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '22' }
+
+      - name: Run installer in sandbox
+        env:
+          PBOX_DRY_RUN: '1'
+          PBOX_DRY_RUN_PATH: '1'
+          PBOX_DRY_RUN_CLAUDE_MODE: 'subscription'
+        run: |
+          set -uo pipefail
+          perl -e 'alarm 300; exec @ARGV' bash pbox-setup.sh > /tmp/dryrun.log 2>&1 || true
+          echo "=== tail of dryrun.log ==="
+          tail -100 /tmp/dryrun.log
+          if grep -q "Selected install plan" /tmp/dryrun.log; then
+            echo "ok: installer reached the post-selection summary screen"
+          else
+            echo "::error::installer did not reach post-selection summary -- early crash"
+            exit 1
+          fi

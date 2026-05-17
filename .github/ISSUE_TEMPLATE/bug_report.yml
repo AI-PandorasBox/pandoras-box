@@ -1,0 +1,85 @@
+name: Bug Report
+description: Report a bug or unexpected behaviour
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before reporting, please check the [Troubleshooting Guide](https://github.com/AI-PandorasBox/pandoras-box/releases/latest/download/pandoras-box-troubleshooting.pdf) and the existing issues list.
+
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      description: Which part of the system is affected?
+      options:
+        - Installer (pbox-setup.sh)
+        - Core / Argus / Job Queue
+        - Conductor
+        - Mail Agent
+        - Calendar Agent
+        - Files Agent
+        - Personal AI
+        - Admin Panel
+        - Dashboard
+        - Terminal
+        - Tailscale / Certificates
+        - Module install
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect to happen?
+      placeholder: |
+        What you did:
+        What you expected:
+        What happened instead:
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant log output
+      description: Paste relevant lines from the service log. Remove any API keys or personal data.
+      render: shell
+
+  - type: input
+    id: macos_version
+    attributes:
+      label: macOS version
+      placeholder: e.g. 14.4.1
+    validations:
+      required: true
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node.js version
+      placeholder: e.g. 20.11.0
+    validations:
+      required: true
+
+  - type: input
+    id: pbox_version
+    attributes:
+      label: Pandoras Box version
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked the Troubleshooting Guide
+          required: true
+        - label: I have removed all API keys and personal data from the log output
+          required: true
+        - label: I have searched existing issues and this is not a duplicate
+          required: true

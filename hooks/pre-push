@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+# hooks/pre-push -- Pandoras Box sanitization scanner
+# _A6_2_LOCAL_ONLY_PATTERNS_V1
+#
+# Blocks any push containing patterns from the LOCAL-ONLY config file at
+# $HOME/.config/pandoras-box/sanitize-patterns, unless the matched line
+# contains a substring from the LOCAL-ONLY allowlist.
+#
+# Patterns + allowlist live OUTSIDE the repo, intentionally:
+#   ~/.config/pandoras-box/sanitize-patterns
+#   ~/.config/pandoras-box/sanitize-allowlist
+#
+# This is so the patterns file itself -- which lists every operator-specific
+# identifier that must not leak -- is never committed to the repo and so
+# never gets indexed by GitHub, Google, Wayback, code-search engines, etc.
+#
+# Install:
+#   cp hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+#
+# First-time setup (per machine):
+#   mkdir -p ~/.config/pandoras-box
+#   cp hooks/sanitize-patterns.template ~/.config/pandoras-box/sanitize-patterns
+#   chmod 600 ~/.config/pandoras-box/sanitize-patterns
+#   <edit to suit your install>
+#
+# Scans: tracked + untracked-but-not-ignored. Skips: binary, node_modules/,
+# .git/, staged/, *.bak-* files.
+
+set -uo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+CONFIG_DIR="${PBOX_SANITIZE_CONFIG_DIR:-$HOME/.config/pandoras-box}"
+PATTERNS_FILE="$CONFIG_DIR/sanitize-patterns"
+ALLOWLIST_FILE="$CONFIG_DIR/sanitize-allowlist"
+
+# Reject if the legacy in-repo file is back -- something is regressing.
+for legacy in "$ROOT/.sanitize-patterns" "$ROOT/.sanitize-allowlist"; do
+  if [[ -f "$legacy" && ! -L "$legacy" ]]; then
+    echo "[sanitize] FATAL: $(basename "$legacy") found at repo root."
+    echo "[sanitize]        Patterns/allowlist must live ONLY at $CONFIG_DIR/."
+    echo "[sanitize]        Move the file out of the repo before pushing:"
+    echo "[sanitize]            mv $legacy $CONFIG_DIR/$(basename "$legacy" | sed 's/^\.//')"
+    exit 1
+  fi
+done
+
+if [[ ! -f "$PATTERNS_FILE" ]]; then
+  echo "[sanitize] WARNING: $PATTERNS_FILE not found on this machine." >&2
+  echo "[sanitize]          Push allowed, but no scan performed."        >&2
+  echo "[sanitize]          To enable: cp hooks/sanitize-patterns.template $PATTERNS_FILE" >&2
+  exit 0
+fi
+
+# Load patterns (skip comments + empty lines)
+PATTERNS=()
+while IFS= read -r line; do
+  [[ "$line" =~ ^#.*$ ]] && continue
+  [[ -z "${line// }" ]]  && continue
+  PATTERNS+=("$line")
+done < "$PATTERNS_FILE"
+
+if [[ ${#PATTERNS[@]} -eq 0 ]]; then
+  echo "[sanitize] WARNING: $PATTERNS_FILE is empty. Skipping scan." >&2
+  exit 0
+fi
+
+# Load allowlist substrings (skip comments + empty lines)
+ALLOWS=()
+if [[ -f "$ALLOWLIST_FILE" ]]; then
+  while IFS= read -r line; do
+    [[ "$line" =~ ^#.*$ ]] && continue
+    [[ -z "${line// }" ]]  && continue
+    ALLOWS+=("$line")
+  done < "$ALLOWLIST_FILE"
+fi
+
+# Collect files to scan: tracked + untracked but not ignored.
+FILES=()
+while IFS= read -r f; do
+  [[ -f "$f" ]] || continue
+  # Skip binary
+  if file --mime "$f" 2>/dev/null | grep -q "charset=binary"; then continue; fi
+  case "$f" in
+    node_modules/*|.git/*|staged/*) continue ;;
+    *.bak-*) continue ;;
+  esac
+  FILES+=("$f")
+done < <(cd "$ROOT" && git ls-files; cd "$ROOT" && git ls-files --others --exclude-standard)
+
+# Deduplicate
+if [[ ${#FILES[@]} -gt 0 ]]; then
+  IFS=$'\n' FILES=($(printf '%s\n' "${FILES[@]}" | sort -u))
+  unset IFS
+fi
+
+if [[ ${#FILES[@]} -eq 0 ]]; then
+  echo "[sanitize] No files to scan."
+  exit 0
+fi
+
+FAIL=0
+HITS=()
+
+# Line-on-allowlist helper: returns 0 (true) if the line contains any allowlist substring.
+line_allowed() {
+  local line="$1"
+  for a in "${ALLOWS[@]}"; do
+    if [[ "$line" == *"$a"* ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+for f in "${FILES[@]}"; do
+  for pattern in "${PATTERNS[@]}"; do
+    # grep with line numbers; tolerate no matches
+    matches=$(grep -inE "$pattern" "$f" 2>/dev/null || true)
+    [[ -z "$matches" ]] && continue
+    while IFS= read -r match; do
+      # Strip leading "linenum:" then test allowlist
+      content="${match#*:}"
+      if line_allowed "$content"; then
+        continue
+      fi
+      HITS+=("  $f: $match  [pattern: $pattern]")
+      FAIL=1
+    done <<< "$matches"
+  done
+done
+
+if [[ $FAIL -eq 1 ]]; then
+  echo ""
+  echo "╔══════════════════════════════════════════════════════════════╗"
+  echo "║          SANITIZATION CHECK FAILED -- PUSH BLOCKED           ║"
+  echo "╚══════════════════════════════════════════════════════════════╝"
+  echo ""
+  echo "The following content matched a local blocklist pattern and is not"
+  echo "exempted by the local allowlist. Resolve before pushing:"
+  echo ""
+  printf '%s\n' "${HITS[@]}"
+  echo ""
+  echo "To allowlist a deliberate public reference, add the exact substring"
+  echo "to $ALLOWLIST_FILE with a comment explaining the rationale."
+  echo ""
+  exit 1
+fi
+
+echo "[sanitize] Scan passed. ${#FILES[@]} files scanned, ${#PATTERNS[@]} patterns checked, ${#ALLOWS[@]} allowlist entries respected."
+exit 0

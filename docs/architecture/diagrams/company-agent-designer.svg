@@ -1,0 +1,202 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1400 740" width="1400" height="740" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif">
+<defs>
+    <radialGradient id="bg" cx="50%" cy="35%" r="85%">
+      <stop offset="0%" stop-color="#16182a"/>
+      <stop offset="60%" stop-color="#0a0c18"/>
+      <stop offset="100%" stop-color="#04050d"/>
+    </radialGradient>
+    <pattern id="grid" x="0" y="0" width="40" height="40" patternUnits="userSpaceOnUse">
+      <circle cx="0" cy="0" r="1" fill="#3a3a5a" fill-opacity="0.15"/>
+    </pattern>
+    <filter id="softshadow" x="-10%" y="-10%" width="120%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="14" flood-color="#000" flood-opacity="0.55"/>
+    </filter>
+    <linearGradient id="titleGrad" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#7B68EE"/>
+      <stop offset="100%" stop-color="#00B4FF"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7080a0"/>
+    </marker>
+    <marker id="arrow-red" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FF6B6B"/>
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7BFF7B"/>
+    </marker>
+    <marker id="arrow-gold" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#FFD700"/>
+    </marker>
+    
+    <linearGradient id="cg-user" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-user" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-chat" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,215,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,215,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-chat" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FFD700" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-conductor" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,140,0,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,140,0,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-conductor" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF8C00" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF8C00" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-task" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(255,20,147,0.12)"/>
+      <stop offset="100%" stop-color="rgba(255,20,147,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-task" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#FF1493" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FF1493" stop-opacity="0.5"/>
+    </linearGradient>
+    <linearGradient id="cg-config" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="rgba(123,104,238,0.12)"/>
+      <stop offset="100%" stop-color="rgba(123,104,238,0.015)"/>
+    </linearGradient>
+    <linearGradient id="strip-config" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#7B68EE" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#7B68EE" stop-opacity="0.5"/>
+    </linearGradient>
+  </defs>
+<rect width="1400" height="740" fill="url(#bg)"/><rect width="1400" height="740" fill="url(#grid)"/>
+<g>
+    <text x="700" y="88" text-anchor="middle" fill="url(#titleGrad)" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="40" font-weight="700" letter-spacing="7">COMPANY AGENT</text>
+    
+    <line x1="344" y1="106" x2="474" y2="106" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+    <text x="700" y="112" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="13" font-weight="500" letter-spacing="5">PER-TENANT CONDUCTOR · ROUTES WORK TO SCOPED TASK AGENTS</text>
+    <line x1="926" y1="106" x2="1056" y2="106" stroke="rgba(123,104,238,0.35)" stroke-width="1"/>
+  </g>
+<g transform="translate(80, 240)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="280" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,215,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="280" height="70" rx="14" fill="url(#cg-user)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-user)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Tenant User</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">staff or customer</text>
+</g>
+<g transform="translate(80, 350)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="280" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,215,0,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="280" height="70" rx="14" fill="url(#cg-chat)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-chat)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Chat Surface</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">Telegram · Signal · web</text>
+</g>
+<g transform="translate(460, 230)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="400" height="240" rx="14" fill="rgba(26,26,46,0.7)" stroke="rgba(255,140,0,0.7)" stroke-width="2"/>
+  <rect x="0" y="0" width="400" height="240" rx="14" fill="url(#cg-conductor)"/>
+  <rect x="0" y="0" width="6" height="240" rx="3" fill="url(#strip-conductor)"/>
+  <g transform="translate(40, 32)">
+    <circle cx="0" cy="0" r="22" fill="rgba(255,140,0,0.08)" stroke="rgba(255,140,0,0.7)" stroke-width="1.5"/>
+    <text x="0" y="6" text-anchor="middle" fill="#FF8C00" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="14" font-weight="700" letter-spacing="1">CA</text>
+  </g>
+  <text x="80" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Company Agent</text>
+  <text x="80" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">one per tenant   ·   no tenant credentials   ·   delegation only</text>
+  <g transform="translate(80, 202)">
+    <rect x="0" y="0" width="75" height="26" rx="13" fill="rgba(255,140,0,0.06)" stroke="rgba(255,140,0,0.45)" stroke-width="1"/>
+    <text x="37.5" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">intent</text>
+  </g>
+  <g transform="translate(165, 202)">
+    <rect x="0" y="0" width="114" height="26" rx="13" fill="rgba(255,140,0,0.06)" stroke="rgba(255,140,0,0.45)" stroke-width="1"/>
+    <text x="57" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">permissions</text>
+  </g>
+  <g transform="translate(289, 202)">
+    <rect x="0" y="0" width="83" height="26" rx="13" fill="rgba(255,140,0,0.06)" stroke="rgba(255,140,0,0.45)" stroke-width="1"/>
+    <text x="41.5" y="17" text-anchor="middle" fill="#e8e8f8" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="500" letter-spacing="0.3">routing</text>
+  </g>
+</g>
+<text x="1146" y="200" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="600" letter-spacing="5">TASK AGENTS   ·   scoped credentials</text>
+<g transform="translate(940, 220)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="url(#cg-task)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-task)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Mail Agent</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">tenant-scoped</text>
+</g>
+<g transform="translate(1152, 220)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="url(#cg-task)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-task)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Calendar Agent</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">tenant-scoped</text>
+</g>
+<g transform="translate(940, 302)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="url(#cg-task)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-task)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Files Agent</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">tenant-scoped</text>
+</g>
+<g transform="translate(1152, 302)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="url(#cg-task)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-task)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Voice Agent</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">tenant-scoped</text>
+</g>
+<g transform="translate(940, 384)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="url(#cg-task)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-task)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Marketing Agent</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">tenant-scoped</text>
+</g>
+<g transform="translate(1152, 384)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(255,20,147,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="200" height="70" rx="14" fill="url(#cg-task)"/>
+  <rect x="0" y="0" width="6" height="70" rx="3" fill="url(#strip-task)"/>
+  <text x="24" y="29" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="16" font-weight="600" letter-spacing="0.3">Web Agent</text>
+  <text x="24" y="50" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="11.5" font-weight="400" letter-spacing="0.4">tenant-scoped</text>
+</g>
+<text x="700" y="510" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12" font-weight="600" letter-spacing="5">PER-TENANT CONFIG   ·   informs the conductor</text>
+<g transform="translate(81, 530)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="url(#cg-config)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-config)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Allowed Users</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">who can talk to it</text>
+</g>
+<g transform="translate(397, 530)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="url(#cg-config)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-config)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Business Rules</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">opening hours · escalation</text>
+</g>
+<g transform="translate(713, 530)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="url(#cg-config)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-config)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Brand Voice</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">tone of voice in replies</text>
+</g>
+<g transform="translate(1029, 530)" filter="url(#softshadow)">
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="rgba(26,26,46,0.55)" stroke="rgba(123,104,238,0.35)" stroke-width="1.5"/>
+  <rect x="0" y="0" width="290" height="80" rx="14" fill="url(#cg-config)"/>
+  <rect x="0" y="0" width="6" height="80" rx="3" fill="url(#strip-config)"/>
+  <text x="24" y="40" fill="#f0f0ff" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="22" font-weight="600" letter-spacing="0.3">Tenant Boundaries</text>
+  <text x="24" y="64" fill="#8888aa" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="12.5" font-weight="400" letter-spacing="0.4">data isolation rules</text>
+</g>
+<line x1="220" y1="310" x2="220" y2="350" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<line x1="360" y1="385" x2="460" y2="360" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="376" y="362.5" width="68" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="410" y="375.5" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">message</text>
+<line x1="860" y1="310" x2="940" y2="255" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<line x1="860" y1="350" x2="940" y2="337" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<rect x="858" y="333.5" width="84" height="18" rx="9" fill="#0a0a14" stroke="#7080a0" stroke-width="1" stroke-opacity="0.4"/>
+<text x="900" y="346.5" text-anchor="middle" fill="#a0a0c0" font-family="-apple-system, BlinkMacSystemFont, 'Inter', 'Helvetica Neue', sans-serif" font-size="10.5" font-weight="500" font-style="italic" letter-spacing="0.2">delegates</text>
+<line x1="860" y1="390" x2="940" y2="419" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7"  marker-end="url(#arrow)"/>
+<line x1="226" y1="530" x2="560" y2="470" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+<line x1="542" y1="530" x2="630" y2="470" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+<line x1="858" y1="530" x2="700" y2="470" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+<line x1="1174" y1="530" x2="770" y2="470" stroke="#7080a0" stroke-width="1.5" stroke-opacity="0.7" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+</svg>
