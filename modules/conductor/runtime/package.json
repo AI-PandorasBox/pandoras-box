@@ -1,0 +1,22 @@
+{
+  "name": "pbox-conductor",
+  "version": "0.5.0-rc1",
+  "description": "Per-tenant conductor daemon for Pandora's Box (multi-tenant business-agent orchestration).",
+  "main": "pbox-conductor.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node pbox-conductor.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "discord.js": "^14.16.0",
+    "@slack/bolt": "^4.0.0",
+    "whatsapp-web.js": "^1.27.0",
+    "qrcode-terminal": "^0.12.0",
+    "dotenv": "^16.4.0"
+  },
+  "license": "Apache-2.0"
+}

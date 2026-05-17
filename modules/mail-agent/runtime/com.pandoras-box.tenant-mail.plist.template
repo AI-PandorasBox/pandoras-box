@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>{{LAUNCHDAEMON_PREFIX}}.{{SLUG}}-mail</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>{{NODE_BIN}}</string>
+    <string>{{INSTALL_PATH}}/{{SLUG}}-mail/pbox-mail-agent.mjs</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>{{INSTALL_PATH}}/{{SLUG}}-mail</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>COMPANY_SLUG</key>
+    <string>{{SLUG}}</string>
+    <key>INSTALL_PATH</key>
+    <string>{{INSTALL_PATH}}</string>
+    <key>LAUNCHDAEMON_PREFIX</key>
+    <string>{{LAUNCHDAEMON_PREFIX}}</string>
+    <key>TASK_TYPE</key>
+    <string>mail</string>
+    <key>NODE_ENV</key>
+    <string>production</string>
+    <key>PATH</key>
+    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+  </dict>
+  <key>UserName</key>
+  <string>{{USER_NAME}}</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <dict>
+    <key>SuccessfulExit</key>
+    <false/>
+    <key>Crashed</key>
+    <true/>
+  </dict>
+  <key>StandardOutPath</key>
+  <string>/tmp/{{LOG_PREFIX}}-{{SLUG}}-mail.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/{{LOG_PREFIX}}-{{SLUG}}-mail.err</string>
+  <key>ThrottleInterval</key>
+  <integer>10</integer>
+</dict>
+</plist>
