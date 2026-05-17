@@ -399,12 +399,12 @@ run_system_check() {
   # the Content Classifier (if installed) -- localhost-only sidecar
   _check_http_service \
     "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.content-classifier" \
-    "the Content Classifier content classifier" \
+    "the Content Classifier" \
     "$INSTALL_PATH/content-classifier/.env" "CONTENT_CLASSIFIER_PORT" "8487" "yes"
 
   # Cron-only services
   _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.argus"  "Security overseer (Argus)"
-  _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.self-improvement" "the Self-Improvement Pipeline self-improvement" "yes"
+  _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.self-improvement" "the Self-Improvement Pipeline" "yes"
   _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.backup" "Encrypted backups"        "yes"
 
   # --- environment checks -------------------------------------------------

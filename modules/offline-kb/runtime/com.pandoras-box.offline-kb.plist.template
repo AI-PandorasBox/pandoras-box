@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  com.pandoras-box.offline-kb.plist.template
+  Filled in by modules/offline-kb/install.sh from theme.conf at install time.
+
+  Placeholders:
+    {{LAUNCHDAEMON_PREFIX}}  e.g. "com.pandoras-box"
+    {{INSTALL_PATH}}         e.g. "/opt/pandoras-box"
+    {{NODE_BIN}}             e.g. "/opt/homebrew/bin/node"
+    {{LOG_PREFIX}}           e.g. "pandoras-box"
+    {{USER_NAME}}            dedicated service account or single-tenant owner
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{{LAUNCHDAEMON_PREFIX}}.offline-kb</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{NODE_BIN}}</string>
+        <string>{{INSTALL_PATH}}/offline-kb/pbox-offline-kb.mjs</string>
+    </array>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>INSTALL_PATH</key>
+        <string>{{INSTALL_PATH}}</string>
+    </dict>
+
+    <key>WorkingDirectory</key>
+    <string>{{INSTALL_PATH}}/offline-kb</string>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+
+    <key>StandardOutPath</key>
+    <string>/tmp/{{LOG_PREFIX}}-offline-kb.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/tmp/{{LOG_PREFIX}}-offline-kb.log</string>
+
+    <key>UserName</key>
+    <string>{{USER_NAME}}</string>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

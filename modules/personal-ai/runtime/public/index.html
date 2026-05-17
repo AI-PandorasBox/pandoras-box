@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{PERSONAL_AI_NAME}}</title>
+<link rel="stylesheet" href="/public/style.css">
+<style>
+  :root {
+    --accent: {{COLOR_ACCENT}};
+    --bg: {{COLOR_BACKGROUND}};
+    --fg: {{COLOR_TEXT}};
+  }
+</style>
+<meta name="pbox-voice" content="{{VOICE_ENABLED}}">
+<meta name="pbox-tts" content="{{TTS_ENABLED}}">
+</head>
+<body>
+<aside id="side">
+  <header>
+    <img src="/avatar.gif" alt="" id="side-avatar">
+    <div>
+      <div class="title">{{PERSONAL_AI_NAME}}</div>
+      <div class="sub">{{SYSTEM_NAME}}</div>
+    </div>
+  </header>
+  <div class="actions">
+    <button id="new-conv" class="primary">New chat</button>
+    <button id="show-facts">Facts</button>
+    <button id="show-drops">Drops</button>
+  </div>
+  <nav id="conv-list" aria-label="Conversations"></nav>
+  <footer>
+    <button id="logout">Sign out</button>
+  </footer>
+</aside>
+
+<main id="chat">
+  <header id="chat-header">
+    <h1 id="conv-title">New chat</h1>
+    <div id="status" class="muted"></div>
+  </header>
+  <section id="messages" aria-live="polite"></section>
+  <form id="composer">
+    <textarea id="input" placeholder="Message {{PERSONAL_AI_NAME}}..." rows="2" autofocus></textarea>
+    <div class="composer-actions">
+      <button type="button" id="mic" hidden>Mic</button>
+      <button type="submit" id="send" class="primary">Send</button>
+    </div>
+  </form>
+</main>
+
+<dialog id="facts-dialog">
+  <header><h2>Important facts</h2><button class="close" data-close>X</button></header>
+  <form id="add-fact-form">
+    <textarea id="new-fact" placeholder="Pin a fact the AI should always remember..." rows="2" required></textarea>
+    <button type="submit" class="primary">Add</button>
+  </form>
+  <ul id="facts-list"></ul>
+</dialog>
+
+<dialog id="drops-dialog">
+  <header><h2>Drops</h2><button class="close" data-close>X</button></header>
+  <form id="add-drop-form">
+    <select id="drop-kind">
+      <option value="note">Note</option>
+      <option value="link">Link</option>
+      <option value="file">File path</option>
+      <option value="image">Image path</option>
+      <option value="snippet">Snippet</option>
+    </select>
+    <input id="drop-path" type="text" placeholder="Path, URL, or note text" required>
+    <button type="submit" class="primary">Add</button>
+  </form>
+  <ul id="drops-list"></ul>
+</dialog>
+
+<script src="/public/app.js"></script>
+</body>
+</html>

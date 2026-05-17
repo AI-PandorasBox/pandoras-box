@@ -1,0 +1,21 @@
+# docker-compose.yml.template
+# Rendered by modules/offline-kb/install.sh into ${INSTALL_PATH}/offline-kb/docker-compose.yml.
+# Placeholders:
+#   {{INSTALL_PATH}}          install root (theme.conf)
+#   {{KIWIX_INTERNAL_PORT}}   host port that maps to the container's 8080
+services:
+  kiwix:
+    image: ghcr.io/kiwix/kiwix-serve:latest
+    container_name: pbox-kiwix
+    restart: unless-stopped
+    # 127.0.0.1 bind so only the on-box wrapper can reach the container.
+    ports:
+      - "127.0.0.1:{{KIWIX_INTERNAL_PORT}}:8080"
+    volumes:
+      - "{{INSTALL_PATH}}/offline-kb/zim:/data:ro"
+    command: ["--port=8080", "/data"]
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp

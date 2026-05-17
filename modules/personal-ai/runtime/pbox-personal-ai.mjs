@@ -1,77 +1,639 @@
 #!/usr/bin/env node
-// pbox-personal-ai.mjs -- Personal AI placeholder for v0.3
-//
-// The full Personal AI ships in v0.4. This v0.3 placeholder:
-//   - Binds the configured port so the dashboard sees the service as RUNNING
-//   - Serves a clear "v0.4 placeholder" page at GET /
-//   - Returns 503 from any /api/* endpoint with an explanatory body
-//
-// Why ship the placeholder now: the install + dashboard + service-management
-// surface needs to be exercisable end-to-end. The Personal AI runtime is
-// genuinely a separate piece of work (voice + memory + MS365 + browser
-// driver + skill loop) that doesn't compress into a single short module.
-//
-// Operators installing v0.3 get a working installer, dashboard, terminal,
-// admin-lite, docs-server, content-classifier, self-improvement cron, plus
-// this placeholder confirming the Personal AI slot is wired and ready for
-// the v0.4 binary.
+// pbox-personal-ai.mjs -- Personal AI assistant server.
+// Localhost-first chat UI with PBKDF2 passphrase auth, SQLite memory,
+// Anthropic SDK proxy. Optional Tailscale-IP allowlist and ElevenLabs TTS.
 
 import http from 'node:http'
+import fs from 'node:fs'
+import path from 'node:path'
+import crypto from 'node:crypto'
+import { execFileSync } from 'node:child_process'
+import { DatabaseSync } from 'node:sqlite'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const INSTALL_PATH = process.env.INSTALL_PATH || '/opt/pandoras-box'
-const PORT = parseInt(process.env.PERSONAL_AI_PORT || process.env.MUSE_PORT || '8800', 10)
+const PORT = parseInt(process.env.PERSONAL_AI_PORT || '8800', 10)
 const BIND = process.env.PERSONAL_AI_BIND || '127.0.0.1'
-const DISPLAY_NAME = process.env.PERSONAL_AI_NAME || process.env.MUSE_DISPLAY_NAME || 'Assistant'
+const PASS_HASH = process.env.PERSONAL_AI_PASSPHRASE_HASH || ''
+const MODEL = process.env.PERSONAL_AI_MODEL || 'claude-sonnet-4-6'
+const VOICE_ENABLED = process.env.PERSONAL_AI_VOICE === '1'
+const TAILSCALE_ONLY = process.env.PERSONAL_AI_TAILSCALE_ONLY === '1'
+const SESSION_TTL_MS = 1000 * 60 * 60 * 8
+const ELEVENLABS_KEY = process.env.ELEVENLABS_API_KEY || ''
+const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'
+const MODULE_HOME = path.join(INSTALL_PATH, 'personal-ai')
+const STORE_DIR = path.join(MODULE_HOME, 'store')
+const SESSIONS_DIR = path.join(STORE_DIR, 'sessions')
+const PUBLIC_DIR = fs.existsSync(path.join(MODULE_HOME, 'public'))
+  ? path.join(MODULE_HOME, 'public')
+  : path.join(__dirname, 'public')
+const DB_PATH = path.join(STORE_DIR, 'memory.db')
+const MAX_BODY = 2 * 1024 * 1024
+const TAILSCALE_CIDRS = [
+  { net: '100.64.0.0', bits: 10, v: 4 },
+  { net: 'fd7a:115c:a1e0::', bits: 48, v: 6 },
+]
 
-const html = `<!doctype html>
-<html><head><meta charset="utf-8"><title>${DISPLAY_NAME} -- v0.3 placeholder</title>
+function readTheme() {
+  const out = {
+    SYSTEM_NAME: 'Pandoras Box',
+    PERSONAL_AI_NAME: process.env.PERSONAL_AI_NAME || 'Assistant',
+    COLOR_ACCENT: '#00b4ff',
+    COLOR_BACKGROUND: '#0d1117',
+    COLOR_TEXT: '#c9d1d9',
+    AVATAR_GIF: '',
+  }
+  try {
+    const conf = fs.readFileSync(path.join(INSTALL_PATH, 'theme.conf'), 'utf8')
+    for (const line of conf.split('\n')) {
+      const m = line.match(/^([A-Z_][A-Z0-9_]*)=["']?([^"'\n]*)["']?$/)
+      if (m && m[1] in out) out[m[1]] = m[2].replace(/\$\{INSTALL_PATH\}/g, INSTALL_PATH)
+    }
+  } catch {}
+  if (process.env.PERSONAL_AI_NAME) out.PERSONAL_AI_NAME = process.env.PERSONAL_AI_NAME
+  return out
+}
+const THEME = readTheme()
+
+fs.mkdirSync(STORE_DIR, { recursive: true })
+fs.mkdirSync(SESSIONS_DIR, { recursive: true })
+const db = new DatabaseSync(DB_PATH)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS conversations (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT,
+    started_at INTEGER NOT NULL,
+    last_msg_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id INTEGER NOT NULL REFERENCES conversations(id),
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    rating INTEGER,
+    regenerated INTEGER DEFAULT 0,
+    corrected INTEGER DEFAULT 0
+  );
+  CREATE INDEX IF NOT EXISTS idx_messages_conv ON messages(conversation_id, id);
+  CREATE TABLE IF NOT EXISTS important_facts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    fact TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    source_message_id INTEGER
+  );
+  CREATE TABLE IF NOT EXISTS drops (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    content_path TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
+`)
+
+const sessions = new Map()
+
+function hashPbkdf2(plain, salt) {
+  return crypto.pbkdf2Sync(plain, salt, 200000, 32, 'sha256').toString('hex')
+}
+function verifyPassphrase(plain) {
+  if (!PASS_HASH || !plain) return false
+  const [salt, hash] = PASS_HASH.split(':')
+  if (!salt || !hash) return false
+  const a = Buffer.from(hashPbkdf2(plain, salt), 'hex')
+  const b = Buffer.from(hash, 'hex')
+  if (a.length !== b.length) return false
+  return crypto.timingSafeEqual(a, b)
+}
+function newSession() {
+  const token = crypto.randomBytes(32).toString('hex')
+  const csrf = crypto.randomBytes(24).toString('hex')
+  sessions.set(token, { expires: Date.now() + SESSION_TTL_MS, csrf })
+  return { token, csrf }
+}
+function getSession(req) {
+  const cookie = req.headers.cookie || ''
+  const m = cookie.match(/pai_sess=([a-f0-9]+)/)
+  if (!m) return null
+  const s = sessions.get(m[1])
+  if (!s || s.expires < Date.now()) { sessions.delete(m[1]); return null }
+  return { token: m[1], ...s }
+}
+function getCsrfCookie(req) {
+  const cookie = req.headers.cookie || ''
+  const m = cookie.match(/pai_csrf=([a-f0-9]+)/)
+  return m ? m[1] : null
+}
+function csrfOk(req, sess) {
+  if (req.method === 'GET' || req.method === 'HEAD') return true
+  const cookie = getCsrfCookie(req)
+  const header = req.headers['x-csrf-token']
+  if (!cookie || !header || !sess) return false
+  if (cookie !== sess.csrf || header !== sess.csrf) return false
+  return true
+}
+
+function getApiKey() {
+  try {
+    const out = execFileSync('security',
+      ['find-generic-password', '-a', process.env.USER || 'pbox', '-s', 'pbox-anthropic-key', '-w'],
+      { encoding: 'utf8', timeout: 2000, stdio: ['ignore', 'pipe', 'ignore'] }
+    ).trim()
+    if (out) return out
+  } catch {}
+  if (process.env.ANTHROPIC_API_KEY) return process.env.ANTHROPIC_API_KEY
+  try {
+    const home = process.env.HOME || ''
+    if (home) {
+      const credPath = path.join(home, '.config', 'claude', 'credentials.json')
+      if (fs.existsSync(credPath)) {
+        const j = JSON.parse(fs.readFileSync(credPath, 'utf8'))
+        if (j && typeof j.api_key === 'string') return j.api_key
+      }
+    }
+  } catch {}
+  return null
+}
+
+function parseIp4(s) {
+  const m = s.match(/^(?:::ffff:)?(\d+)\.(\d+)\.(\d+)\.(\d+)$/)
+  if (!m) return null
+  return (parseInt(m[1]) << 24 >>> 0) + (parseInt(m[2]) << 16) + (parseInt(m[3]) << 8) + parseInt(m[4])
+}
+function inCidr4(ip, cidr) {
+  const ipN = parseIp4(ip); const baseN = parseIp4(cidr.net)
+  if (ipN == null || baseN == null) return false
+  const mask = cidr.bits === 0 ? 0 : (~0 << (32 - cidr.bits)) >>> 0
+  return (ipN & mask) === (baseN & mask)
+}
+function ipAllowed(req) {
+  if (!TAILSCALE_ONLY) return true
+  const ip = req.socket.remoteAddress || ''
+  if (ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1') return true
+  for (const c of TAILSCALE_CIDRS) {
+    if (c.v === 4 && inCidr4(ip, c)) return true
+    if (c.v === 6 && ip.toLowerCase().startsWith(c.net.toLowerCase().split('::')[0])) return true
+  }
+  return false
+}
+
+function ensureConversation(id, firstUserContent) {
+  if (id) {
+    const row = db.prepare('SELECT id FROM conversations WHERE id = ?').get(id)
+    if (row) return row.id
+  }
+  const now = Date.now()
+  const title = (firstUserContent || 'New conversation').slice(0, 80).replace(/\s+/g, ' ').trim()
+  const r = db.prepare('INSERT INTO conversations (title, started_at, last_msg_at) VALUES (?, ?, ?)')
+    .run(title, now, now)
+  return Number(r.lastInsertRowid)
+}
+function recordMessage(conversation_id, role, content) {
+  const now = Date.now()
+  const r = db.prepare(
+    'INSERT INTO messages (conversation_id, role, content, created_at) VALUES (?, ?, ?, ?)'
+  ).run(conversation_id, role, content, now)
+  db.prepare('UPDATE conversations SET last_msg_at = ? WHERE id = ?').run(now, conversation_id)
+  appendSessionLog({ ts: now, conversation_id, role, content })
+  return Number(r.lastInsertRowid)
+}
+function appendSessionLog(entry) {
+  try {
+    const d = new Date(entry.ts || Date.now())
+    const fname = `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}.jsonl`
+    fs.appendFileSync(path.join(SESSIONS_DIR, fname), JSON.stringify(entry) + '\n')
+  } catch {}
+}
+function loadHistory(conversation_id, limit = 40) {
+  const rows = db.prepare(
+    'SELECT id, role, content FROM messages WHERE conversation_id = ? ORDER BY id DESC LIMIT ?'
+  ).all(conversation_id, limit)
+  return rows.reverse()
+}
+function loadImportantFacts() {
+  const rows = db.prepare('SELECT fact FROM important_facts ORDER BY id DESC LIMIT 100').all()
+  return rows.map(r => r.fact)
+}
+
+let AnthropicCtor = null
+async function getAnthropic() {
+  if (AnthropicCtor) return AnthropicCtor
+  const mod = await import('@anthropic-ai/sdk')
+  AnthropicCtor = mod.default || mod.Anthropic
+  return AnthropicCtor
+}
+
+function buildSystemPrompt() {
+  const facts = loadImportantFacts()
+  const factsBlock = facts.length
+    ? '\n\nUser facts pinned as important:\n' + facts.map(f => '- ' + f).join('\n')
+    : ''
+  return `You are ${THEME.PERSONAL_AI_NAME}, a personal AI assistant running on the operator's machine. ` +
+    `Be concise, accurate, and useful. Avoid filler. Never invent facts about the operator -- ` +
+    `if you do not know, say so.${factsBlock}`
+}
+
+async function callClaude({ history, userContent, stream = false }) {
+  const apiKey = getApiKey()
+  if (!apiKey) throw new Error('No Anthropic API key found. Set ANTHROPIC_API_KEY or add to macOS Keychain (service=pbox-anthropic-key).')
+  const Ctor = await getAnthropic()
+  const client = new Ctor({ apiKey })
+  const messages = []
+  for (const m of history) {
+    if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content })
+  }
+  messages.push({ role: 'user', content: userContent })
+  const opts = {
+    model: MODEL,
+    max_tokens: 2048,
+    system: buildSystemPrompt(),
+    messages,
+  }
+  if (stream) return client.messages.stream(opts)
+  const resp = await client.messages.create(opts)
+  return (resp.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
+}
+
+function send(res, code, body, headers = {}) {
+  res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', ...headers })
+  res.end(typeof body === 'string' ? body : JSON.stringify(body))
+}
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    let size = 0
+    const chunks = []
+    req.on('data', c => {
+      size += c.length
+      if (size > MAX_BODY) { reject(new Error('body too large')); req.destroy(); return }
+      chunks.push(c)
+    })
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')))
+    req.on('error', reject)
+  })
+}
+async function readJson(req) {
+  const raw = await readBody(req)
+  if (!raw) return {}
+  try { return JSON.parse(raw) } catch { throw new Error('invalid json') }
+}
+function setCookie(res, parts) {
+  const prev = res.getHeader('set-cookie')
+  const arr = Array.isArray(prev) ? prev : (prev ? [prev] : [])
+  arr.push(parts.join('; '))
+  res.setHeader('set-cookie', arr)
+}
+function clearCookie(res, name) {
+  setCookie(res, [`${name}=`, 'Path=/', 'Max-Age=0', 'HttpOnly', 'SameSite=Strict'])
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')
+}
+
+const STATIC_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.gif': 'image/gif',
+  '.png': 'image/png',
+  '.ico': 'image/x-icon',
+}
+function readPublicFile(name) {
+  const safe = name.replace(/[^a-zA-Z0-9._-]/g, '')
+  if (!safe || safe.startsWith('.')) return null
+  const full = path.join(PUBLIC_DIR, safe)
+  if (!full.startsWith(PUBLIC_DIR + path.sep)) return null
+  try {
+    const data = fs.readFileSync(full)
+    return { data, type: STATIC_TYPES[path.extname(full)] || 'application/octet-stream' }
+  } catch { return null }
+}
+
+const DEFAULT_AVATAR_SVG = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="${THEME.COLOR_ACCENT}"/><stop offset="1" stop-color="${THEME.COLOR_BACKGROUND}"/>
+  </linearGradient></defs>
+  <circle cx="48" cy="48" r="46" fill="url(#g)"/>
+  <text x="48" y="58" font-family="-apple-system, sans-serif" font-size="34" font-weight="600" text-anchor="middle" fill="${THEME.COLOR_TEXT}">${escapeHtml((THEME.PERSONAL_AI_NAME || 'A').charAt(0).toUpperCase())}</text>
+</svg>`
+
+function serveAvatar(res) {
+  const candidate = THEME.AVATAR_GIF
+  if (candidate && fs.existsSync(candidate)) {
+    try {
+      const data = fs.readFileSync(candidate)
+      res.writeHead(200, { 'content-type': 'image/gif', 'cache-control': 'public, max-age=300' })
+      res.end(data); return
+    } catch {}
+  }
+  res.writeHead(200, { 'content-type': 'image/svg+xml', 'cache-control': 'public, max-age=300' })
+  res.end(DEFAULT_AVATAR_SVG)
+}
+
+function renderLoginPage(error = '') {
+  return `<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${escapeHtml(THEME.PERSONAL_AI_NAME)} -- sign in</title>
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; max-width: 640px; margin: 60px auto; padding: 24px; color: #222; line-height: 1.6; }
-  h1 { font-size: 1.6rem; margin: 0 0 6px; }
-  .meta { color: #888; font-size: 13px; margin-bottom: 32px; }
-  .pending { background: #fffce0; padding: 20px 24px; border-left: 4px solid #d4a000; border-radius: 4px; }
-  code { background: #f4f4f6; padding: 1px 6px; border-radius: 3px; font-family: ui-monospace, Menlo, monospace; font-size: 13px; }
-</style></head><body>
-<h1>${DISPLAY_NAME}</h1>
-<div class="meta">Pandoras Box -- Personal AI placeholder server (v0.3)</div>
-<div class="pending">
-  <strong>This is the v0.3 release.</strong>
-  <p>The full Personal AI -- voice, memory, mail/calendar/files, browser
-  automation, skill loop, watch companion -- ships in <strong>v0.4</strong>.
-  This placeholder confirms the service slot is wired correctly and the
-  installer can register the LaunchDaemon. Updating to v0.4 will drop the
-  full runtime into this same slot.</p>
-  <p>What works today in v0.3:</p>
-  <ul>
-    <li>The installer, all module configuration, plist registration, sanitize hooks</li>
-    <li>Dashboard at <code>http://127.0.0.1:8181</code> -- watch the service status</li>
-    <li>Admin Lite at <code>http://127.0.0.1:8488</code> -- mobile-friendly restart</li>
-    <li>Browser terminal at <code>http://127.0.0.1:8484</code> -- log tail + restart</li>
-    <li>Local docs at <code>http://127.0.0.1:8485</code> -- manuals + architecture</li>
-    <li>Content classifier sidecar (shadow mode) at <code>http://127.0.0.1:8487</code></li>
-    <li>Weekly self-improvement review on Sundays at 08:00</li>
-  </ul>
-</div>
-</body></html>`
+  :root { --accent:${THEME.COLOR_ACCENT}; --bg:${THEME.COLOR_BACKGROUND}; --fg:${THEME.COLOR_TEXT}; }
+  body { font-family:-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--fg); margin:0; display:flex; align-items:center; justify-content:center; height:100vh; }
+  form { background:rgba(255,255,255,0.04); padding:32px; border-radius:10px; width:320px; box-shadow:0 4px 24px rgba(0,0,0,0.4); }
+  h1 { margin:0 0 4px; font-size:1.3rem; }
+  .sub { color:#888; font-size:0.85rem; margin-bottom:20px; }
+  input { width:100%; padding:12px; background:var(--bg); border:1px solid #2a2a40; border-radius:6px; color:var(--fg); box-sizing:border-box; font-size:14px; }
+  button { margin-top:14px; width:100%; padding:12px; background:var(--accent); border:none; border-radius:6px; color:#000; font-weight:600; cursor:pointer; font-size:14px; }
+  .err { color:#ff6b6b; font-size:13px; margin-top:10px; }
+</style></head>
+<body><form method="POST" action="/api/login" enctype="application/x-www-form-urlencoded">
+  <h1>${escapeHtml(THEME.PERSONAL_AI_NAME)}</h1>
+  <div class="sub">${escapeHtml(THEME.SYSTEM_NAME)} -- Personal AI</div>
+  <input name="passphrase" type="password" placeholder="Passphrase" autofocus required autocomplete="current-password">
+  <button type="submit">Sign in</button>
+  ${error ? `<div class="err">${escapeHtml(error)}</div>` : ''}
+</form></body></html>`
+}
 
-const server = http.createServer((req, res) => {
-  const url = new URL(req.url, `http://${req.headers.host}`)
-  if (url.pathname === '/api/health') {
-    res.writeHead(200, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ ok: true, version: 'v0.3-placeholder', note: 'Personal AI runtime ships in v0.4' }))
-    return
+function renderApp() {
+  let html
+  const file = readPublicFile('index.html')
+  if (file) html = file.data.toString('utf8')
+  else html = '<!doctype html><html><body>index.html missing in public/</body></html>'
+  html = html
+    .replaceAll('{{PERSONAL_AI_NAME}}', escapeHtml(THEME.PERSONAL_AI_NAME))
+    .replaceAll('{{SYSTEM_NAME}}', escapeHtml(THEME.SYSTEM_NAME))
+    .replaceAll('{{COLOR_ACCENT}}', THEME.COLOR_ACCENT)
+    .replaceAll('{{COLOR_BACKGROUND}}', THEME.COLOR_BACKGROUND)
+    .replaceAll('{{COLOR_TEXT}}', THEME.COLOR_TEXT)
+    .replaceAll('{{VOICE_ENABLED}}', VOICE_ENABLED ? '1' : '0')
+    .replaceAll('{{TTS_ENABLED}}', ELEVENLABS_KEY ? '1' : '0')
+  return html
+}
+
+async function handleLogin(req, res) {
+  const raw = await readBody(req)
+  let passphrase = ''
+  if ((req.headers['content-type'] || '').includes('application/json')) {
+    try { passphrase = JSON.parse(raw).passphrase || '' } catch {}
+  } else {
+    const m = raw.match(/(?:^|&)passphrase=([^&]*)/)
+    if (m) passphrase = decodeURIComponent(m[1].replace(/\+/g, ' '))
   }
-  if (url.pathname.startsWith('/api/')) {
-    res.writeHead(503, { 'content-type': 'application/json' })
-    res.end(JSON.stringify({ error: 'Personal AI runtime not yet shipped', version: 'v0.3-placeholder' }))
-    return
+  if (!verifyPassphrase(passphrase)) {
+    if ((req.headers.accept || '').includes('application/json')) {
+      send(res, 401, { error: 'invalid passphrase' }); return
+    }
+    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+    res.end(renderLoginPage('Wrong passphrase.')); return
   }
-  res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-  res.end(html)
+  const { token, csrf } = newSession()
+  const secure = req.socket && req.socket.encrypted ? '; Secure' : ''
+  res.writeHead(302, {
+    'set-cookie': [
+      `pai_sess=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_MS/1000}${secure}`,
+      `pai_csrf=${csrf}; SameSite=Strict; Path=/; Max-Age=${SESSION_TTL_MS/1000}${secure}`,
+    ],
+    location: '/',
+  })
+  res.end()
+}
+
+function handleLogout(req, res) {
+  const s = getSession(req)
+  if (s) sessions.delete(s.token)
+  clearCookie(res, 'pai_sess'); clearCookie(res, 'pai_csrf')
+  send(res, 200, { ok: true })
+}
+
+async function handleChat(req, res) {
+  const body = await readJson(req)
+  const content = typeof body.content === 'string' ? body.content.trim() : ''
+  if (!content) return send(res, 400, { error: 'content required' })
+  const cidIn = body.conversation_id != null ? parseInt(body.conversation_id, 10) : null
+  const cid = ensureConversation(Number.isInteger(cidIn) && cidIn > 0 ? cidIn : null, content)
+  recordMessage(cid, 'user', content)
+  const history = loadHistory(cid).slice(0, -1)
+  try {
+    const text = await callClaude({ history, userContent: content, stream: false })
+    const mid = recordMessage(cid, 'assistant', text)
+    send(res, 200, { conversation_id: cid, message_id: mid, content: text })
+  } catch (e) {
+    send(res, 502, { error: 'llm_error', detail: String(e.message || e) })
+  }
+}
+
+async function handleChatStream(req, res, url) {
+  const cidIn = url.searchParams.get('conversation_id')
+  const content = (url.searchParams.get('content') || '').trim()
+  if (!content) return send(res, 400, { error: 'content required' })
+  const cidNum = cidIn ? parseInt(cidIn, 10) : null
+  const cid = ensureConversation(Number.isInteger(cidNum) && cidNum > 0 ? cidNum : null, content)
+  recordMessage(cid, 'user', content)
+  const history = loadHistory(cid).slice(0, -1)
+  res.writeHead(200, {
+    'content-type': 'text/event-stream; charset=utf-8',
+    'cache-control': 'no-cache',
+    'connection': 'keep-alive',
+    'x-accel-buffering': 'no',
+  })
+  res.write(`event: start\ndata: ${JSON.stringify({ conversation_id: cid })}\n\n`)
+  let acc = ''
+  try {
+    const stream = await callClaude({ history, userContent: content, stream: true })
+    stream.on('text', (chunk) => {
+      acc += chunk
+      res.write(`event: token\ndata: ${JSON.stringify({ text: chunk })}\n\n`)
+    })
+    stream.on('error', (err) => {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: String(err.message || err) })}\n\n`)
+      res.end()
+    })
+    await stream.finalMessage()
+    const mid = recordMessage(cid, 'assistant', acc)
+    res.write(`event: end\ndata: ${JSON.stringify({ message_id: mid })}\n\n`)
+    res.end()
+  } catch (e) {
+    res.write(`event: error\ndata: ${JSON.stringify({ message: String(e.message || e) })}\n\n`)
+    res.end()
+  }
+}
+
+function handleListConversations(req, res) {
+  const rows = db.prepare(
+    'SELECT id, title, started_at, last_msg_at FROM conversations ORDER BY last_msg_at DESC LIMIT 200'
+  ).all()
+  send(res, 200, { conversations: rows })
+}
+
+function handleListMessages(req, res, idStr) {
+  const id = parseInt(idStr, 10)
+  if (!Number.isInteger(id) || id <= 0) return send(res, 400, { error: 'bad id' })
+  const exists = db.prepare('SELECT id FROM conversations WHERE id = ?').get(id)
+  if (!exists) return send(res, 404, { error: 'not found' })
+  const rows = db.prepare(
+    'SELECT id, role, content, created_at, rating, regenerated, corrected FROM messages WHERE conversation_id = ? ORDER BY id ASC'
+  ).all(id)
+  send(res, 200, { conversation_id: id, messages: rows })
+}
+
+async function handleAddFact(req, res) {
+  const body = await readJson(req)
+  const fact = typeof body.fact === 'string' ? body.fact.trim() : ''
+  if (!fact) return send(res, 400, { error: 'fact required' })
+  if (fact.length > 1000) return send(res, 400, { error: 'fact too long' })
+  let srcId = null
+  if (body.source_message_id != null) {
+    const sid = parseInt(body.source_message_id, 10)
+    if (Number.isInteger(sid) && sid > 0) {
+      const exists = db.prepare('SELECT id FROM messages WHERE id = ?').get(sid)
+      if (exists) srcId = sid
+    }
+  }
+  const r = db.prepare(
+    'INSERT INTO important_facts (fact, created_at, source_message_id) VALUES (?, ?, ?)'
+  ).run(fact, Date.now(), srcId)
+  send(res, 200, { id: Number(r.lastInsertRowid) })
+}
+
+function handleListFacts(req, res) {
+  const rows = db.prepare(
+    'SELECT id, fact, created_at, source_message_id FROM important_facts ORDER BY id DESC LIMIT 500'
+  ).all()
+  send(res, 200, { facts: rows })
+}
+
+const ALLOWED_DROP_KINDS = new Set(['note', 'link', 'file', 'image', 'snippet'])
+async function handleAddDrop(req, res) {
+  const body = await readJson(req)
+  const kind = typeof body.kind === 'string' ? body.kind.trim() : ''
+  const contentPath = typeof body.content_path === 'string' ? body.content_path.trim() : ''
+  if (!ALLOWED_DROP_KINDS.has(kind)) return send(res, 400, { error: 'invalid kind' })
+  if (!contentPath || contentPath.length > 1024) return send(res, 400, { error: 'invalid content_path' })
+  if (contentPath.includes('\0') || contentPath.includes('..')) return send(res, 400, { error: 'invalid content_path' })
+  const r = db.prepare(
+    'INSERT INTO drops (kind, content_path, created_at) VALUES (?, ?, ?)'
+  ).run(kind, contentPath, Date.now())
+  send(res, 200, { id: Number(r.lastInsertRowid) })
+}
+
+function handleListDrops(req, res) {
+  const rows = db.prepare(
+    'SELECT id, kind, content_path, created_at FROM drops ORDER BY id DESC LIMIT 200'
+  ).all()
+  send(res, 200, { drops: rows })
+}
+
+async function handleTts(req, res) {
+  if (!ELEVENLABS_KEY) return send(res, 404, { error: 'tts disabled' })
+  const body = await readJson(req)
+  const text = typeof body.text === 'string' ? body.text : ''
+  if (!text || text.length > 5000) return send(res, 400, { error: 'invalid text' })
+  try {
+    const r = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(ELEVENLABS_VOICE_ID)}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key': ELEVENLABS_KEY,
+        'content-type': 'application/json',
+        'accept': 'audio/mpeg',
+      },
+      body: JSON.stringify({ text, model_id: 'eleven_turbo_v2_5' }),
+    })
+    if (!r.ok) {
+      const err = await r.text()
+      return send(res, 502, { error: 'tts_failed', status: r.status, detail: err.slice(0, 500) })
+    }
+    const buf = Buffer.from(await r.arrayBuffer())
+    res.writeHead(200, { 'content-type': 'audio/mpeg', 'content-length': buf.length })
+    res.end(buf)
+  } catch (e) {
+    send(res, 502, { error: 'tts_failed', detail: String(e.message || e) })
+  }
+}
+
+function handleHealth(req, res) {
+  send(res, 200, {
+    ok: true,
+    version: 'v0.4',
+    model: MODEL,
+    voice_enabled: VOICE_ENABLED,
+    tts_enabled: !!ELEVENLABS_KEY,
+    name: THEME.PERSONAL_AI_NAME,
+  })
+}
+
+async function handleRateMessage(req, res, idStr) {
+  const body = await readJson(req)
+  const id = parseInt(idStr, 10)
+  if (!Number.isInteger(id) || id <= 0) return send(res, 400, { error: 'bad id' })
+  const rating = parseInt(body.rating, 10)
+  if (![-1, 0, 1].includes(rating)) return send(res, 400, { error: 'rating must be -1, 0, or 1' })
+  const r = db.prepare('UPDATE messages SET rating = ? WHERE id = ?').run(rating, id)
+  if (r.changes === 0) return send(res, 404, { error: 'not found' })
+  send(res, 200, { ok: true })
+}
+
+const server = http.createServer(async (req, res) => {
+  try {
+    if (!ipAllowed(req)) return send(res, 403, { error: 'forbidden' })
+    const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`)
+    const p = url.pathname
+
+    if (p === '/avatar.gif' && req.method === 'GET') return serveAvatar(res)
+
+    if (p === '/' && req.method === 'GET') {
+      const sess = getSession(req)
+      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
+      res.end(sess ? renderApp() : renderLoginPage())
+      return
+    }
+    if (p.startsWith('/public/') && req.method === 'GET') {
+      const file = readPublicFile(p.slice('/public/'.length))
+      if (!file) return send(res, 404, { error: 'not found' })
+      res.writeHead(200, { 'content-type': file.type, 'cache-control': 'public, max-age=60' })
+      return res.end(file.data)
+    }
+
+    if (p === '/api/login' && req.method === 'POST') return handleLogin(req, res)
+    if (p === '/api/health' && req.method === 'GET') return handleHealth(req, res)
+
+    const sess = getSession(req)
+    if (!sess) return send(res, 401, { error: 'unauthorized' })
+    if (!csrfOk(req, sess)) return send(res, 403, { error: 'csrf' })
+
+    if (p === '/api/logout' && req.method === 'POST') return handleLogout(req, res)
+    if (p === '/api/chat' && req.method === 'POST') return handleChat(req, res)
+    if (p === '/api/chat/stream' && req.method === 'GET') return handleChatStream(req, res, url)
+    if (p === '/api/conversations' && req.method === 'GET') return handleListConversations(req, res)
+    const mMsgs = p.match(/^\/api\/conversations\/(\d+)\/messages$/)
+    if (mMsgs && req.method === 'GET') return handleListMessages(req, res, mMsgs[1])
+    if (p === '/api/important_facts' && req.method === 'POST') return handleAddFact(req, res)
+    if (p === '/api/important_facts' && req.method === 'GET')  return handleListFacts(req, res)
+    if (p === '/api/drops' && req.method === 'POST') return handleAddDrop(req, res)
+    if (p === '/api/drops' && req.method === 'GET')  return handleListDrops(req, res)
+    if (p === '/api/tts' && req.method === 'POST') return handleTts(req, res)
+    const mRate = p.match(/^\/api\/messages\/(\d+)\/rate$/)
+    if (mRate && req.method === 'POST') return handleRateMessage(req, res, mRate[1])
+
+    send(res, 404, { error: 'not found' })
+  } catch (e) {
+    try { send(res, 500, { error: 'server_error', detail: String(e.message || e) }) } catch {}
+  }
 })
 
-server.listen(PORT, BIND, () => {
-  console.log(`[personal-ai] v0.3 placeholder listening on http://${BIND}:${PORT}`)
-  console.log(`[personal-ai] display name: ${DISPLAY_NAME}`)
-  console.log(`[personal-ai] (full Personal AI runtime ships in v0.4)`)
+server.on('listening', () => {
+  console.log(`[personal-ai] listening on http://${BIND}:${PORT}`)
+  console.log(`[personal-ai] model: ${MODEL}`)
+  if (!PASS_HASH) console.log('[personal-ai] WARNING: PERSONAL_AI_PASSPHRASE_HASH not set; login disabled')
+  if (TAILSCALE_ONLY) console.log('[personal-ai] Tailscale-only allowlist active')
 })
+
+server.listen(PORT, BIND)
+
+function shutdown() {
+  try { db.close() } catch {}
+  server.close(() => process.exit(0))
+  setTimeout(() => process.exit(0), 2000).unref()
+}
+process.on('SIGTERM', shutdown)
+process.on('SIGINT', shutdown)

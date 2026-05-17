@@ -128,7 +128,8 @@ run_module_selection() {
     "Lightweight 0.3B-parameter classifier that screens outbound text against six axes (prompt safety, response safety, response refusal, prompt toxicity, response toxicity, jailbreak detection). Runs locally on CPU. Shadow mode by default — observes for 4 weeks of calibration before any blocking, so you see what it would have caught before it actually catches anything." \
     "About 600 MB disk for the model (auto-downloaded from HuggingFace). No accounts. Python 3.11+ (managed by Homebrew)." \
     "Free. Local CPU inference." \
-    "~3 minutes (model download dominates)"; then
+    "~3 minutes (model download dominates)" \
+    "yes"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST content-classifier"
     # Fail-open vs fail-closed policy
     echo ""
@@ -136,7 +137,11 @@ run_module_selection() {
     echo "    [1] Still go through (fail-open — fewer false stops, less safety)"
     echo "    [2] Be blocked until the Content Classifier recovers (fail-closed — safer)"
     echo ""
-    read -rp "  Choose [1/2, default 2]: " _cerberus_failmode
+    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+      _cerberus_failmode="2"
+    else
+      read -rp "  Choose [1/2, default 2]: " _cerberus_failmode
+    fi
     _cerberus_failmode="${_cerberus_failmode:-2}"
     if [[ "$_cerberus_failmode" == "1" ]]; then
       export CONTENT_CLASSIFIER_FAIL_MODE="open"
@@ -151,7 +156,8 @@ run_module_selection() {
     "Weekly cycle that analyses your assistant's session history, generates tool description and prompt improvement proposals (GEPA), reviews skills the assistant has saved, and surfaces actionable items for you to approve. Slow-burn quality lift." \
     "Nothing." \
     "Free (uses your existing Claude subscription)." \
-    "~3 minutes"; then
+    "~3 minutes" \
+    "yes"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST self-improvement"
     run_self_improvement_setup
   fi

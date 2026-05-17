@@ -1,90 +1,85 @@
 # offline-kb
 
 **Status:** Optional
-**Depends on:** personal-ai
-**Storage:** **OFFLINE.** Downloads are large but read locally -- no per-query
-charge for stable reference content.
+**Depends on:** Docker, Node 22+
+**Storage:** Local. All ZIM files live on disk; no network egress at query time.
 
 ## What It Does
 
-the Offline Knowledge Library is your Personal Assistant's offline knowledge base. It indexes a
-curated library of content that does not change often -- Wikipedia, Stack
-Overflow, iFixit, Project Gutenberg, Khan Academy -- so the assistant can
-answer reference questions without spending money on web search APIs.
+Runs a local [Kiwix](https://kiwix.org) server in Docker against an offline ZIM
+pack (Wikipedia, Wiktionary, Stack Overflow), with a thin Node wrapper that
+provides a branded landing page, a JSON search API, and a search log.
 
-The assistant **prefers the Offline Knowledge Library** for stable reference content (technical
-docs, history, biographies, repair guides, programming questions) and only
-falls back to live web search (Brave) for current events.
+Two endpoints to know:
 
-This significantly reduces Brave Search quota burn on a typical user --
-Wikipedia + Stack Overflow alone cover most "what is X" / "how do I do Y"
-questions a personal assistant gets asked.
+- `http://127.0.0.1:8090/` -- the branded UI (search box + recent queries)
+- `http://127.0.0.1:8090/api/search?q=<query>` -- JSON results, also writes
+  the query to the local SQLite log
 
-## Sources
+## ZIM Choices
 
-You pick which to download during install. All are free, all are offline ZIM
-files (a Wikipedia-derived format read by Kiwix).
+You pick one during install. All are free from
+[download.kiwix.org/zim](https://download.kiwix.org/zim).
 
-| Source | Approx size | Notes |
+| Pack | Size | Notes |
 |---|---|---|
-| Wikipedia (English, full) | ~95 GB | The big one. Recommended. |
-| Stack Overflow | ~30 GB | Programming Q&A. Highly recommended. |
-| iFixit (repair guides) | ~3 GB | Small, useful. |
-| Project Gutenberg | ~80 GB | Public-domain literature. |
-| Khan Academy | ~12 GB | Educational explainers. |
+| `wikipedia_en_simple_all_nopic` | ~1.5 GB | **Default.** Simple English Wikipedia, no images. Good starting point. |
+| `wikipedia_en_all_nopic` | ~13 GB | Full English Wikipedia, text-only. |
+| `wikipedia_en_all` | ~95 GB | Full English Wikipedia, with images. |
+| `wiktionary_en_all_nopic` | ~1 GB | Dictionary. |
+| `stackoverflow.com_en_all` | ~80 GB | Programming Q&A. |
+| `skip` | -- | Don't download anything; you provide a ZIM in `$INSTALL_PATH/offline-kb/zim/` manually. |
 
-Total if you take all five: ~220 GB. Most users start with Wikipedia + Stack
-Overflow + iFixit (~128 GB).
+**Disk-space warning.** The 95 GB and 80 GB packs will eat real disk. Verify
+you have headroom before selecting them. There is no resume on partial
+download (the installer uses `curl --fail` and discards `.part` files on
+interrupt).
 
-## Requirements
+## Add More Packs After Install
 
-- 60 GB free disk minimum (the installer pre-checks). 200+ GB if you want
-  all five sources.
-- Docker -- Kiwix runs in a container. The installer will offer to install
-  Docker via Homebrew Cask if it's missing. (Docker Desktop's first-run
-  setup must be done manually -- Apple's licence model.)
-- Stable broadband for the first download (95 GB at home broadband can take
-  hours).
-
-## Monthly Cost
-
-Free. ZIM files are free downloads from
-https://download.kiwix.org/zim/. No subscription, no per-query charge, no
-ongoing storage cost beyond what your local disk gives you.
-
-You may *save* significant Brave Search quota by having the Offline Knowledge Library. A typical
-personal assistant burns most of its Brave quota on "stable reference"
-queries -- the Offline Knowledge Library absorbs those.
-
-## How the assistant decides what to use
-
-Your assistant has both `search_knowledge` (the Offline Knowledge Library) and `brave_search`
-(Brave). It picks based on the query:
-
-- "What's the half-life of carbon-14?" -> the Offline Knowledge Library (stable reference)
-- "Latest on the GBP/USD rate" -> Brave (current event)
-- "How do I replace a MacBook battery?" -> the Offline Knowledge Library (iFixit)
-- "What did the FOMC say today?" -> Brave (current event)
-
-You don't need to tell it which to use. The selection is part of the routing
-prompt.
-
-## Configuration
-
-`/opt/pandoras-box/offline-kb/scope.json` -- which sources are enabled. To add a
-source after install, edit this file then run:
+Drop additional `.zim` files into `$INSTALL_PATH/offline-kb/zim/` and restart
+the container:
 
 ```bash
-sudo bash /opt/pandoras-box/scripts/offline-kb-zim-add.sh <source-name>
+cd /opt/pandoras-box/offline-kb && docker compose restart
 ```
+
+Kiwix auto-discovers every `.zim` in the mounted directory.
+
+## Remote Access
+
+Wrapper binds `127.0.0.1` by default. For LAN or off-box use, **do not** flip
+the bind to `0.0.0.0` -- there is no auth layer. Front it with Tailscale:
+
+```bash
+# On the machine running the module:
+tailscale serve --bg --https=443 / http://127.0.0.1:8090
+```
+
+Or any reverse proxy that provides authentication.
+
+## Privacy
+
+The search log lives at `$INSTALL_PATH/offline-kb/store/searches.db`, owned by
+the operator. It is never read by the network and never exported. Delete the
+file to clear history.
+
+## Troubleshooting
+
+| Symptom | Check |
+|---|---|
+| HTTP 502 from /api/search | Container not running: `docker ps \| grep kiwix` |
+| HTTP 200 but zero results | ZIM not loaded: `docker logs pbox-kiwix \| tail` |
+| Wrapper not listening | LaunchDaemon log: `tail -50 /tmp/pandoras-box-offline-kb.log` |
+| Port collision on 8090 | Override with `OFFLINE_KB_PORT` in `$INSTALL_PATH/offline-kb/.env`, reload the daemon |
 
 ## Uninstall
 
 ```bash
-launchctl unload ${PBOX_PLIST_DIR:-/Library/LaunchDaemons}/com.pandoras-box.offline-kb-kiwix.plist
-sudo rm ${PBOX_PLIST_DIR:-/Library/LaunchDaemons}/com.pandoras-box.offline-kb-kiwix.plist
-docker stop pbox-kiwix && docker rm pbox-kiwix
+launchctl unload /Library/LaunchDaemons/com.pandoras-box.offline-kb.plist
+sudo rm /Library/LaunchDaemons/com.pandoras-box.offline-kb.plist
+cd /opt/pandoras-box/offline-kb && docker compose down
 sudo rm -rf /opt/pandoras-box/offline-kb
 ```
 
-This frees the 60+ GB the ZIM files were using.
+This frees the disk space the ZIMs were using.

@@ -1,121 +1,138 @@
 # trading-research
 
-**Status:** Optional. **NOT FINANCIAL ADVICE. INSTALLS DEMO-ONLY BY DEFAULT.**
-**Depends on:** core, personal-ai
+**Status:** Optional, demo-only.
+**DEMO ONLY. NOT FINANCIAL ADVICE.**
+**No order placement under any circumstances.**
 
-## Risk acknowledgement
+## What this module is
 
-This module places real orders if (and only if) you switch to production
-credentials. Trading involves the risk of significant loss. The drawdown
-circuit breaker is a safety mechanism but is NOT a guarantee. Past performance
-does not predict future results. The author of this software is not a
-financial advisor and this software does not provide financial advice.
+A small, dependency-free read-only research surface. It logs in to your
+IG **demo** account, reads positions and account balances, and computes a
+deterministic indicator (50/200 moving-average crossover on minute bars) for
+a list of operator-chosen instruments. A localhost web page displays the
+data. That is the entire scope.
 
-The installer will not proceed past the the Trading Research Agent module without you typing
-`I understand` (exactly, case-sensitive). The production switch is a
-SEPARATE script (`trading-research-go-live.sh`) that requires at least 14 days of demo
-trading and a second risk acknowledgement.
+There are no order-placement endpoints. There is no live-account support.
+There is no notification surface. There is no auto-tuning. There is no
+strategy engine. If you want any of those, this module is not for you.
 
-## What It Does
+## What this module is NOT
 
-Generates trading signals across multiple strategies, optionally executes
-through a brokerage account, and surfaces decisions in your Personal
-Assistant's Reports tab.
+- Not financial advice.
+- Not a backtester.
+- Not a live-trading bot.
+- Not a recommendation to trade anything.
 
-### Strategies
+This is educational software for people who want to look at their own demo
+positions in a local web page and see one deterministic indicator alongside.
 
-| Code | Name | When it runs |
-|---|---|---|
-| A | Momentum | Continuous |
-| B | Mean reversion | Continuous |
-| C | Multi-signal (overhauled) | Continuous |
-| D | Quality filter | Continuous |
-| G | UK dividend run-up | Pre-ex-div windows |
-| H | Index ORB (opening range breakout) | UK market open, 14:30 UK |
+## Hard demo-only gate
 
-### Daily cycle
+At process start, the runtime checks `process.env.IG_LIVE`. If it equals the
+exact string `"true"` it logs:
 
 ```
-02:00 UK -- Nightly tuning: backtest current params + sanity-fail
-            retrospective + the Personal AI generates parameter proposals + apply
-            in-envelope changes + log out-of-envelope for your approval
-07:00    -- Pre-market warmup: cache backtest results for the dashboard
-09:00 / 13:00 / 17:00 / 21:00 UK -- News watch (pre-trade gate consults this)
-14:30 UK -- Market open; Strategy H starts opening-range tracking
-22:30 UK -- Market close; cost model runs over today's fills
+FATAL: IG_LIVE=true detected. This module is demo-only. Exiting.
 ```
 
-### Drawdown circuit breaker
+and exits with code `1`. The IG REST base URL is hard-coded to
+`https://demo-api.ig.com/gateway/deal/`. There is no env override.
 
-| Threshold | Action |
-|---|---|
-| -3% intraday | Block all new entries for 1 hour |
-| -5% week-to-date | Block all new entries; require your acknowledgement to resume |
-| -10% month-to-date | Hard halt; assistant pings you immediately |
+If you want to wire the module to a live account, **the right answer is to
+fork it and audit every line first.** Do not edit the gate in place.
 
-### Autonomy envelope
+## Prerequisites
 
-Your assistant can autonomously adjust strategy parameters within an envelope
-(stop-loss bounds, take-profit bounds, position size cap, sector
-concentration cap). Outside the envelope, changes need your approval. You
-configure the envelope during install or in the Reports tab.
+- macOS, Node.js 22+ (`brew install node`)
+- An IG demo account: free signup at `https://labs.ig.com/`. You need a demo
+  username, password, and demo-account API key. **Not your live credentials.**
+- No npm dependencies.
 
-## Requirements
-
-- An IG account (demo + production) -- IG is the supported broker. Sign up
-  for the demo at https://labs.ig.com (free).
-- 14+ days of demo trading before the production switch.
-- A pool size you choose (demo: paper money; production: real money).
-
-## Costs
-
-| Item | Cost |
-|---|---|
-| Brokerage demo account | Free |
-| Brokerage production | Spread + commission per trade (varies by broker) |
-| Market data (default) | Free (yfinance) |
-| Market data (paid) | Optional, $10-50/month if you opt in |
-| Pool size | YOUR choice. Real money on the production switch. |
-
-**No profit guarantee. You can lose money.** The drawdown circuit caps
-weekly/monthly losses but does not eliminate them, and is not a substitute
-for understanding what the strategies do.
-
-## Production switch
-
-After 14+ days of demo trading and reviewing the decision journal:
+## Install
 
 ```bash
-sudo bash /opt/pandoras-box/scripts/trading-research-go-live.sh
+sudo bash modules/trading-research/install.sh
 ```
 
-This prompts for production IG credentials and requires a second risk
-acknowledgement. Demo trading continues to run alongside production by default
-(useful for parameter changes -- they're tested in demo before being applied
-live).
+The installer:
+1. Verifies Node 22+ and validates the demo-only gate is present in the runtime.
+2. Stages `pbox-trading-research.mjs` + `public/` into `$INSTALL_PATH/trading-research/`.
+3. Prompts for IG demo credentials (saved chmod 600 to `.env`).
+4. Renders + installs the LaunchDaemon plist.
+5. Curls the configured port to confirm the service responds.
 
-## UI surface (Personal Assistant)
+Dry-run: `PBOX_DRY_RUN=1 sudo bash modules/trading-research/install.sh`
+performs all validation but writes nothing and does not call `launchctl`.
 
-| Panel | What |
+## Environment variables
+
+Written to `$INSTALL_PATH/trading-research/.env` by the installer:
+
+| Var | Purpose |
 |---|---|
-| Watchlist | Per-name array with prices, news flags, regime gate state |
-| Decision journal | Every parameter change: who decided, expected vs actual outcome |
-| 30-day verification | Dashboard of expected vs actual for the last 30 days |
-| Strategy G / H sub-tabs | Per-strategy detail (pre-ex-div names, ORB state, fills) |
-| Parameter Proposals | Out-of-envelope proposals awaiting your approval |
+| `IG_USERNAME` | IG demo login |
+| `IG_PASSWORD` | IG demo login |
+| `IG_API_KEY` | IG demo API key |
+| `TRADING_RESEARCH_PORT` | UI port (default `8487`) |
+| `INSTALL_PATH` | Resolved at install time |
 
-## Configuration
+Setting `IG_LIVE=true` anywhere in the environment will cause the daemon to
+refuse to start.
 
-`/opt/pandoras-box/trading-research/.env` -- broker creds, pool size, drawdown thresholds,
-autonomy envelope, strategy selection, market data source.
+## Watchlist
+
+Operator-edited at `$INSTALL_PATH/trading-research/store/watchlist.json`:
+
+```json
+{
+  "_comment": "List IG epics to compute 50/200 MA crossovers for. DEMO data only.",
+  "epics": ["IX.D.FTSE.DAILY.IP", "CS.D.GBPUSD.MINI.IP"]
+}
+```
+
+The runtime re-reads the file on every poll, so edits land without a restart.
+
+## Signal: 50/200 moving-average crossover
+
+For each epic, the module fetches the last 200 minute bars, computes the
+50-bar and 200-bar simple moving average of the bid/ask midpoint close, and
+classifies:
+
+- `bullish_crossover` -- 50-bar MA above 200-bar MA
+- `bearish_crossover` -- 50-bar MA below 200-bar MA
+- `insufficient_data` -- fewer than 200 bars available
+- `error` -- IG API returned an error for that epic
+
+This is purely a deterministic indicator for display. It is **not** a trade
+recommendation. Moving-average crossovers are a textbook teaching example;
+their predictive value in practice ranges from "marginal" to "negative net
+of cost" depending on the instrument and regime. Do not interpret
+`bullish_crossover` as "buy". Do not interpret `bearish_crossover` as "sell".
+
+## UI
+
+`http://127.0.0.1:8487/` (localhost only). The page has a sticky top banner
+in your theme accent colour:
+
+> This is research/education software. Not financial advice. Demo account only.
+
+Three tables: accounts, positions, signals. An SSE endpoint at
+`/api/stream` pushes a fresh snapshot every 60 seconds while the page is
+open. When the page is closed, polling stops and no IG calls are made.
+
+## What it costs to run
+
+- IG demo account: free.
+- Compute: trivial.
+- Anthropic API: zero. This module makes no LLM calls.
 
 ## Uninstall
 
 ```bash
-launchctl unload ${PBOX_PLIST_DIR:-/Library/LaunchDaemons}/com.pandoras-box.trading-research.plist
-sudo rm ${PBOX_PLIST_DIR:-/Library/LaunchDaemons}/com.pandoras-box.trading-research.plist
+sudo launchctl unload /Library/LaunchDaemons/com.pandoras-box.trading-research.plist
+sudo rm /Library/LaunchDaemons/com.pandoras-box.trading-research.plist
 sudo rm -rf /opt/pandoras-box/trading-research
 ```
 
-This stops the Trading Research Agent. Open positions on your broker are NOT closed automatically.
-Close them manually before uninstall if you want a clean exit.
+There is nothing to close on the IG side -- the module never opened a
+position to begin with.

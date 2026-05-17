@@ -22,12 +22,13 @@ NODE_BIN=$(command -v node)
 ok "Node.js $NODE_BIN"
 
 step 2 "Staging runtime"
-sudo mkdir -p "$TARGET_DIR"
-sudo cp "$MODULE_SRC_DIR/weekly-review.mjs" "$TARGET_DIR/"
-sudo chmod 755 "$TARGET_DIR/weekly-review.mjs"
+sudo mkdir -p "$TARGET_DIR" "$TARGET_DIR/output"
+sudo cp "$MODULE_SRC_DIR/weekly-review.mjs"   "$TARGET_DIR/"
+sudo cp "$MODULE_SRC_DIR/gepa-optimiser.mjs"  "$TARGET_DIR/"
+sudo chmod 755 "$TARGET_DIR/weekly-review.mjs" "$TARGET_DIR/gepa-optimiser.mjs"
 sudo bash -c "echo 'INSTALL_PATH=$INSTALL_PATH' > '$TARGET_DIR/.env'"
 sudo chmod 600 "$TARGET_DIR/.env"
-ok "Runtime staged (.env: $TARGET_DIR/.env)"
+ok "Runtime staged (.env: $TARGET_DIR/.env, output: $TARGET_DIR/output/)"
 
 step 3 "Installing plist (Sunday 08:00 cron)"
 SERVICE_USER="${SELF_IMPROVEMENT_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"

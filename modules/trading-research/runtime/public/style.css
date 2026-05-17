@@ -1,0 +1,102 @@
+:root {
+  --bg: #0f1115;
+  --surface: #161922;
+  --surface-2: #1e2230;
+  --border: #2a2f3d;
+  --text: #e6e8ee;
+  --text-muted: #8a93a7;
+  --ok: #4ade80;
+  --warn: #f59e0b;
+  --err: #f87171;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  margin: 0;
+}
+
+#banner {
+  background: var(--accent, #c79a2b);
+  color: #111;
+  font-weight: 600;
+  text-align: center;
+  padding: 10px 16px;
+  letter-spacing: 0.01em;
+  border-bottom: 2px solid rgba(0,0,0,.35);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+header {
+  padding: 18px 28px 6px;
+}
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: 0.01em;
+}
+header .meta {
+  color: var(--text-muted);
+  font-size: 12px;
+  margin-top: 4px;
+}
+header .sep { margin: 0 6px; }
+
+section {
+  padding: 12px 28px 22px;
+}
+section h2 {
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 6px;
+  margin: 0 0 10px;
+}
+.muted { color: var(--text-muted); font-size: 12px; margin: 4px 0 12px; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+th, td {
+  text-align: left;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+th {
+  background: var(--surface-2);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+}
+tbody tr:last-child td { border-bottom: none; }
+td.empty { color: var(--text-muted); text-align: center; padding: 18px; }
+
+.signal-bullish_crossover { color: var(--ok); font-weight: 600; }
+.signal-bearish_crossover { color: var(--err); font-weight: 600; }
+.signal-neutral { color: var(--text-muted); }
+.signal-insufficient_data { color: var(--warn); }
+.signal-error { color: var(--err); }
+
+.status-ok { color: var(--ok); }
+.status-err { color: var(--err); }
+
+footer {
+  padding: 14px 28px 32px;
+  color: var(--text-muted);
+  font-size: 12px;
+  border-top: 1px solid var(--border);
+  margin-top: 12px;
+}
+footer code { background: var(--surface-2); padding: 1px 6px; border-radius: 3px; }

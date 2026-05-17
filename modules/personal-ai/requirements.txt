@@ -1,0 +1,8 @@
+# personal-ai runtime requirements
+# Node.js >= 22 (required for built-in node:sqlite and global fetch)
+
+# npm runtime dep (the only one):
+@anthropic-ai/sdk>=0.30.0
+
+# Optional (no install, env-gated):
+#   ELEVENLABS_API_KEY -- enables POST /api/tts proxy to api.elevenlabs.io

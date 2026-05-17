@@ -1,17 +1,17 @@
 #!/usr/bin/env node
-// weekly-review.mjs -- Pandoras Box self-improvement Sunday cycle (v0.3 stub)
+// weekly-review.mjs -- Pandoras Box self-improvement Sunday cycle
 //
-// Real GEPA-style optimisation pipeline ships in v0.4. This v0.3 stub:
-//   1. Walks INSTALL_PATH/*/logs and aggregates the last 7 days of activity
-//   2. Counts errors, restarts, slow responses per module
-//   3. Writes a markdown digest to INSTALL_PATH/self-improvement/weekly-YYYY-MM-DD.md
-//   4. Touches a marker file so the dashboard knows when the last review ran
+// Two passes run on the same Sunday cron:
+//   1. Legacy log-activity summary (kept for dashboard continuity)
+//   2. GEPA optimiser -- reads personal-ai session log, emits operator-gated
+//      prompt-edit digest under self-improvement/output/.
 //
 // Triggered by com.pandoras-box.self-improvement LaunchDaemon at Sunday 08:00.
-// No HTTP surface, no auth needed.
+// No HTTP surface, no auth needed. No LLM calls. No auto-application of edits.
 
 import fs from 'node:fs'
 import path from 'node:path'
+import { runGepaOptimiser } from './gepa-optimiser.mjs'
 
 const INSTALL_PATH = process.env.INSTALL_PATH || '/opt/pandoras-box'
 const TARGET_DIR = path.join(INSTALL_PATH, 'self-improvement')
@@ -94,3 +94,13 @@ const outFile = path.join(TARGET_DIR, `weekly-${today}.md`)
 fs.writeFileSync(outFile, md.join('\n'))
 fs.writeFileSync(path.join(TARGET_DIR, 'last-run'), `${new Date().toISOString()}\n${outFile}\n`)
 console.log(`[self-improvement] wrote ${outFile}`)
+
+// Second pass: GEPA optimiser. Runs unconditionally; emits its own digest
+// even when the personal-ai session dir is missing (so the operator gets a
+// clear "no data" file rather than silent absence).
+try {
+  const gepa = runGepaOptimiser()
+  console.log(`[self-improvement] gepa wrote ${gepa.outFile} (turns=${gepa.turns}, files=${gepa.files})`)
+} catch (e) {
+  console.error(`[self-improvement] gepa failed: ${e.message}`)
+}
