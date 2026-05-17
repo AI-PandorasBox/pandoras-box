@@ -23,6 +23,22 @@ Resolves Gap #5 from the v0.3 installer audit. Six modules now ship full runtime
 ### Added
 
 - **Dependabot.** `.github/dependabot.yml` -- weekly Monday 06:00 UK scan of github-actions ecosystem, target `dev`. Npm deferred until repo-level `package.json` exists.
+- **Shared stub helpers** at `lib/stub-helpers.sh`. Five reusable helpers (`stub_scaffolded_warning`, `stub_check_conductor`, `stub_validate_slug`, `stub_env_set`, `stub_check_node`) sourced by the 7 STUB modules. Standardises the operator UX across `calendar`, `files`, `mail-google`, `mail-ms365`, `relay-discord`, `relay-slack`, `relay-whatsapp` and gives a single place to update when the v0.5.x conductor runtime ships.
+- **`uninstall.sh` per STUB module** (7 new). Each reverses its `install.sh`: `sed`s the relevant keys out of `<slug>/.env`, prompts before deleting cached tokens / bridge dirs where applicable, restarts the conductor.
+
+### Changed
+
+- **All 7 STUB modules** (`calendar`, `files`, `mail-google`, `mail-ms365`, `relay-discord`, `relay-slack`, `relay-whatsapp`) rewritten to print a clear "scaffolded -- v0.5.x conductor not yet shipped" warning at install start AND end, so operators are not misled by the install reporting PASS while no agent surface actually runs.
+- **STUB README template standardised** across the 7 modules: Status + Depends on + scaffolded warning callout + What It Does + Requirements (full table) + Monthly Cost + How to Install + After Installation + Uninstall + Notes (per-tenant isolation, gotchas).
+- **`relay-whatsapp` bridge dir is now per-tenant** (`$INSTALL_PATH/<slug>/whatsapp-bridge/`). Previously a global `$INSTALL_PATH/whatsapp-bridge/` — incompatible with multi-tenant deployment on the same Mac.
+- **`relay-whatsapp` npm deps pinned** to `whatsapp-web.js@^1.27` + `qrcode-terminal@^0.12` (previously unpinned latest).
+- **`relay-discord` channel ID validated** as a Discord snowflake (17-20 digit numeric) at install time, before writing the env key. Previously accepted any string.
+- **`relay-slack` token shape validated** — bot token must start with `xoxb-`, app token with `xapp-`.
+- **`mail-google` install.sh** no longer prints misleading "browser will open" prompt during install. The Google OAuth flow runs when the v0.5.x conductor first needs to read mail; install only saves credentials.
+- **`mail-ms365` install.sh** no longer attempts to run the `@softeria/ms-365-mcp-server` OAuth flow inline (the package isn't in the company `node_modules` at v0.4 stub time). Now defers to the v0.5.x conductor; pre-creates the token-cache dir with correct permissions.
+- **All STUB `.env` writes are idempotent.** `stub_env_set` deletes any existing key= line before appending. Previous behaviour left duplicate `RELAY_TYPE=` lines if the operator switched between relay modules.
+- **All STUB installers validate the company slug** against the list of installed companies before writing anything. Previously typo'd slugs silently wrote `.env` to a non-existent path.
+- **All STUB installers check Node.js 18+** as a uniform prerequisite (previously inconsistent across the 7).
 
 ### Fixed
 
