@@ -1,0 +1,49 @@
+# CodeQL static analysis for Pandora's Box.
+#
+# Scans the JavaScript / .mjs sources (module runtimes, public web UIs) for
+# common security flaws. Python is intentionally out-of-scope here -- the
+# content-classifier sidecar is a thin HF transformer wrapper installed per-
+# operator from upstream, not maintained as repo source.
+#
+# Inputs are all hardcoded matrix values (no github.event.* / no head_ref).
+# No `run:` steps that interpolate untrusted input. Safe by construction.
+
+name: CodeQL
+
+on:
+  push:
+    branches: [dev, testing, main]
+  pull_request:
+    branches: [dev, testing, main]
+  schedule:
+    # Weekly re-scan to pick up advisories that landed after the last push.
+    - cron: "0 7 * * 1"
+
+jobs:
+  analyze:
+    name: Analyze (JavaScript)
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Initialise CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-and-quality
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{ matrix.language }}"
