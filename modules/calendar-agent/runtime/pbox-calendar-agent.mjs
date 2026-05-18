@@ -107,20 +107,24 @@ function clearProjectSessions () {
 // tools (group/shared/delete-with-attendees families) and route those calls
 // to a sub-job via the jobs DB at status='PENDING_REVIEW', risk_level='high'.
 
-const BLOCKED_TOOLS = new Set([
-  // never permitted from a calendar agent regardless of provider
-  'Write', 'Bash', 'Edit',
-  // mail-send via MS365 -- explicit block; calendar agent doesn't send mail
-  'mcp__ms365__send-mail',
-  'mcp__ms365__reply-mail-message',
-  'mcp__ms365__reply-all-mail-message',
-  'mcp__ms365__forward-mail-message',
-  'mcp__ms365__send-draft-message',
-  'mcp__ms365__send-shared-mailbox-mail',
-  // files mutations via MS365
-  'mcp__ms365__upload-file-content',
-  'mcp__ms365__delete-file',
-])
+// Pattern-based deny list, multi-provider. Mirrors mail-agent's regex approach
+// so both Google + MS365 surfaces are blocked symmetrically. An MS365-only Set
+// would leave Gmail / Google Drive mutations unblocked on a Google-calendar
+// tenant unless the operator separately edited .claude/settings.json.
+const BLOCKED_TOOL_PATTERNS = [
+  // generic SDK tools never used by a calendar agent
+  /^Write$/, /^Bash$/, /^Edit$/, /^MultiEdit$/, /^NotebookEdit$/,
+  // mail send / reply / forward / draft surfaces (any provider)
+  /mcp__(ms365|gmail|google)__.*(send|reply|forward|draft).*(mail|message)/i,
+  /mcp__(ms365|gmail|google)__.*(empty|purge).*(trash|bin|deleted)/i,
+  // files mutations (any provider)
+  /mcp__(ms365|gmail|google)__.*(upload|delete).*file/i,
+  /mcp__(ms365|gmail|google)__.*drive.*(delete|trash|upload)/i,
+]
+
+function isBlockedTool (toolName) {
+  return BLOCKED_TOOL_PATTERNS.some(p => p.test(toolName))
+}
 
 // Tool-name fragments that trigger the operator-approval routing.
 // We check substrings rather than exact names because MCP servers vary.
@@ -165,7 +169,7 @@ function buildCanUseTool (jobId, jobsDbPath) {
       }
     }
 
-    if (BLOCKED_TOOLS.has(toolName)) {
+    if (isBlockedTool(toolName)) {
       auditWrite({ event: 'tool_denied', tool: toolName, reason: 'out_of_scope', job_id: jobId, task_type: TASK_TYPE })
       return { behavior: 'deny', message: `${AGENT_NAME}: ${toolName} is outside calendar scope.`, interrupt: false }
     }
