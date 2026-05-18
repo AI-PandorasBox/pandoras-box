@@ -104,6 +104,71 @@ Recommended branch names:
 
 ---
 
+## Commit Message Format
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) with module scope so the CHANGELOG can be generated mechanically and so the history is greppable.
+
+**Shape:**
+
+```
+<type>(<scope>): <imperative summary, no trailing period>
+
+<optional body explaining the WHY, wrapped at ~72 cols>
+
+<optional footer with BREAKING CHANGE: notes or issue refs>
+```
+
+**Types:**
+
+| Type | When to use | Lands under in CHANGELOG |
+|---|---|---|
+| `feat` | New user-visible capability | `### Runtime code rollout` / `### Added` |
+| `fix` | Bug correction | `### Fixed` |
+| `docs` | Documentation only changes (README, docs/, manuals/) | `### Changed` (only if user-facing) |
+| `refactor` | Code restructure with no behaviour change | `### Changed` (only if visible) |
+| `perf` | Performance improvement | `### Changed` |
+| `test` | Test additions or fixes | (omit from CHANGELOG) |
+| `build` | Brewfile / package.json / Dockerfile / dependency changes | `### Changed` if user-visible |
+| `ci` | CI workflow, hooks, sanitize patterns | `### CI` |
+| `chore` | Maintenance with no user-facing impact | (omit from CHANGELOG) |
+
+**Scope (the `(...)` part):**
+
+Use the module name (`personal-ai`, `trading-research`, `offline-kb`, `dashboard`, etc.) or a top-level area (`installer`, `docs`, `hooks`, `release`). Omit the scope only for repo-wide changes.
+
+**Examples:**
+
+```
+feat(personal-ai): add Anthropic SDK proxy with PBKDF2 auth
+fix(trading-research): resolve port collision with content-classifier
+fix(installer): force TERM=xterm-256color in headless contexts
+docs(personal-sensor): clarify geofence env vars
+ci: defer CodeQL until Advanced Security available
+chore(release): squash to v0.4.0-rc1
+build: bump @anthropic-ai/sdk to ^0.30
+```
+
+**CHANGELOG discipline:**
+
+Every `feat` or `fix` commit MUST add a line to the `[Unreleased]` section of `CHANGELOG.md` under the matching `###` heading (`### Added` / `### Fixed`). Lines should be one bullet, prose, complete sentences:
+
+```markdown
+### Fixed
+- **`trading-research`: port collision with `content-classifier`.** Both modules defaulted to `:8487`. Moved to `:8490`.
+```
+
+On tag (`v0.X.Y`), the maintainer moves all `[Unreleased]` content under a new dated version heading. Empty `### sub-headings` are removed; non-empty ones carry the entries.
+
+**Breaking changes:**
+
+Add `BREAKING CHANGE: <description>` in the commit footer. Tag the next release as a major version bump. Examples of breaking changes in this codebase: changing default port for a module already in use, changing the operator-facing `theme.conf` schema, changing the `install.sh` 5-step pattern interface.
+
+**Verifying locally:**
+
+There is no `commitlint` hook today (planned). For now, eyeball your commit against the table above. If a single commit straddles types (e.g. a `feat` that also fixes a `fix`), prefer splitting into two commits.
+
+---
+
 ## Code Style
 
 - No em dashes in comments or documentation. Use a regular hyphen or restructure the sentence.

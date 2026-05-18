@@ -1,0 +1,25 @@
+# Dependabot configuration -- Pandora's Box
+#
+# Watches dependencies for security advisories and version drift.
+# Scope is intentionally narrow today: only `github-actions` because the
+# repo doesn't ship a `package.json` (npm deps install per-operator at
+# install time, not at repo level). Add `npm` ecosystem when/if a
+# repo-level package.json lands.
+
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/London"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    target-branch: "dev"

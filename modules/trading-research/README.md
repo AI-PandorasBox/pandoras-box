@@ -73,7 +73,7 @@ Written to `$INSTALL_PATH/trading-research/.env` by the installer:
 | `IG_USERNAME` | IG demo login |
 | `IG_PASSWORD` | IG demo login |
 | `IG_API_KEY` | IG demo API key |
-| `TRADING_RESEARCH_PORT` | UI port (default `8487`) |
+| `TRADING_RESEARCH_PORT` | UI port (default `8490`) |
 | `INSTALL_PATH` | Resolved at install time |
 
 Setting `IG_LIVE=true` anywhere in the environment will cause the daemon to
@@ -111,7 +111,7 @@ of cost" depending on the instrument and regime. Do not interpret
 
 ## UI
 
-`http://127.0.0.1:8487/` (localhost only). The page has a sticky top banner
+`http://127.0.0.1:8490/` (localhost only). The page has a sticky top banner
 in your theme accent colour:
 
 > This is research/education software. Not financial advice. Demo account only.

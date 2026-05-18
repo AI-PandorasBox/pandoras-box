@@ -1,0 +1,20 @@
+{
+  "name": "pbox-calendar-agent",
+  "version": "0.5.0-rc1",
+  "description": "Per-tenant calendar task agent for Pandora's Box (multi-provider: Google Calendar + Outlook).",
+  "main": "pbox-calendar-agent.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node pbox-calendar-agent.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.0",
+    "@softeria/ms-365-mcp-server": "^0.5.0",
+    "googleapis": "^144.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "license": "Apache-2.0"
+}

@@ -1,65 +1,107 @@
 #!/usr/bin/env bash
 # install.sh -- relay-whatsapp module installer
+# Wires WhatsApp bridge config into the company .env + bootstraps the
+# whatsapp-web.js dependency tree PER-TENANT (NOT global). The v0.5.x
+# conductor runtime loads the WhatsApp driver and connects to the bridge
+# when it starts. v0.4 ships this as a SCAFFOLDED module -- credentials
+# get saved, but the relay surface goes live when v0.5.x is installed.
 set -euo pipefail
 
 MODULE_NAME="relay-whatsapp"
 TOTAL_STEPS=3
 
+# Pinned npm dep versions. Bump deliberately, not "latest".
+WHATSAPP_WEB_VERSION="^1.27"
+QRCODE_TERMINAL_VERSION="^0.12"
+
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
 
+LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)/lib
+[[ -f "$INSTALL_PATH/lib/stub-helpers.sh" ]] && source "$INSTALL_PATH/lib/stub-helpers.sh" \
+  || source "$LIB_DIR/stub-helpers.sh"
+
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
+fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
+
+stub_scaffolded_warning "$MODULE_NAME"
 
 echo ""
-echo "  IMPORTANT NOTICE"
-echo "  ────────────────"
-echo "  The WhatsApp relay uses an unofficial bridge (whatsapp-web.js or similar)."
-echo "  Using unofficial automation tools with WhatsApp may violate WhatsApp's Terms"
-echo "  of Service. Your account may be restricted or banned."
+echo "  ┌─────────────────────────────────────────────────────────────────┐"
+echo "  │  TERMS OF SERVICE WARNING"
+echo "  │"
+echo "  │  The WhatsApp relay uses an unofficial bridge (whatsapp-web.js)."
+echo "  │  Using unofficial automation tools with WhatsApp may violate"
+echo "  │  WhatsApp's Terms of Service. Your account may be restricted"
+echo "  │  or BANNED."
+echo "  │"
+echo "  │  Do NOT use this on your primary WhatsApp number. The right"
+echo "  │  pattern is a SEPARATE WhatsApp number on a SEPARATE SIM or"
+echo "  │  a virtual number from a service that supports WhatsApp."
+echo "  │"
+echo "  │  Review: https://www.whatsapp.com/legal/terms-of-service"
+echo "  └─────────────────────────────────────────────────────────────────┘"
 echo ""
-echo "  Review WhatsApp's Terms of Service before proceeding:"
-echo "  https://www.whatsapp.com/legal/terms-of-service"
-echo ""
-read -rp "  I have read the Terms of Service and accept the risk (yes/no): " accepted
+if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  accepted="yes"
+else
+  read -rp "  I have read the Terms of Service and accept the risk (yes/no): " accepted
+fi
 [[ "$accepted" =~ ^[Yy] ]] || { echo "Installation cancelled."; exit 0; }
 echo ""
 
-step 1 "Checking Node.js version"
-NODE_VER=$(node --version | tr -d 'v' | cut -d. -f1)
-[[ "$NODE_VER" -ge 18 ]] || { echo "FAIL: Node.js 18+ required."; exit 1; }
-ok "Node.js v$(node --version)"
-
-step 2 "Installing whatsapp-web.js bridge"
-BRIDGE_DIR="$INSTALL_PATH/whatsapp-bridge"
-sudo mkdir -p "$BRIDGE_DIR"
-sudo chown "$(whoami):staff" "$BRIDGE_DIR"
-cd "$BRIDGE_DIR"
-if [[ ! -f package.json ]]; then
-  npm init -y >/dev/null 2>&1
-  npm install whatsapp-web.js qrcode-terminal >/dev/null 2>&1 || {
-    echo "FAIL: Could not install whatsapp-web.js."
-    echo "  Check your internet connection and try again."
-    exit 1
-  }
+step 1 "Checking prerequisites + selecting company"
+stub_check_node || fail "Node.js prerequisite missing"
+if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  COMPANY_SLUG="dryrun-placeholder"
+  ok "(dry-run) using placeholder slug"
+else
+  read -rp "  Company slug this relay serves (e.g. company-a): " COMPANY_SLUG
+  stub_validate_slug "$COMPANY_SLUG" || fail "Invalid company slug"
 fi
-ok "Bridge installed in $BRIDGE_DIR"
 
-step 3 "Configuring conductor"
-read -rp "  Company slug this relay serves (e.g. company-a): " COMPANY_SLUG
-RELAY_ENV="$INSTALL_PATH/${COMPANY_SLUG}-conductor/.env"
-[[ -f "$RELAY_ENV" ]] || RELAY_ENV="$INSTALL_PATH/$COMPANY_SLUG/.env"
-sudo sed -i'' '/^WHATSAPP_BRIDGE_DIR=/d' "$RELAY_ENV"
-sudo bash -c "echo 'WHATSAPP_BRIDGE_DIR=$BRIDGE_DIR' >> '$RELAY_ENV'"
-sudo bash -c "echo 'RELAY_TYPE=whatsapp' >> '$RELAY_ENV'" 2>/dev/null || true
-sudo chmod 600 "$RELAY_ENV"
-sudo launchctl stop "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
-sleep 1
-sudo launchctl start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
+step 2 "Installing whatsapp-web.js bridge per-tenant (pinned)"
+# Per-tenant bridge dir, NOT global. Each company has its own session +
+# linked-device record. Multi-tenant on the same Mac is supported.
+BRIDGE_DIR="$INSTALL_PATH/$COMPANY_SLUG/whatsapp-bridge"
+sudo mkdir -p "$BRIDGE_DIR"
+SERVICE_USER="${BRIDGE_USER:-$(stat -f '%Su' "$INSTALL_PATH" 2>/dev/null || echo $USER)}"
+sudo chown "$SERVICE_USER:staff" "$BRIDGE_DIR" 2>/dev/null || true
+
+if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  ok "(dry-run) skipping npm install"
+else
+  pushd "$BRIDGE_DIR" >/dev/null
+  if [[ ! -f package.json ]]; then
+    npm init -y >/dev/null 2>&1
+  fi
+  npm install "whatsapp-web.js@${WHATSAPP_WEB_VERSION}" "qrcode-terminal@${QRCODE_TERMINAL_VERSION}" --no-audit --no-fund >/dev/null 2>&1 \
+    || fail "npm install failed for whatsapp-web.js@${WHATSAPP_WEB_VERSION} qrcode-terminal@${QRCODE_TERMINAL_VERSION}"
+  popd >/dev/null
+  ok "Bridge installed in $BRIDGE_DIR (whatsapp-web.js ${WHATSAPP_WEB_VERSION}, qrcode-terminal ${QRCODE_TERMINAL_VERSION})"
+fi
+
+step 3 "Writing relay config + restarting conductor (if installed)"
+BASE_ENV="$INSTALL_PATH/$COMPANY_SLUG/.env"
+[[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || -f "$BASE_ENV" ]] || fail "$BASE_ENV not found."
+stub_env_set "$BASE_ENV" "WHATSAPP_BRIDGE_DIR" "$BRIDGE_DIR"
+stub_env_set "$BASE_ENV" "RELAY_TYPE" "whatsapp"
+
+if stub_check_conductor "$COMPANY_SLUG"; then
+  sudo launchctl stop "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
+  sleep 1
+  sudo launchctl start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
+  ok "Conductor restarted; WhatsApp relay starting for $COMPANY_SLUG"
+else
+  ok "Config saved. Conductor not yet installed (v0.5.x). Relay goes live when v0.5.x ships."
+fi
+
+stub_scaffolded_warning "$MODULE_NAME"
 
 echo ""
 echo "[$MODULE_NAME] PASS"
-echo "  On first run, scan the QR code in the conductor log to authenticate:"
-echo "  tail -f /tmp/${LOG_PREFIX}-${COMPANY_SLUG}-conductor.log"
-echo ""
-echo "  WARNING: Keep your account within WhatsApp's usage policies."
+echo "  WhatsApp relay configured for '$COMPANY_SLUG' (per-tenant bridge dir: $BRIDGE_DIR)."
+echo "  On first run (after v0.5.x), scan the QR code in the conductor log:"
+echo "    tail -f /tmp/${LOG_PREFIX}-${COMPANY_SLUG}-conductor.log"
+echo "  WARNING: Keep your WhatsApp account within WhatsApp's usage policies."

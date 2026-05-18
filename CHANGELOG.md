@@ -9,6 +9,60 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Runtime code rollout (v0.4.0-rc1 -- six new module daemons)
+
+Resolves Gap #5 from the v0.3 installer audit. Six modules now ship full runtime code following the canonical 5-step `install.sh` + `runtime/<bin>.mjs` + `runtime/com.pandoras-box.<name>.plist.template` pattern.
+
+- **`personal-ai` runtime** -- browser-first chat UI on `127.0.0.1:8800`, PBKDF2 passphrase auth (200000 iters / sha256 / 16-byte salt, timing-safe-equal), SQLite memory at `${INSTALL_PATH}/personal-ai/store/memory.db` (conversations / messages / important_facts / drops), Anthropic SDK proxy via `@anthropic-ai/sdk` (sole new external dep, lazy-imported, key resolution: macOS Keychain `pbox-anthropic-key` -> `ANTHROPIC_API_KEY` env -> Claude CLI credentials), optional ElevenLabs TTS server proxy (env-gated). JSONL session log under `store/sessions/YYYY-MM-DD.jsonl` consumed by `self-improvement` GEPA.
+- **`personal-sensor` runtime** -- 10-min ambient signal daemon, SSE endpoint on `127.0.0.1:8489/events`. Signal sources: calendar pull (token-gated by existing `mail-*` module `.env`), free-time gap detection, optional `corelocationcli` geofence. Persistent JSONL log + read-only `/recent?n=N` replay endpoint. Node 22 builtins only -- zero external deps.
+- **`offline-kb` runtime** -- Kiwix-serve wrapper on `127.0.0.1:8090` with branded search UI from `theme.conf`. Generates `docker-compose.yml` with `read_only` / `no-new-privileges` / `tmpfs:/tmp` hardening. `/api/search?q=` JSON envelope + streaming `/proxy/*` pass-through to Kiwix at internal `:8089`. SHA256 verification on ZIM downloads (best-effort).
+- **`media-production` runtime** -- background queue worker polling `${INSTALL_PATH}/media-production/store/queue/*.json` every 30s. Four backends via `fetch` builtin (no SDK deps): Suno (flagged experimental -- unofficial API), ElevenLabs (narration), Google AI Imagen (image), Google AI Veo (video, with long-running-op polling). Operator fills API keys in `.env`; worker keeps running on missing-key jobs (per-job failure mode). Optional `127.0.0.1:8486` HTTP for job submission.
+- **`trading-research` runtime** -- IG demo-only REST client on `127.0.0.1:8490` with mandatory top-of-file `// DEMO-ONLY. NOT FINANCIAL ADVICE.` comment. **Hard gate: refuses to start if `IG_LIVE=true`** (`process.exit(1)`). 50/200 minute-bar MA crossover signals. No order endpoints whatsoever; UI is read-only. `install.sh` step 1 contains static-analysis guard refusing install if the demo-only gate string or demo URL is missing from runtime.
+- **`self-improvement` GEPA optimiser** -- deterministic prompt-edit digest from `personal-ai` JSONL session log. Identifies rejected (rating<3) / regenerated / corrected assistant turns; groups by conversation; emits markdown digest to `output/weekly-YYYY-MM-DD.md`. Operator-gated -- never auto-applies. No LLM call; no network. Skill-suggestion heuristic at >=3 distinct conversations per kind.
+
+### Added
+
+- **Dependabot.** `.github/dependabot.yml` -- weekly Monday 06:00 UK scan of github-actions ecosystem, target `dev`. Npm deferred until repo-level `package.json` exists.
+- **Shared stub helpers** at `lib/stub-helpers.sh`. Five reusable helpers (`stub_scaffolded_warning`, `stub_check_conductor`, `stub_validate_slug`, `stub_env_set`, `stub_check_node`) sourced by the 7 STUB modules. Standardises the operator UX across `calendar`, `files`, `mail-google`, `mail-ms365`, `relay-discord`, `relay-slack`, `relay-whatsapp` and gives a single place to update when the v0.5.x conductor runtime ships.
+- **`uninstall.sh` per STUB module** (7 new). Each reverses its `install.sh`: `sed`s the relevant keys out of `<slug>/.env`, prompts before deleting cached tokens / bridge dirs where applicable, restarts the conductor.
+
+### Changed
+
+- **All 7 STUB modules** (`calendar`, `files`, `mail-google`, `mail-ms365`, `relay-discord`, `relay-slack`, `relay-whatsapp`) rewritten to print a clear "scaffolded -- v0.5.x conductor not yet shipped" warning at install start AND end, so operators are not misled by the install reporting PASS while no agent surface actually runs.
+- **STUB README template standardised** across the 7 modules: Status + Depends on + scaffolded warning callout + What It Does + Requirements (full table) + Monthly Cost + How to Install + After Installation + Uninstall + Notes (per-tenant isolation, gotchas).
+- **`relay-whatsapp` bridge dir is now per-tenant** (`$INSTALL_PATH/<slug>/whatsapp-bridge/`). Previously a global `$INSTALL_PATH/whatsapp-bridge/` — incompatible with multi-tenant deployment on the same Mac.
+- **`relay-whatsapp` npm deps pinned** to `whatsapp-web.js@^1.27` + `qrcode-terminal@^0.12` (previously unpinned latest).
+- **`relay-discord` channel ID validated** as a Discord snowflake (17-20 digit numeric) at install time, before writing the env key. Previously accepted any string.
+- **`relay-slack` token shape validated** — bot token must start with `xoxb-`, app token with `xapp-`.
+- **`mail-google` install.sh** no longer prints misleading "browser will open" prompt during install. The Google OAuth flow runs when the v0.5.x conductor first needs to read mail; install only saves credentials.
+- **`mail-ms365` install.sh** no longer attempts to run the `@softeria/ms-365-mcp-server` OAuth flow inline (the package isn't in the company `node_modules` at v0.4 stub time). Now defers to the v0.5.x conductor; pre-creates the token-cache dir with correct permissions.
+- **All STUB `.env` writes are idempotent.** `stub_env_set` deletes any existing key= line before appending. Previous behaviour left duplicate `RELAY_TYPE=` lines if the operator switched between relay modules.
+- **All STUB installers validate the company slug** against the list of installed companies before writing anything. Previously typo'd slugs silently wrote `.env` to a non-existent path.
+- **All STUB installers check Node.js 18+** as a uniform prerequisite (previously inconsistent across the 7).
+
+### Fixed
+
+- **Installer: `RECOMMENDED` modules now actually default to install on accept-all.** `lib/setup-modules.sh` `offer_module` calls for `content-classifier` and `self-improvement` were missing the `"yes"` 6th positional arg, so the menu defaulted them to "no" despite the `[RECOMMENDED]` label.
+- **Installer: system-check label cleanup.** `pbox-setup.sh` `run_system_check` was rendering "the Content Classifier content classifier" and "the Self-Improvement Pipeline self-improvement" (double-naming artefact from a Greek-rename sed pass). Cleaned to single-named labels.
+- **Installer: dry-run inline-read in content-classifier fail-mode prompt.** The fail-mode choice (`fail-open` / `fail-closed`) used a bare `read -rp`, bypassing the dry-run shim. Wrapped in `PBOX_DRY_RUN_ACTIVE` check defaulting to `closed` so the dry-run no longer hangs.
+- **Installer: headless `TERM` crash.** `pbox-setup.sh` `print_banner` calls `clear`, which aborts under `set -e` when bash auto-sets `TERM=dumb` (CI runners, cron, `ssh -T`). Forced `TERM=xterm-256color` early if unset/dumb.
+- **Docs: Google AI key placeholder.** `docs/setup/google-ai.md` previously contained an example string starting with `AIza` followed by ~35 alphanumeric characters that matched the credential-shape CI regex `AIza[0-9A-Za-z_-]{35}`. Replaced with a non-matching descriptive form so the placeholder communicates shape without triggering the gate.
+- **`trading-research`: port collision with `content-classifier`.** Both modules defaulted to `:8487`. `trading-research` moved to `:8490`.
+- **`trading-research`: dry-run staging parity.** Module's `install.sh` short-circuited at steps 2 + 3 in dry-run, leaving target dir + `.env` empty (inconsistent with all other modules). Now always stages files via the sudo shim; writes a placeholder `.env` with `IG_*=dryrun-placeholder` sentinels in dry-run mode.
+- **Installer: `install_tenant_runtimes` wired into `setup-company.sh`.** `lib/setup-tenant-runtimes.sh` already shipped (renders per-tenant plists + npm-installs conductor + 3 task agents + conditionally loads LaunchDaemons), but was never sourced or called. Adding a company via `pbox-setup.sh` therefore wrote `.env` + dirs but installed no daemons. Now sourced from `pbox-setup.sh` and invoked at the end of both `setup_company_ms365` and `setup_company_google`. Dry-run flow is unchanged -- the parent `run_company_setup` short-circuits before the call.
+- **v0.5.0-rc1 audit pass -- 6 patches.** Static cross-port audit + sandbox + Tart VM verification surfaced 5 cross-port consistency findings + 1 portability glitch.
+  - **`files-agent` timestamp units** -- 7 writes used seconds (`Math.floor(Date.now()/1000)`); the contract + the other three agents use milliseconds (`Date.now()`). Self-consistent inside files-agent, but cross-agent comparisons (Argus parsing, future cross-tenant queries) saw two scales coexisting in the same INTEGER column. Aligned to ms throughout; stale-cutoff `- 60` becomes `- 60_000`.
+  - **`calendar-agent` BLOCKED_TOOL_PATTERNS** -- the in-file deny `Set` covered only `mcp__ms365__*` tools. A Google-calendar tenant would have unblocked `mcp__gmail__create_event` / `mcp__google__delete_event` unless the operator separately edited `.claude/settings.json`. Replaced with a regex array covering `ms365 | gmail | google` prefixes, matching mail-agent's pattern.
+  - **`mail-agent` + `calendar-agent` defensive `ALTER TABLE` on boot** -- files-agent had idempotent migrations for `last_active` / `cost_usd` / `risk_level`; mail + calendar relied on the conductor's `CREATE TABLE` having run first. Clean installs were unaffected, but any older `jobs.db` missing these columns would crash mail/calendar on the first `UPDATE`. Both now run the same migration block on boot (gated on `existsSync(JOBS_DB)`).
+  - **Audit log canonical shape** -- four agents diverged: conductor used `src` (others `source`), files-agent used `tenant` (others `slug`), calendar-agent omitted `task_type` (mail/files included it). Canonicalised to `{ts, source, slug, task_type?, ...event}` across all four. Argus + external parsers no longer have to handle three schemas.
+  - **`TASK_TYPE` constant** -- mail + calendar allowed an env override (dead code in calendar; AGENT_NAME hardcoded the value anyway). Hardcoded to match files-agent's pattern.
+  - **`setup-tenant-runtimes.sh` zsh portability** -- line 50 used unbraced `"$user:staff"`; zsh parsed as a parameter-substring expression and threw "bad substitution". Bash-safe but trips an operator sourcing the file into an interactive zsh. Braced as `"${user}:staff"`.
+
+### CI
+
+- **CodeQL workflow** added then removed -- requires GitHub Advanced Security on private repos, which the AI-PandorasBox account doesn't have. Will reinstate post-public-flip (free for public repos) or post-Advanced-Security purchase.
+- **Sanitize workflow now passes all 4 jobs** -- gate-on-the-gate, generic credential-shape scan, `.sh`/`.mjs` syntax validation, installer dry-run smoke on macOS-14 runner. First all-green run since the repo was rewritten on 2026-05-17.
+
 ### Installer (v0.2.0 -- step-by-step + module pickers + Claude-first)
 
 - **No-liability disclaimer gate.** Installer's first action is a typed-acceptance gate covering: AI agents take real-world actions, the user is responsible for those actions, third-party costs are the user's, pre-release software / no support guarantees, no financial / legal / medical advice, data on the user's machine is the user's responsibility. Any input other than typed `yes` exits the installer cleanly without making any changes.

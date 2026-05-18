@@ -128,6 +128,8 @@ setup_company_ms365() {
     "COMPANY_SLUG=$slug" \
     "COMPANY_NAME=$display_name"
 
+  install_tenant_runtimes "$slug" "$service_user"
+
   check_pass "Company '$display_name' configured ($slug)."
   echo ""
   echo "  Next: run the Microsoft 365 authentication flow to grant access."
@@ -195,6 +197,8 @@ setup_company_google() {
     "ANTHROPIC_API_KEY=$ANTHROPIC_API_KEY" \
     "COMPANY_SLUG=$slug" \
     "COMPANY_NAME=$display_name"
+
+  install_tenant_runtimes "$slug" "$service_user"
 
   check_pass "Company '$display_name' configured ($slug) with Google Workspace."
   echo ""
