@@ -49,6 +49,7 @@ Resolves Gap #5 from the v0.3 installer audit. Six modules now ship full runtime
 - **Docs: Google AI key placeholder.** `docs/setup/google-ai.md` previously contained an example string starting with `AIza` followed by ~35 alphanumeric characters that matched the credential-shape CI regex `AIza[0-9A-Za-z_-]{35}`. Replaced with a non-matching descriptive form so the placeholder communicates shape without triggering the gate.
 - **`trading-research`: port collision with `content-classifier`.** Both modules defaulted to `:8487`. `trading-research` moved to `:8490`.
 - **`trading-research`: dry-run staging parity.** Module's `install.sh` short-circuited at steps 2 + 3 in dry-run, leaving target dir + `.env` empty (inconsistent with all other modules). Now always stages files via the sudo shim; writes a placeholder `.env` with `IG_*=dryrun-placeholder` sentinels in dry-run mode.
+- **Installer: `install_tenant_runtimes` wired into `setup-company.sh`.** `lib/setup-tenant-runtimes.sh` already shipped (renders per-tenant plists + npm-installs conductor + 3 task agents + conditionally loads LaunchDaemons), but was never sourced or called. Adding a company via `pbox-setup.sh` therefore wrote `.env` + dirs but installed no daemons. Now sourced from `pbox-setup.sh` and invoked at the end of both `setup_company_ms365` and `setup_company_google`. Dry-run flow is unchanged -- the parent `run_company_setup` short-circuits before the call.
 
 ### CI
 
