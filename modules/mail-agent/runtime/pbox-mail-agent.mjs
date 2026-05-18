@@ -644,6 +644,23 @@ const bootProvider = detectProvider()
 log(`Provider at boot: ${bootProvider ?? 'NONE'}`)
 auditWrite({ event: 'agent_started', provider: bootProvider, poll_ms: POLL_MS })
 
+// Idempotent schema migrations (older deployments may pre-date these columns).
+// Matches files-agent's defensive boot pattern.
+if (existsSync(JOBS_DB)) {
+  for (const stmt of [
+    'ALTER TABLE jobs ADD COLUMN last_active INTEGER',
+    'ALTER TABLE jobs ADD COLUMN cost_usd REAL',
+    "ALTER TABLE jobs ADD COLUMN risk_level TEXT NOT NULL DEFAULT 'standard'",
+  ]) {
+    let mdb
+    try {
+      mdb = new DatabaseSync(JOBS_DB)
+      mdb.prepare('PRAGMA busy_timeout=5000').run()
+      mdb.prepare(stmt).run()
+    } catch { /* column exists */ } finally { mdb?.close() }
+  }
+}
+
 // Graceful shutdown.
 for (const sig of ['SIGINT', 'SIGTERM']) {
   process.on(sig, () => {

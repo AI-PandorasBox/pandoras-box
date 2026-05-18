@@ -413,5 +413,22 @@ if (!existsSync(dirname(AUDIT_LOG))) {
   try { mkdirSync(dirname(AUDIT_LOG), { recursive: true }) } catch {}
 }
 
+// Idempotent schema migrations (older deployments may pre-date these columns).
+// Matches files-agent's defensive boot pattern.
+if (existsSync(JOBS_DB)) {
+  for (const stmt of [
+    'ALTER TABLE jobs ADD COLUMN last_active INTEGER',
+    'ALTER TABLE jobs ADD COLUMN cost_usd REAL',
+    "ALTER TABLE jobs ADD COLUMN risk_level TEXT NOT NULL DEFAULT 'standard'",
+  ]) {
+    let mdb
+    try {
+      mdb = new DatabaseSync(JOBS_DB)
+      mdb.prepare('PRAGMA busy_timeout=5000').run()
+      mdb.prepare(stmt).run()
+    } catch { /* column exists */ } finally { mdb?.close() }
+  }
+}
+
 poll()
 setInterval(poll, POLL_MS)
