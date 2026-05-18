@@ -167,7 +167,7 @@ function extractUploadSize(input) {
 // Insert a PENDING_REVIEW sub-job describing a write/delete that needs approval
 function queueApprovalSubJob(parentJobId, toolName, op, input) {
   const id = randomUUID()
-  const now = Math.floor(Date.now() / 1000)
+  const now = Date.now()
   const prompt = JSON.stringify({
     kind: 'files_write_approval_request',
     parent_job_id: parentJobId,
@@ -307,7 +307,7 @@ async function executeJob(job) {
     return
   }
 
-  const now = Math.floor(Date.now() / 1000)
+  const now = Date.now()
   let db
   let heartbeat
   let costUsd = null
@@ -329,7 +329,7 @@ async function executeJob(job) {
         hdb = new DatabaseSync(JOBS_DB)
         hdb.prepare('PRAGMA busy_timeout=5000').run()
         hdb.prepare('UPDATE jobs SET last_active=? WHERE id=?')
-          .run(Math.floor(Date.now() / 1000), job.id)
+          .run(Date.now(), job.id)
       } catch {} finally { hdb?.close() }
     }, HEARTBEAT_MS)
 
@@ -384,7 +384,7 @@ async function executeJob(job) {
       }
     }
 
-    const done = Math.floor(Date.now() / 1000)
+    const done = Date.now()
     db = new DatabaseSync(JOBS_DB)
     db.prepare('PRAGMA busy_timeout=5000').run()
     db.prepare(`
@@ -408,7 +408,7 @@ async function executeJob(job) {
     })
     try {
       if (!db) db = new DatabaseSync(JOBS_DB)
-      const t = Math.floor(Date.now() / 1000)
+      const t = Date.now()
       db.prepare(`
         UPDATE jobs SET status=?, result=?, cost_usd=?, updated_at=?
          WHERE id=?
@@ -435,7 +435,7 @@ async function poll() {
     db = new DatabaseSync(JOBS_DB)
     db.prepare('PRAGMA busy_timeout=5000').run()
     // Recover abandoned IN_PROGRESS jobs (heartbeat stale > 60s)
-    const staleTime = Math.floor(Date.now() / 1000) - 60
+    const staleTime = Date.now() - 60_000
     const stale = db.prepare(`
       SELECT id FROM jobs
        WHERE task_type=? AND status='IN_PROGRESS'
@@ -445,7 +445,7 @@ async function poll() {
       db.prepare(`
         UPDATE jobs SET status='APPROVED', last_active=NULL, updated_at=?
          WHERE id=?
-      `).run(Math.floor(Date.now() / 1000), j.id)
+      `).run(Date.now(), j.id)
       log(`Recovered stale IN_PROGRESS job ${j.id} -> APPROVED`)
     }
     const jobs = db.prepare(`
