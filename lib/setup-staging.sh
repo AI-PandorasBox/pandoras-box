@@ -11,7 +11,7 @@
 # Sub-trees we copy from the cloned-repo SETUP_DIR to INSTALL_PATH.
 # Anything NOT in this list stays out of /opt/pandoras-box/.
 _STAGE_DIRS=( lib scripts modules config assets manuals docs hooks )
-_STAGE_FILES=( README.md CHANGELOG.md DISCLAIMER.md LICENSE )
+_STAGE_FILES=( README.md CHANGELOG.md DISCLAIMER.md LICENSE VERSION )
 
 run_staging() {
   section_header "Staging installer files to $INSTALL_PATH"
@@ -21,6 +21,20 @@ run_staging() {
   echo ""
 
   sudo mkdir -p "$INSTALL_PATH"
+
+  # Establish the VERSION anchor used by `pbox update --check-only` (Layer 1
+  # of the auto-update mechanism). Three sources, in order of trust:
+  #   1) $SETUP_DIR/VERSION already exists (release tarball ships one)
+  #   2) git describe in $SETUP_DIR (clone-from-source operators)
+  #   3) "v0.0.0-dev" fallback so the file always exists
+  if [[ ! -f "$SETUP_DIR/VERSION" ]]; then
+    local detected
+    if detected=$(cd "$SETUP_DIR" 2>/dev/null && git describe --tags --abbrev=0 2>/dev/null); then
+      echo "$detected" > "$SETUP_DIR/VERSION"
+    else
+      echo "v0.0.0-dev" > "$SETUP_DIR/VERSION"
+    fi
+  fi
 
   local copied=0 skipped=0 dirs_done=0
   for sub in "${_STAGE_DIRS[@]}"; do
