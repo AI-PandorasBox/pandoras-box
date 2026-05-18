@@ -106,7 +106,7 @@ function auditWrite(event) {
   const line = JSON.stringify({
     ts: new Date().toISOString(),
     source: AGENT_NAME,
-    tenant: COMPANY_SLUG,
+    slug: COMPANY_SLUG,
     task_type: TASK_TYPE,
     ...event,
   }) + '\n'

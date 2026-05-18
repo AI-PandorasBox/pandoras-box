@@ -92,9 +92,9 @@ for (const d of [STORE_DIR, LOGS_DIR]) {
 function auditWrite (event) {
   try {
     const entry = JSON.stringify({
-      ts:    new Date().toISOString(),
-      slug:  COMPANY_SLUG,
-      src:   'conductor',
+      ts:     new Date().toISOString(),
+      source: 'conductor',
+      slug:   COMPANY_SLUG,
       ...event,
     }) + '\n'
     appendFileSync(AUDIT_LOG, entry, { mode: 0o600 })

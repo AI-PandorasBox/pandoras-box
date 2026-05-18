@@ -224,7 +224,7 @@ function log (msg) {
 }
 
 function auditWrite (event) {
-  const line = JSON.stringify({ ts: new Date().toISOString(), source: AGENT_NAME, slug: COMPANY_SLUG, ...event }) + '\n'
+  const line = JSON.stringify({ ts: new Date().toISOString(), source: AGENT_NAME, slug: COMPANY_SLUG, task_type: TASK_TYPE, ...event }) + '\n'
   try {
     if (!existsSync(dirname(AUDIT_LOG))) mkdirSync(dirname(AUDIT_LOG), { recursive: true })
     appendFileSync(AUDIT_LOG, line)
