@@ -28,7 +28,7 @@ install_tenant_runtimes() {
 
   echo "[setup-tenant-runtimes] tenant=$slug user=$user node=$node_bin"
 
-  for role in conductor mail calendar files; do
+  for role in conductor mail calendar files voice; do
     local module_dir target_dir plist_label plist_src plist_dst
     if [[ "$role" == "conductor" ]]; then
       module_dir="$INSTALL_PATH/modules/conductor"
@@ -91,6 +91,11 @@ install_tenant_runtimes() {
         ;;
       files)
         if [[ -f "$base_env" ]] && grep -q '^FILES_ENABLED=true' "$base_env"; then
+          load_it=1
+        fi
+        ;;
+      voice)
+        if [[ -f "$base_env" ]] && grep -qE '^(ELEVENLABS_API_KEY|GROQ_API_KEY)=' "$base_env"; then
           load_it=1
         fi
         ;;
