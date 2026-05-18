@@ -47,7 +47,7 @@ install_tenant_runtimes() {
     echo "  staging $role -> $target_dir"
     sudo mkdir -p "$target_dir"
     sudo cp -R "$module_dir/runtime/." "$target_dir/"
-    sudo chown -R "$user:staff" "$target_dir" 2>/dev/null || true
+    sudo chown -R "${user}:staff" "$target_dir" 2>/dev/null || true
     sudo chmod 755 "$target_dir"/*.mjs 2>/dev/null || true
 
     if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
