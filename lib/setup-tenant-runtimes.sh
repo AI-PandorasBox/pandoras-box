@@ -28,11 +28,14 @@ install_tenant_runtimes() {
 
   echo "[setup-tenant-runtimes] tenant=$slug user=$user node=$node_bin"
 
-  for role in conductor mail calendar files voice; do
+  for role in conductor mail calendar files voice voice-call; do
     local module_dir target_dir plist_label plist_src plist_dst
     if [[ "$role" == "conductor" ]]; then
       module_dir="$INSTALL_PATH/modules/conductor"
       target_dir="$INSTALL_PATH/$slug-conductor"
+    elif [[ "$role" == "voice-call" ]]; then
+      module_dir="$INSTALL_PATH/modules/voice-call"
+      target_dir="$INSTALL_PATH/$slug-voice-call"
     else
       module_dir="$INSTALL_PATH/modules/${role}-agent"
       target_dir="$INSTALL_PATH/$slug-${role}"
@@ -96,6 +99,11 @@ install_tenant_runtimes() {
         ;;
       voice)
         if [[ -f "$base_env" ]] && grep -qE '^(ELEVENLABS_API_KEY|GROQ_API_KEY)=' "$base_env"; then
+          load_it=1
+        fi
+        ;;
+      voice-call)
+        if [[ -f "$base_env" ]] && grep -q '^GOOGLE_API_KEY=' "$base_env"; then
           load_it=1
         fi
         ;;

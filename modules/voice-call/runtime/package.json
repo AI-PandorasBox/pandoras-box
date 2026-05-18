@@ -1,0 +1,18 @@
+{
+  "name": "pbox-voice-call",
+  "version": "0.5.1-rc1",
+  "description": "Per-tenant real-time voice call orchestrator for Pandora's Box (Gemini Live bridge).",
+  "main": "pbox-voice-call.mjs",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node pbox-voice-call.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0",
+    "dotenv": "^16.4.0"
+  },
+  "license": "Apache-2.0"
+}
