@@ -41,7 +41,6 @@ jobs:
 
           tar -czf "$TARBALL" -C "$TMPDIR" "pandoras-box-${VERSION}"
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
-          mv "$TARBALL" .
           ls -lh "$TARBALL"
 
       - name: Generate SHA256 checksums
