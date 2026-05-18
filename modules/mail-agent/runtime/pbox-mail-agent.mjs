@@ -46,7 +46,7 @@ import dotenv from 'dotenv'
 
 const COMPANY_SLUG  = process.env.COMPANY_SLUG
 const INSTALL_PATH  = process.env.INSTALL_PATH
-const TASK_TYPE     = process.env.TASK_TYPE || 'mail'
+const TASK_TYPE     = 'mail'
 
 if (!COMPANY_SLUG || !INSTALL_PATH) {
   console.error('[pbox-mail-agent] FATAL: COMPANY_SLUG and INSTALL_PATH env vars are required.')

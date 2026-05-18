@@ -28,7 +28,7 @@ import { dirname } from 'node:path'
 
 const COMPANY_SLUG  = process.env.COMPANY_SLUG
 const INSTALL_PATH  = process.env.INSTALL_PATH
-const TASK_TYPE     = process.env.TASK_TYPE ?? 'calendar'
+const TASK_TYPE     = 'calendar'
 
 if (!COMPANY_SLUG || !INSTALL_PATH) {
   console.error('[pbox-calendar-agent] FATAL: COMPANY_SLUG and INSTALL_PATH must be set in env')
