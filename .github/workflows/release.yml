@@ -42,6 +42,9 @@ jobs:
           cp README.md CHANGELOG.md DISCLAIMER.md LICENSE CODE_OF_CONDUCT.md \
              CONTRIBUTING.md SECURITY.md .sanitize-patterns .gitignore "$STAGING/" 2>/dev/null || true
 
+          # VERSION anchor for auto-update Layer 1 (pbox update --check-only)
+          echo "$VERSION" > "$STAGING/VERSION"
+
           tar -czf "$TARBALL" -C "$TMPDIR" "pandoras-box-${VERSION}"
           echo "tarball=$TARBALL" >> "$GITHUB_OUTPUT"
           ls -lh "$TARBALL"

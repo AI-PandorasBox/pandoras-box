@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Voice Call</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Voice Call</h1>
+      <div class="meta" id="meta">loading…</div>
+    </header>
+
+    <section class="controls">
+      <button id="startBtn" class="primary">Start call</button>
+      <button id="endBtn"   class="danger" disabled>End call</button>
+      <div class="status" id="status">idle</div>
+    </section>
+
+    <section class="transcript">
+      <h2>Transcript</h2>
+      <ol id="transcript"></ol>
+    </section>
+
+    <section class="text-input" id="textInputBox" hidden>
+      <input id="textInput" type="text" placeholder="Type instead of speak…">
+      <button id="sendText">Send</button>
+    </section>
+
+    <footer>
+      <small>Audio: 16 kHz in / 24 kHz out · loopback-only · <span id="costEst">cost est —</span></small>
+    </footer>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

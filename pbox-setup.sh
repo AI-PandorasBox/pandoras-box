@@ -59,6 +59,7 @@ source "$LIB_DIR/setup-modules.sh"
 source "$LIB_DIR/setup-service-provider.sh"
 source "$LIB_DIR/setup-staging.sh"
 source "$LIB_DIR/setup-system-modules.sh"
+source "$LIB_DIR/setup-update-check.sh"
 
 # =============================================================================
 # Entry point
@@ -112,6 +113,7 @@ main() {
   fi
   advance_step "[REQUIRED] System verification"
   run_system_check
+  run_update_check_setup
   print_done
 }
 

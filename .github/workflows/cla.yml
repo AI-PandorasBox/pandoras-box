@@ -25,6 +25,7 @@ permissions:
 
 jobs:
   cla-check:
+    if: github.actor != 'dependabot[bot]' && github.actor != 'renovate[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: CLA Assistant

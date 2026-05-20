@@ -8,13 +8,37 @@
 [![Latest Release](https://img.shields.io/github/v/release/AI-PandorasBox/pandoras-box.svg)](https://github.com/AI-PandorasBox/pandoras-box/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/AI-PandorasBox/pandoras-box.svg?style=social)](https://github.com/AI-PandorasBox/pandoras-box/stargazers)
 
-Pandoras Box is an open-source multi-agent AI system for Mac. It runs multiple AI assistants simultaneously on a single Mac Mini -- one per company or context -- with strict OS-level isolation between them, an independent oversight daemon that approves every action, and a browser-first personal AI interface for the owner.
+**Run your own AI ops team. On hardware you own.**
 
-The system is designed to handle real business operations: email, calendar, documents, and voice for multiple separate companies from one machine, without any cross-company data exposure. It is built for people who want production-grade AI assistants running on hardware they own and control, not cloud services they depend on.
+Pandoras Box turns a Mac mini into a self-hosted multi-agent AI platform. One installer, one machine, multiple AI assistants -- each scoped to a company or context, each isolated at the operating-system level. Every action is approved by an independent oversight daemon before it runs. You own the keys, you own the data, you own the audit trail.
+
+Built for people who want production-grade AI assistants on hardware they control rather than cloud services they depend on. Today it handles email, calendar, documents, voice synthesis, and real-time voice calls for multiple separate companies from one box -- with zero cross-company data path.
 
 **Project website + walkthrough:** [ai-pandorasbox.co.uk](https://ai-pandorasbox.co.uk)
 
-> **Note:** Pandoras Box is a macOS-native system. Linux support is planned for a future release.
+### Who is this for?
+
+- **Operators running multiple businesses or contexts.** Get one AI assistant per company, not one shared assistant that mixes their data.
+- **People who want to OWN their AI stack.** No SaaS subscription, no third-party data custody, no terms-of-service changes you didn't agree to. You bring your own API keys (Anthropic, Google, ElevenLabs, etc.) and pay them directly.
+- **Engineers who want a sandbox for agentic workflows.** Full source, Apache 2.0, modular install, hook-driven extensibility.
+
+### How is this different?
+
+- **vs. Claude.ai / ChatGPT:** Those are conversational. This is operational -- agents actually send mail, edit calendars, generate audio, on your behalf, under approval gates.
+- **vs. Cursor / IDE assistants:** Those help you write code. This handles your inbox, your scheduling, your files, your voice work.
+- **vs. cloud agent platforms (Lindy, Relevance, etc.):** Those host your agents on someone else's machine. Here, your agents live on your Mac. The only cloud calls are the LLM/voice APIs you authorise.
+
+> **Note:** Pandoras Box is a macOS-native system (14+ on Apple Silicon). Linux support is planned for a future release.
+
+### Realistic costs
+
+You bring your own API keys. Pandoras Box doesn't bill you anything -- it's the LLMs/voices you call that cost money. Typical operator monthly spend depends on usage:
+
+- **Light personal use** (~50 conversational queries/day): $5-15/month on Anthropic.
+- **Multi-company business operation** (real mail + calendar + research, 2-3 companies): $50-150/month combined Anthropic + Google + ElevenLabs.
+- **Heavy voice/video pipeline operator:** can hit $200+/month on ElevenLabs alone if doing daily narration.
+
+A built-in cost gate (`MAX_BUDGET_USD` per job, configurable) prevents runaway loops. The dashboard module shows day-by-day spend.
 
 ---
 
@@ -57,6 +81,23 @@ git clone https://github.com/AI-PandorasBox/pandoras-box.git
 cd pandoras-box
 bash install.sh
 ```
+
+### What the installer actually does
+
+The installer is a guided shell script -- nothing happens silently. Expect roughly the following 10 steps over 15-30 minutes:
+
+1. **Disclaimer + theme selection.** Branding, paths, log location.
+2. **Prerequisites check.** macOS version, Apple Silicon, Homebrew, Node 22+, available disk.
+3. **Claude credentials.** API key OR subscription auth via `claude /login` (your choice). Stored in macOS Keychain.
+4. **Tailscale (optional).** Joins your private mesh so you can reach the Personal AI from your phone.
+5. **Certificates.** Self-signed TLS for the loopback HTTPS surfaces.
+6. **Company agents.** For each company you add: collects MS365 or Google OAuth creds, creates a service account, generates per-tenant plists, npm-installs the conductor + 4 task agents.
+7. **Personal AI.** The browser-first owner-facing assistant (chat UI on `127.0.0.1:8800`).
+8. **Optional modules.** Backups, Dashboard, Terminal, Docs server, Ollama, relays (Discord/Slack/WhatsApp), Voice, Trading research, Offline KB, Media production -- each opt-in.
+9. **System verification.** Health-checks every installed service.
+10. **Update-check LaunchAgent.** Weekly background poll for new releases (osascript notification when available).
+
+Reversible: every module has its own `uninstall.sh`. Per-tenant data lives under `/opt/pandoras-box/<slug>/`; removing a company is a single `rm -rf` of that dir + a `launchctl unload` of its plists.
 
 **Prerequisites:** macOS 14 or later, Node.js 20+, Homebrew, an Anthropic account (Claude Pro or Pro Max recommended).
 
@@ -115,6 +156,8 @@ A fifth component -- **the Personal AI** -- is the owner's personal AI interface
 | **mail-google** | Gmail | Gmail integration via Google OAuth | [catalog](docs/modules.md#mail-google) · [agents guide](manuals/06-company-agents.md) | Optional |
 | **calendar** | Calendar sync | Calendar integration (auto-detects MS365 or Google) | [catalog](docs/modules.md#calendar) · [agents guide](manuals/06-company-agents.md) | Optional |
 | **files** | Document access | SharePoint or Google Drive document retrieval | [catalog](docs/modules.md#files) · [agents guide](manuals/06-company-agents.md) | Optional |
+| **voice-agent** | TTS + STT task agent | Per-tenant narration / transcription via ElevenLabs + Groq Whisper. Same canUseTool security envelope as mail/calendar/files. | [README](modules/voice-agent/README.md) | Optional |
+| **voice-call** | Real-time voice call | Browser-default loopback HTTP+WSS daemon bridging mic audio to Gemini Live. Per-tenant voice + system prompt config. Conversation-only in v0.5.x. | [README](modules/voice-call/README.md) | Optional |
 | **admin-lite** | Mobile admin | Mobile-friendly admin panel (Tailscale-accessible) | [catalog](docs/modules.md#admin-lite) · [admin guide](manuals/03-admin-guide.md) | Optional |
 | **dashboard** | System monitor | Local service status and health dashboard | [catalog](docs/modules.md#dashboard) · [admin guide](manuals/03-admin-guide.md) | Optional |
 | **terminal** | Web terminal | Browser-based terminal with authentication | [catalog](docs/modules.md#terminal) · [admin guide](manuals/03-admin-guide.md) | Optional |

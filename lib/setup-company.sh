@@ -116,7 +116,8 @@ setup_company_ms365() {
   create_service_account "$service_user" "$((uid_base + company_index))" "$display_name Agent"
   sudo mkdir -p "$base_dir" "$INSTALL_PATH/${slug}-conductor" \
     "$INSTALL_PATH/${slug}-mail" "$INSTALL_PATH/${slug}-calendar" \
-    "$INSTALL_PATH/${slug}-files" "$INSTALL_PATH/${slug}-voice"
+    "$INSTALL_PATH/${slug}-files" "$INSTALL_PATH/${slug}-voice" \
+    "$INSTALL_PATH/${slug}-voice-call"
   sudo chown -R "${service_user}:staff" "$base_dir" "$INSTALL_PATH/${slug}-"*
   sudo chmod 750 "$base_dir" "$INSTALL_PATH/${slug}-"*
 
@@ -187,7 +188,8 @@ setup_company_google() {
   create_service_account "$service_user" "$((500 + company_index))" "$display_name Agent"
   sudo mkdir -p "$base_dir" "$INSTALL_PATH/${slug}-conductor" \
     "$INSTALL_PATH/${slug}-mail" "$INSTALL_PATH/${slug}-calendar" \
-    "$INSTALL_PATH/${slug}-files" "$INSTALL_PATH/${slug}-voice"
+    "$INSTALL_PATH/${slug}-files" "$INSTALL_PATH/${slug}-voice" \
+    "$INSTALL_PATH/${slug}-voice-call"
   sudo chown -R "${service_user}:staff" "$base_dir" "$INSTALL_PATH/${slug}-"*
   sudo chmod 750 "$base_dir" "$INSTALL_PATH/${slug}-"*
 
