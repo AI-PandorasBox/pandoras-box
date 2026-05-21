@@ -101,6 +101,8 @@ Reversible: every module has its own `uninstall.sh`. Per-tenant data lives under
 
 **Prerequisites:** macOS 14 or later, Node.js 20+, Homebrew, an Anthropic account (Claude Pro or Pro Max recommended).
 
+> **macOS pre-flight (do this first, not optional):** Before you run the installer, turn off iCloud Drive's **"Desktop & Documents Folders"** sync and **"Optimize Mac Storage"**. macOS can otherwise evict installed files to iCloud and replace them with placeholders, silently breaking every service that imports them and corrupting backups. See [docs/setup/icloud.md](docs/setup/icloud.md) for the full explanation and the verify command. This applies to Dropbox, OneDrive, Google Drive too — do not install Pandora's Box into any cloud-synced directory.
+
 **You do not need to be technical.** Step 1 of the installer is to install Claude itself and brief it about your install. From that point on, if anything goes wrong on any later step, you press Return at the prompt and Claude reads the install log and tells you what to do next. No prior knowledge of macOS, Node, or shell scripting required.
 
 **An API key is no longer needed up front.** The installer signs you into Claude in the browser the same way the Claude desktop app does. You only need to provide API keys later for *optional* paid services (Google AI for image/video, ElevenLabs for voice, Brave Search for web context, Suno for music) and the installer will tell you which.

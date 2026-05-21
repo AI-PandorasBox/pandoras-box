@@ -6,6 +6,7 @@ Each guide in this folder covers one external dependency or third-party service 
 
 | Guide | When you need it |
 |---|---|
+| [macOS iCloud Drive](icloud.md) | **Always — do this first.** Disable Desktop & Documents folder sync before installing |
 | [Anthropic auth](anthropic.md) | Always — Claude Pro/Max subscription or API key powers the bridge |
 | [Microsoft 365](ms365.md) | Mail / Calendar / Files modules for any business tenant on Office 365 |
 | [Tailscale](tailscale.md) | Personal AI mobile access (strongly recommended) |
@@ -20,10 +21,11 @@ Each guide in this folder covers one external dependency or third-party service 
 
 Most operators follow this order:
 
-1. **Anthropic** — get Claude Pro/Max subscription active first; the installer's first step is to sign in via `claude /login`.
-2. **Tailscale** — install it across your devices early; later steps assume your phone can reach the Mac.
-3. **Microsoft 365** — for each business tenant, register the Azure AD app once. The installer guides you through it interactively.
-4. **Optional add-ons** — ElevenLabs / Google AI / Obsidian / Docker / YouTube / IG only if you've picked the modules that need them.
+1. **macOS iCloud Drive** — disable Desktop & Documents folder sync and Optimize Mac Storage before anything else. See the [iCloud guide](icloud.md). Skipping this risks silent file eviction and corrupted backups.
+2. **Anthropic** — get Claude Pro/Max subscription active first; the installer's first step is to sign in via `claude /login`.
+3. **Tailscale** — install it across your devices early; later steps assume your phone can reach the Mac.
+4. **Microsoft 365** — for each business tenant, register the Azure AD app once. The installer guides you through it interactively.
+5. **Optional add-ons** — ElevenLabs / Google AI / Obsidian / Docker / YouTube / IG only if you've picked the modules that need them.
 
 ## Credential storage
 
