@@ -1,8 +1,21 @@
 # =============================================================================
-# setup-backups.sh -- Encrypted offsite-ready backups
-# Installs `age`, generates a keypair, stores the private key in macOS Keychain,
-# writes the daily backup LaunchAgent + Sunday freshness probe LaunchAgent,
-# and writes a recovery instructions file outside the encrypted blob.
+# setup-backups.sh -- Encrypted offsite-ready backups (LaunchDaemon flavour)
+#
+# Marker: _BACKUPS_LAUNCHDAEMON_V1
+#
+# Architecture (2026-05-21+):
+#   - Backup runs as ROOT via a LaunchDaemon (not a user LaunchAgent). This is
+#     necessary on macOS Tahoe -- TCC silently blocks user LaunchAgents from
+#     reading ~/Desktop and ~/Documents, which made the previous installer's
+#     backups zero-byte on a non-trivial fraction of installs.
+#   - Scripts live under /Users/Shared/pandoras-box-backup-scripts/ (root:wheel
+#     755). Env file at /usr/local/etc/pandoras-box-backup.env (root:wheel 600).
+#   - Per-component size assertion -- 0-byte components refuse to update the
+#     `latest` symlink. Daily [OK]/[FAIL] email (opt-out) via SMTP relay.
+#   - B2 offsite remains opt-in. Local-only is the default.
+#
+# This module REQUIRES sudo. install.sh + pbox-setup.sh now prompt the user
+# before kicking off this function.
 # =============================================================================
 
 run_backups_setup() {
@@ -10,12 +23,13 @@ run_backups_setup() {
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi
+
   print_module_info_card \
     "Encrypted backups" \
-    "Every night, your databases (CRM, agent memory, knowledge stores) and config files are dumped, packaged into a single tarball, and encrypted with age (a modern offline encryption tool). The plaintext is deleted; only the encrypted blob remains. A separate Sunday job verifies the most recent backup is fresh and readable. Recovery instructions are written outside the encrypted blob in plaintext, so you can restore from a fresh OS install with no working Pandoras Box." \
-    "Nothing -- the installer generates the encryption key for you and stores it in macOS Keychain. You can optionally save a copy to a separate device or to paper for off-box recovery." \
-    "Free. Uses age (Homebrew). The backup volume defaults to /Users/Shared/ -- no cloud charges. Off-box copy is optional and uses your own storage." \
-    "~3 minutes"
+    "Every night at 03:30, a root LaunchDaemon dumps your CRM databases, agent stores, configs, and selected directories into a single tarball, encrypts it with age, and writes it to /Users/Shared/pandoras-box-backups/. A per-component size assertion refuses to update the 'latest' symlink if any piece came back empty. An optional daily email reports [OK] or [FAIL]." \
+    "Sudo password (for the LaunchDaemon install). Optionally: SMTP creds for the daily email, Backblaze B2 creds for offsite mirroring." \
+    "Free locally. Optional B2 offsite tier ~\$0.005/GB/month." \
+    "~4 minutes"
 
   prompt_yes_no "Install encrypted backups?" backup_choice "yes"
   if [[ "$backup_choice" != "yes" ]]; then
@@ -24,7 +38,13 @@ run_backups_setup() {
   fi
 
   echo ""
-  info_msg "Step 1 of 4: Install age (offline encryption tool)..."
+  warn_msg "The backups module needs sudo for LaunchDaemon install (/Library/LaunchDaemons/, /Users/Shared/, /usr/local/etc/)."
+  echo ""
+  # Cache sudo so we don't re-prompt per command.
+  sudo -v || error_exit "sudo required for backup install"
+
+  echo ""
+  info_msg "Step 1 of 7: Install age (offline encryption tool)"
   if ! command -v age &>/dev/null; then
     if ! brew install age 2>&1 | tail -3; then
       error_exit "Could not install age via Homebrew. Resolve and re-run."
@@ -33,59 +53,51 @@ run_backups_setup() {
   check_pass "age installed: $(age --version 2>&1 | head -1)"
 
   echo ""
-  info_msg "Step 2 of 4: Generate backup encryption keypair..."
-  local SECRETS_DIR="$INSTALL_PATH/secrets"
-  sudo mkdir -p "$SECRETS_DIR"
-  sudo chmod 755 "$SECRETS_DIR"
-  local PUBKEY_FILE="$SECRETS_DIR/age-backup-pubkey.txt"
-  local TMP_PRIVKEY=$(mktemp)
-  trap 'rm -f "$TMP_PRIVKEY"' EXIT
+  info_msg "Step 2 of 7: Generate backup encryption keypair"
+  local PUBKEY_FILE="/usr/local/etc/pandoras-box-backup-pubkey.txt"
+  local TMP_PRIVKEY; TMP_PRIVKEY=$(mktemp)
+  local TMP_PUBKEY="$TMP_PRIVKEY.pub"
+  local TMP_FULL="$TMP_PRIVKEY.full"
+  trap 'rm -f "$TMP_PRIVKEY" "$TMP_PUBKEY" "$TMP_FULL"' EXIT
 
-  if [[ -f "$PUBKEY_FILE" ]]; then
+  if sudo test -f "$PUBKEY_FILE"; then
     info_msg "Public key already exists at $PUBKEY_FILE -- skipping keypair generation."
   else
-    age-keygen 2>"$TMP_PRIVKEY.full" | grep "^# public key:" | awk '{print $4}' > "$TMP_PRIVKEY.pub" || {
-      error_exit "age-keygen failed."
-    }
-    grep "^AGE-SECRET-KEY-" "$TMP_PRIVKEY.full" > "$TMP_PRIVKEY"
-    sudo cp "$TMP_PRIVKEY.pub" "$PUBKEY_FILE"
-    sudo chmod 644 "$PUBKEY_FILE"
-    sudo chown "$(id -u):$(id -g)" "$PUBKEY_FILE"
+    age-keygen 2>"$TMP_FULL" >/dev/null || error_exit "age-keygen failed"
+    grep '^# public key:' "$TMP_FULL" | awk '{print $4}' > "$TMP_PUBKEY"
+    grep '^AGE-SECRET-KEY-'      "$TMP_FULL"            > "$TMP_PRIVKEY"
+    sudo cp "$TMP_PUBKEY" "$PUBKEY_FILE"
+    sudo chown root:wheel "$PUBKEY_FILE"
+    sudo chmod 644        "$PUBKEY_FILE"
 
-    # Store private key in Keychain (login keychain, current user)
     if security add-generic-password \
-      -s "pbox-backup-age" \
-      -a "$(whoami)" \
-      -w "$(cat "$TMP_PRIVKEY")" \
-      -U 2>/dev/null; then
-      check_pass "Private key stored in Keychain (item: 'pbox-backup-age')."
+        -s "pbox-backup-age" \
+        -a "$(whoami)" \
+        -w "$(cat "$TMP_PRIVKEY")" \
+        -U 2>/dev/null; then
+      check_pass "Private key stored in macOS Keychain (item 'pbox-backup-age')."
     else
-      warn_msg "Could not store private key in Keychain. Saving to $TMP_PRIVKEY.SAVE-ME"
+      warn_msg "Could not store private key in Keychain. Saving to ~/Desktop/PBOX-BACKUP-PRIVKEY-DELETE-AFTER-COPYING.txt"
       cp "$TMP_PRIVKEY" "$HOME/Desktop/PBOX-BACKUP-PRIVKEY-DELETE-AFTER-COPYING.txt"
       echo ""
-      echo "  ${C_BOLD}MANUAL STEP: copy ~/Desktop/PBOX-BACKUP-PRIVKEY-DELETE-AFTER-COPYING.txt"
-      echo "  to a separate device, then DELETE the Desktop file.${C_RESET}"
+      echo "  ${C_BOLD}MANUAL STEP: copy that Desktop file to a separate device, then DELETE it.${C_RESET}"
+      press_enter_to_continue
     fi
-    rm -f "$TMP_PRIVKEY" "$TMP_PRIVKEY.pub" "$TMP_PRIVKEY.full"
+    rm -f "$TMP_PRIVKEY" "$TMP_PUBKEY" "$TMP_FULL"
     check_pass "Public key written to $PUBKEY_FILE"
   fi
 
   echo ""
-  info_msg "Step 3 of 4: Off-box recovery copy"
+  info_msg "Step 3 of 7: Off-box recovery copy"
   echo ""
-  echo "  ${C_BOLD}Strongly recommended.${C_RESET} If this Mac is lost, stolen, or its disk fails,"
-  echo "  the only way to decrypt your backups is the private key. The Keychain"
-  echo "  copy is bound to this Mac. You should keep at least one off-box copy."
+  echo "  ${C_BOLD}Strongly recommended.${C_RESET} If this Mac is lost and you have no off-box copy of"
+  echo "  the private key, your backups are unrecoverable. Make a copy now:"
+  echo "    1. Print to terminal (you copy by hand to USB / password manager / paper)"
+  echo "    2. Skip for now (re-run via: security find-generic-password -s pbox-backup-age -w)"
   echo ""
-  echo "  Options:"
-  echo "    1. Save to another device (USB stick, password manager, home PC)"
-  echo "    2. Print to paper and store in a safe"
-  echo "    3. Skip for now (you can do this any time later)"
-  echo ""
-  prompt_yes_no "Print the private key to this terminal so you can copy it now?" show_key "no"
+  prompt_yes_no "Print the private key now?" show_key "no"
   if [[ "$show_key" == "yes" ]]; then
-    local key
-    key=$(security find-generic-password -s "pbox-backup-age" -w 2>/dev/null || echo "")
+    local key; key=$(security find-generic-password -s "pbox-backup-age" -w 2>/dev/null || echo "")
     if [[ -n "$key" ]]; then
       echo ""
       echo "  ${C_BOLD}── COPY THIS KEY TO A SAFE PLACE ──${C_RESET}"
@@ -100,11 +112,78 @@ run_backups_setup() {
   fi
 
   echo ""
-  info_msg "Step 4 of 4: Install backup LaunchAgents..."
+  info_msg "Step 4 of 7: Install backup scripts to /Users/Shared/pandoras-box-backup-scripts/"
+  local SCRIPTS_DIR="/Users/Shared/pandoras-box-backup-scripts"
+  sudo mkdir -p "$SCRIPTS_DIR"
+  sudo install -o root -g wheel -m 755 "$INSTALL_PATH/scripts/pandoras-box-backup.sh"              "$SCRIPTS_DIR/pandoras-box-backup.sh"
+  sudo install -o root -g wheel -m 755 "$INSTALL_PATH/scripts/pandoras-box-backup-offsite.sh"      "$SCRIPTS_DIR/pandoras-box-backup-offsite.sh"      || true
+  sudo install -o root -g wheel -m 755 "$INSTALL_PATH/scripts/pandoras-box-backup-daily-report.mjs" "$SCRIPTS_DIR/pandoras-box-backup-daily-report.mjs"
+  sudo install -o root -g wheel -m 644 "$INSTALL_PATH/scripts/pandoras-box-backup-recovery-template.md" "$SCRIPTS_DIR/RECOVERY-template.md"
+  check_pass "Scripts installed to $SCRIPTS_DIR"
 
-  # Daily backup at 03:30
-  local DAILY_PLIST="$HOME/Library/LaunchAgents/com.pandoras-box.backup.plist"
-  cat > "/tmp/pbox-backup-daily.plist" <<PLIST
+  echo ""
+  info_msg "Step 5 of 7: Write env file (B2/SMTP optional)"
+  local ENV_FILE="/usr/local/etc/pandoras-box-backup.env"
+  if ! sudo test -f "$ENV_FILE"; then
+    sudo tee "$ENV_FILE" >/dev/null <<ENV
+# pandoras-box-backup.env -- written by setup-backups.sh
+# root:wheel 600. Edit with sudo $EDITOR if you add B2 or SMTP later.
+AGE_PUBKEY_FILE="$PUBKEY_FILE"
+BACKUP_VOL="${PBOX_BACKUP_VOL:-/Users/Shared/pandoras-box-backups}"
+KEEP_DAYS=60
+MIN_BLOB_SIZE_BYTES=$((100 * 1024 * 1024))
+# B2 offsite (opt-in -- set these to enable the offsite LaunchDaemon)
+# B2_KEYID=
+# B2_APPKEY=
+# B2_BUCKET=pandoras-box-backups
+# B2_RETENTION_DAYS=14
+# SMTP daily-report (opt-in -- set these to enable the [OK]/[FAIL] email)
+# SMTP_HOST=
+# SMTP_USER=
+# SMTP_PASS=
+# REPORT_EMAIL_TO=
+ENV
+    sudo chown root:wheel "$ENV_FILE"
+    sudo chmod 600        "$ENV_FILE"
+    check_pass "Env file created at $ENV_FILE (B2 + SMTP commented out)"
+  else
+    info_msg "Env file already exists at $ENV_FILE -- not overwriting."
+  fi
+
+  prompt_yes_no "Configure Backblaze B2 offsite mirroring now?" b2_choice "no"
+  if [[ "$b2_choice" == "yes" ]]; then
+    echo "B2 setup: enter your B2 KeyID, AppKey, and bucket name."
+    read -r -p "  B2 KeyID:   " b2_keyid
+    read -r -s -p "  B2 AppKey:  " b2_appkey; echo
+    read -r -p "  B2 bucket:  " b2_bucket
+    sudo bash -c "{
+      sed -i '' 's|^# B2_KEYID=.*$|B2_KEYID=\"$b2_keyid\"|'                \"$ENV_FILE\"
+      sed -i '' 's|^# B2_APPKEY=.*$|B2_APPKEY=\"$b2_appkey\"|'              \"$ENV_FILE\"
+      sed -i '' 's|^# B2_BUCKET=.*$|B2_BUCKET=\"$b2_bucket\"|'              \"$ENV_FILE\"
+      sed -i '' 's|^# B2_RETENTION_DAYS=.*$|B2_RETENTION_DAYS=14|'          \"$ENV_FILE\"
+    }"
+    check_pass "B2 creds written to $ENV_FILE"
+  fi
+
+  prompt_yes_no "Configure daily [OK]/[FAIL] email report?" smtp_choice "no"
+  if [[ "$smtp_choice" == "yes" ]]; then
+    read -r -p "  SMTP host (e.g. smtp.gmail.com):   " s_host
+    read -r -p "  SMTP user:                          " s_user
+    read -r -s -p "  SMTP password:                      " s_pass; echo
+    read -r -p "  Send to email:                       " s_to
+    sudo bash -c "{
+      sed -i '' 's|^# SMTP_HOST=.*$|SMTP_HOST=\"$s_host\"|'                  \"$ENV_FILE\"
+      sed -i '' 's|^# SMTP_USER=.*$|SMTP_USER=\"$s_user\"|'                  \"$ENV_FILE\"
+      sed -i '' 's|^# SMTP_PASS=.*$|SMTP_PASS=\"$s_pass\"|'                  \"$ENV_FILE\"
+      sed -i '' 's|^# REPORT_EMAIL_TO=.*$|REPORT_EMAIL_TO=\"$s_to\"|'        \"$ENV_FILE\"
+    }"
+    check_pass "SMTP creds written to $ENV_FILE"
+  fi
+
+  echo ""
+  info_msg "Step 6 of 7: Install LaunchDaemons (system) + daily-report LaunchAgent (user)"
+  local DAEMON="/Library/LaunchDaemons/com.pandoras-box.backup.plist"
+  sudo tee "$DAEMON" >/dev/null <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -113,124 +192,130 @@ run_backups_setup() {
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>$INSTALL_PATH/scripts/pbox-backup.sh</string>
+    <string>$SCRIPTS_DIR/pandoras-box-backup.sh</string>
   </array>
+  <key>UserName</key><string>root</string>
+  <key>GroupName</key><string>wheel</string>
   <key>StartCalendarInterval</key>
   <dict>
     <key>Hour</key><integer>3</integer>
     <key>Minute</key><integer>30</integer>
   </dict>
-  <key>StandardOutPath</key><string>/tmp/pbox-backup.log</string>
-  <key>StandardErrorPath</key><string>/tmp/pbox-backup.log</string>
+  <key>StandardOutPath</key><string>/tmp/pandoras-box-backup-daemon.log</string>
+  <key>StandardErrorPath</key><string>/tmp/pandoras-box-backup-daemon.log</string>
+  <key>RunAtLoad</key><false/>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
 </dict>
 </plist>
 PLIST
-  mv "/tmp/pbox-backup-daily.plist" "$DAILY_PLIST"
-  launchctl load "$DAILY_PLIST" 2>/dev/null || true
-  check_pass "Daily backup LaunchAgent installed (03:30)."
+  sudo chown root:wheel "$DAEMON"; sudo chmod 644 "$DAEMON"
+  sudo launchctl bootout system/com.pandoras-box.backup 2>/dev/null || true
+  sudo launchctl bootstrap system "$DAEMON"
+  check_pass "Daily backup LaunchDaemon installed (03:30, root)"
 
-  # Sunday freshness probe at 07:30
-  local PROBE_PLIST="$HOME/Library/LaunchAgents/com.pandoras-box.backup-freshness.plist"
-  cat > "/tmp/pbox-backup-freshness.plist" <<PLIST
+  if [[ "$b2_choice" == "yes" ]]; then
+    local OFFSITE_PLIST="/Library/LaunchDaemons/com.pandoras-box.backup-offsite.plist"
+    sudo tee "$OFFSITE_PLIST" >/dev/null <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <key>Label</key><string>com.pandoras-box.backup-freshness</string>
+  <key>Label</key><string>com.pandoras-box.backup-offsite</string>
   <key>ProgramArguments</key>
   <array>
     <string>/bin/bash</string>
-    <string>$INSTALL_PATH/scripts/pbox-backup-freshness.sh</string>
+    <string>$SCRIPTS_DIR/pandoras-box-backup-offsite.sh</string>
   </array>
+  <key>UserName</key><string>root</string>
+  <key>GroupName</key><string>wheel</string>
   <key>StartCalendarInterval</key>
   <dict>
     <key>Weekday</key><integer>0</integer>
-    <key>Hour</key><integer>7</integer>
-    <key>Minute</key><integer>30</integer>
+    <key>Hour</key><integer>1</integer>
+    <key>Minute</key><integer>0</integer>
   </dict>
-  <key>StandardOutPath</key><string>/tmp/pbox-backup-freshness.log</string>
-  <key>StandardErrorPath</key><string>/tmp/pbox-backup-freshness.log</string>
+  <key>StandardOutPath</key><string>/tmp/pandoras-box-offsite-daemon.log</string>
+  <key>StandardErrorPath</key><string>/tmp/pandoras-box-offsite-daemon.log</string>
+  <key>RunAtLoad</key><false/>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+  </dict>
 </dict>
 </plist>
 PLIST
-  mv "/tmp/pbox-backup-freshness.plist" "$PROBE_PLIST"
-  launchctl load "$PROBE_PLIST" 2>/dev/null || true
-  check_pass "Sunday freshness probe LaunchAgent installed (07:30)."
+    sudo chown root:wheel "$OFFSITE_PLIST"; sudo chmod 644 "$OFFSITE_PLIST"
+    sudo launchctl bootout system/com.pandoras-box.backup-offsite 2>/dev/null || true
+    sudo launchctl bootstrap system "$OFFSITE_PLIST"
+    check_pass "Offsite (B2) LaunchDaemon installed (Sunday 01:00, root)"
+  fi
 
-  # RECOVERY.md (plaintext, OUTSIDE encrypted blob)
-  local BACKUP_VOL="${PBOX_BACKUP_VOL:-/Users/Shared/pandoras-box-backups}"
-  sudo mkdir -p "$BACKUP_VOL"
-  sudo chmod 755 "$BACKUP_VOL"
-  cat > "/tmp/RECOVERY.md" <<RECOVERY
-# Pandoras Box -- Backup Recovery
+  if [[ "$smtp_choice" == "yes" ]]; then
+    local REPORT_PLIST="$HOME/Library/LaunchAgents/com.pandoras-box.backup-daily-report.plist"
+    cat > "/tmp/pandoras-box-backup-daily-report.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.pandoras-box.backup-daily-report</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>$SCRIPTS_DIR/pandoras-box-backup-daily-report.mjs</string>
+  </array>
+  <key>StartCalendarInterval</key>
+  <dict>
+    <key>Hour</key><integer>7</integer>
+    <key>Minute</key><integer>0</integer>
+  </dict>
+  <key>StandardOutPath</key><string>/tmp/pandoras-box-backup-daily-report.log</string>
+  <key>StandardErrorPath</key><string>/tmp/pandoras-box-backup-daily-report.log</string>
+</dict>
+</plist>
+PLIST
+    mv "/tmp/pandoras-box-backup-daily-report.plist" "$REPORT_PLIST"
+    launchctl unload "$REPORT_PLIST" 2>/dev/null || true
+    launchctl load   "$REPORT_PLIST"
+    check_pass "Daily-report LaunchAgent installed (07:00 user)"
+  fi
 
-This file is intentionally plaintext (not encrypted) so you can find it
-without a working Pandoras Box install.
-
-## What you need to recover
-
-1. The encrypted backup blob: \`<DATE>.tar.age\` in this directory
-2. The age private key, in one of these places:
-   - macOS Keychain item \`pbox-backup-age\` (current user)
-   - Off-box copy you made during install (USB stick, paper, etc.)
-   - The Desktop file named \`PBOX-BACKUP-PRIVKEY-DELETE-AFTER-COPYING.txt\`
-     (if you saved one)
-
-## Recovery commands
-
-### 1. Get the private key out of Keychain (if available)
-
-\`\`\`bash
-security find-generic-password -s "pbox-backup-age" -w > ~/key.txt
-\`\`\`
-
-### 2. Decrypt the backup blob
-
-\`\`\`bash
-age -d -i ~/key.txt < <BACKUP_FILE>.tar.age | tar -xf -
-\`\`\`
-
-### 3. Inspect the contents
-
-The tarball contains:
-- \`postgres/\` -- pg_dump files of your CRM databases
-- \`sqlite/\` -- copies of agent memory + knowledge stores
-- \`config/\` -- environment files (encrypted, contain API keys)
-- \`MANIFEST.txt\` -- list of files + sizes + timestamps
-
-### 4. Restore
-
-Restore steps depend on which databases / files you need. Read MANIFEST.txt
-first. For Postgres: \`psql -f postgres/<db>.sql\`. For SQLite: \`cp\` to the
-correct path with the correct ownership.
-
-## Off-box / disaster recovery
-
-If this Mac is gone:
-1. Buy or use another Mac
-2. Install Homebrew + age: \`brew install age\`
-3. Find your off-box private key copy
-4. Decrypt the most recent backup blob with the commands above
-5. Reinstall Pandoras Box on the new Mac, then restore data
-
-If you do not have an off-box private key copy and this Mac is gone, the
-backups are unrecoverable. The Sunday freshness probe is for catching backup
-failures EARLY -- if the probe stops emailing you, investigate immediately.
-
-RECOVERY
-  sudo cp "/tmp/RECOVERY.md" "$BACKUP_VOL/RECOVERY.md"
-  sudo chmod 644 "$BACKUP_VOL/RECOVERY.md"
-  rm -f "/tmp/RECOVERY.md"
-  check_pass "RECOVERY.md written to $BACKUP_VOL"
+  echo ""
+  info_msg "Step 7 of 7: Full Disk Access pre-flight (TCC)"
+  echo ""
+  echo "  ${C_BOLD}macOS Tahoe blocks root daemons from reading ~/Desktop and ~/Documents by default.${C_RESET}"
+  echo "  Without an explicit Full Disk Access grant to /bin/bash, those parts of your backup"
+  echo "  will be empty. Grant FDA now so the first scheduled run is complete:"
+  echo ""
+  echo "    1. System Settings → Privacy & Security → Full Disk Access"
+  echo "    2. Click '+' and add /bin/bash"
+  echo "    3. Make sure the toggle is on"
+  echo ""
+  prompt_yes_no "Open the Full Disk Access pane now?" fda_open "yes"
+  if [[ "$fda_open" == "yes" ]]; then
+    open 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles' || true
+    echo ""
+    echo "  When you have granted FDA to /bin/bash, press Enter to continue."
+    press_enter_to_continue
+  else
+    warn_msg "Skipping FDA grant. Your first backup may have empty Desktop/Documents tarballs. The daily email will show [FAIL] until granted."
+  fi
 
   echo ""
   success_msg "Encrypted backups installed."
   echo ""
-  echo "  Daily backup:        03:30 UK -> $BACKUP_VOL/<DATE>.tar.age"
-  echo "  Sunday probe:        07:30 UK -> /opt/pandoras-box/.backup-freshness.json"
-  echo "  Public key:          $PUBKEY_FILE"
+  echo "  Daily backup:        03:30 UK -> /Users/Shared/pandoras-box-backups/<DATE>.tar.age"
+  [[ "$b2_choice"   == "yes" ]] && echo "  Sunday B2 mirror:    01:00 UK -> Backblaze B2 ($b2_bucket)"
+  [[ "$smtp_choice" == "yes" ]] && echo "  Daily email:         07:00 UK -> $s_to"
+  echo "  Public key:          /usr/local/etc/pandoras-box-backup-pubkey.txt"
   echo "  Private key:         macOS Keychain ('pbox-backup-age')"
-  echo "  Recovery guide:      $BACKUP_VOL/RECOVERY.md"
+  echo "  Env file:            $ENV_FILE (sudo to edit)"
+  echo "  Recovery template:   $SCRIPTS_DIR/RECOVERY-template.md"
+  echo ""
+  echo "  ${C_BOLD}First scheduled run is tonight at 03:30.${C_RESET} To run manually now:"
+  echo "    sudo launchctl kickstart -k system/com.pandoras-box.backup"
   echo ""
   press_enter_to_continue
 }

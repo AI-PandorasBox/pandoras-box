@@ -34,6 +34,9 @@ info() { echo -e "       $*"; }
 # Prerequisites check
 # ---------------------------------------------------------------------------
 check_prereqs() {
+  # _BACKUPS_SUDO_NOTICE_V1
+  echo "  Note: the Encrypted Backups module will request sudo. The rest of the installer is user-only."
+
   local fail=0
 
   # macOS version

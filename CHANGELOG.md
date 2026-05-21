@@ -9,6 +9,72 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+++ b/CHANGELOG.md
+### Changed -- backups module rebuilt (TCC-hardened LaunchDaemon flavour)
+
+The encrypted backups module has been re-architected. The previous user
+LaunchAgent flavour silently failed under macOS Tahoe TCC when reading
+`~/Desktop` and `~/Documents`; backups produced 0-byte tarballs and the
+`latest` symlink was happily updated each night. This release fixes the silent
+failure and adds three operator-visibility features.
+
+**Breaking changes:**
+
+- Daily backup now runs as a root LaunchDaemon (`com.pandoras-box.backup` in
+  `/Library/LaunchDaemons/`). The previous user LaunchAgent
+  (`~/Library/LaunchAgents/com.pandoras-box.backup.plist`) is no longer used.
+- Scripts moved from `$INSTALL_PATH/scripts/` to
+  `/Users/Shared/pandoras-box-backup-scripts/` (root:wheel 755).
+- Env file moved from `$INSTALL_PATH/backups/.env` to
+  `/usr/local/etc/pandoras-box-backup.env` (root:wheel 600).
+- Age public key moved from `$INSTALL_PATH/secrets/age-backup-pubkey.txt` to
+  `/usr/local/etc/pandoras-box-backup-pubkey.txt` (root:wheel 644). Private
+  key in macOS Keychain is unchanged.
+- The installer now requires **sudo** for the backups module. The rest of the
+  installer is unchanged (user-context).
+- The previous Sunday freshness probe (`com.pandoras-box.backup-freshness`)
+  is replaced by a per-component size assertion baked into every nightly run.
+
+**Added:**
+
+- Per-component size assertion. If any component comes back empty, the
+  `latest` symlink is NOT updated. No more silent zero-byte success.
+- Optional daily `[OK]/[FAIL]` email via a user LaunchAgent at 07:00.
+  Configurable during install; SMTP creds in the env file.
+- Optional Backblaze B2 weekly mirror. Configurable during install; 14-day
+  remote retention by default.
+- TCC pre-flight: the installer prompts to grant Full Disk Access to
+  `/bin/bash` (opens the System Settings pane) before the first scheduled
+  run.
+
+**Migration from previous backups install:**
+
+If you ran the previous installer and want to switch:
+
+```bash
+# Unload old user LaunchAgents (if present)
+launchctl unload ~/Library/LaunchAgents/com.pandoras-box.backup.plist 2>/dev/null
+launchctl unload ~/Library/LaunchAgents/com.pandoras-box.backup-freshness.plist 2>/dev/null
+rm -f ~/Library/LaunchAgents/com.pandoras-box.backup*.plist
+
+# Re-run the backups setup with the new flavour
+sudo bash <PBOX_INSTALL_PATH>/lib/setup-backups.sh
+```
+
+Your existing encrypted blobs at `/Users/Shared/pandoras-box-backups/` are NOT
+touched -- the migration only swaps the daemon, scripts, env file, and pubkey
+location. Your Keychain age private key is unchanged.
+
+**Reason for the change:**
+
+Discovered during an internal incident on 2026-05-20 -- a Pandora's Box
+install had been silently producing 0-byte backups since 2026-05-03 because
+TCC was blocking the user LaunchAgent from reading `~/Desktop`. The root
+LaunchDaemon + per-component assertion + daily email together prevent the
+failure mode entirely. The size-assertion catches it on the first run; the
+email surfaces it the next morning.
+
+
 ### Runtime code rollout (v0.4.0-rc1 -- six new module daemons)
 
 Resolves Gap #5 from the v0.3 installer audit. Six modules now ship full runtime code following the canonical 5-step `install.sh` + `runtime/<bin>.mjs` + `runtime/com.pandoras-box.<name>.plist.template` pattern.

@@ -365,8 +365,14 @@ run_system_check() {
 
   # Cron-only services (no HTTP) -- fall back to launchctl-only check.
   _check_cron_service() {
-    local label="$1" pretty="$2" optional="${3:-no}"
-    if launchctl list 2>/dev/null | grep -q "$label"; then
+    local label="$1" pretty="$2" optional="${3:-no}" domain="${4:-user}"
+    local found="no"
+    if [[ "$domain" == "system" ]]; then
+      if launchctl print "system/$label" >/dev/null 2>&1; then found="yes"; fi
+    else
+      if launchctl list 2>/dev/null | grep -q "$label"; then found="yes"; fi
+    fi
+    if [[ "$found" == "yes" ]]; then
       check_pass "$pretty: registered (cron-driven, no HTTP surface)"
     else
       if [[ "$optional" == "yes" ]]; then
@@ -416,7 +422,7 @@ run_system_check() {
   # Cron-only services
   _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.argus"  "Security overseer (Argus)"
   _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.self-improvement" "the Self-Improvement Pipeline" "yes"
-  _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.backup" "Encrypted backups"        "yes"
+  _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.backup" "Encrypted backups"        "yes" "system"
 
   # --- environment checks -------------------------------------------------
   if command -v claude &>/dev/null && claude --print --max-output-tokens 5 "ok" >/dev/null 2>&1; then
@@ -437,7 +443,7 @@ run_system_check() {
     warn_msg "Certificates: not found -- HTTPS connections may not work"
   fi
 
-  if [[ -f "$INSTALL_PATH/secrets/age-backup-pubkey.txt" ]]; then
+  if [[ -f "/usr/local/etc/pandoras-box-backup-pubkey.txt" ]]; then
     check_pass "Backups: encryption key configured"
   else
     info_msg "Backups: not configured (optional)"
