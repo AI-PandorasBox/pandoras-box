@@ -162,6 +162,17 @@ run_module_selection() {
     run_self_improvement_setup
   fi
 
+  # ──── Module: skills library ─────────────────────────────────────────────
+  if offer_module "[OPTIONAL] the Skills Library (reusable skill primitives)" \
+    "Tenant-agnostic skill primitives your agents can invoke. Ships build_board_pack_from_calendar (board-pack PDF from MS365 calendar: per-week pull with resume, xlsx assembly with row-count verify, Chrome-headless PDF). One code path, no per-company logic; add your own skills under the module's skills/ dir." \
+    "The personal-ai module (provides the Node runtime + calendar MCP + exceljs)." \
+    "Free." \
+    "~1 minute" \
+    "no"; then
+    SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST skills-library"
+    run_skills_library_setup
+  fi
+
   # ──── Module: discord relay ──────────────────────────────────────────────
   if offer_module "Discord relay" \
     "Receive and reply to your Personal Assistant via Discord DMs. One-way personal -- only your Discord user can address the bot." \

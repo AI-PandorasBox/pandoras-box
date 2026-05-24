@@ -46,3 +46,4 @@ run_admin_shell_setup() { _run_module_install admin-shell; }
 run_self_improvement_setup()      { _run_module_install self-improvement; }
 run_content_classifier_setup()    { _run_module_install content-classifier; }
 run_docs_server_setup() { _run_module_install docs-server; }
+run_skills_library_setup() { _run_module_install skills-library; }
