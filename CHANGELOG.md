@@ -9,7 +9,28 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
-++ b/CHANGELOG.md
+### Added -- Skills Library module
+
+A new optional module (`modules/skills-library`) ships reusable, tenant-agnostic
+skill primitives any agent can invoke. First skill: `build_board_pack_from_calendar`
+(board-pack PDF from MS365 calendar -- per-week pull with resume, exceljs xlsx
+assembly with row-count verification, Chrome-headless PDF render). The installer
+copies skills to `shared/skills/library/` and preserves operator-specific branding
+presets. Add your own skills under the module's `skills/` dir.
+
+### Added -- Release + commit signing
+
+Commits and tags are SSH-signed and show GitHub's "Verified" badge. Release
+artifacts ship a `SHA256SUMS` manifest + detached `SHA256SUMS.sig`; verify a
+download with `scripts/verify-release.sh` against `scripts/allowed_signers`
+(see `RELEASE-SIGNING.md`).
+
+### Added -- Activation matrix template
+
+`config/agent-activation.template.json` documents the per-agent activation schema
+(modules / subsystem_handles / skills / rules / policies / surfaces / stores, plus
+`requires` dependency maps) with two illustrative agents.
+
 ### Changed -- backups module rebuilt (TCC-hardened LaunchDaemon flavour)
 
 The encrypted backups module has been re-architected. The previous user
