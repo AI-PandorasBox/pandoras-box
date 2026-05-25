@@ -24,10 +24,15 @@ section_header() { echo -e "\n  ${C_BOLD}${C_CYAN}=== $* ===${C_RESET}\n"; }
 error_exit() {
   echo ""
   error_msg "$*"
+  # Record this failure so it lands in the install report. _INSTALL_ISSUE_LOG_V1
+  if command -v pbox_record_issue >/dev/null 2>&1; then
+    pbox_record_issue "1" "${BASH_LINENO[0]:-?}" "error_exit: $*"
+  fi
   echo ""
   echo "  If you are not sure how to fix this:"
   echo "    -  Press the Claude prompt above to ask the install assistant"
   echo "    -  Or open an issue at https://github.com/AI-PandorasBox/pandoras-box/issues"
+  echo "       (attach the sanitised report: ${PBOX_REPORT:-~/Library/Logs/PandorasBox/install-latest.report})"
   echo ""
   exit 1
 }

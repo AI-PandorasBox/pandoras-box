@@ -67,7 +67,7 @@ fi
 
 rm -f "$RCLONE_CONFIG"
 
-# Stamp file for the catch-up wrapper (mirrors the local Zeus behaviour).
+# Stamp file for the catch-up wrapper (mirrors the local backup behaviour).
 if [[ "$STATUS" == "ok" ]]; then
   date -u +%FT%TZ > "$BACKUP_VOL/.last-offsite-success"
 fi

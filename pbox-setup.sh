@@ -5,7 +5,7 @@
 # Version: 0.2.0
 # Platform: macOS 14+ (Sonoma or later)
 # =============================================================================
-set -euo pipefail
+set -Eeuo pipefail   # -E so the install-issue-log ERR trap fires inside functions
 
 # Survive headless contexts (CI runners, cron, ssh -T). bash auto-sets TERM=dumb
 # when there's no tty, which causes `clear` and `tput` to abort with "TERM
@@ -28,6 +28,9 @@ STEP_TOTAL=11
 # core next so the prompt helpers exist, then everything else.)
 source "$LIB_DIR/setup-dry-run.sh"
 source "$LIB_DIR/setup-core.sh"
+# Install-issue logging: persistent transcript + structured issue/fix records +
+# a sanitised, attachable bug report. _INSTALL_ISSUE_LOG_V1
+source "$LIB_DIR/setup-issue-log.sh"
 # If PBOX_DRY_RUN=1, install prompt overrides on top of setup-core.sh.
 if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
   pbox_install_dryrun_prompt_overrides
@@ -65,7 +68,13 @@ source "$LIB_DIR/setup-update-check.sh"
 # Entry point
 # =============================================================================
 main() {
+  # _INSTALL_ISSUE_LOG_V1 -- set up the persistent log + report bundle, then tee
+  # the whole run into it. The ERR trap records each failed step; the EXIT trap
+  # builds the sanitised report and tells the operator where to find it.
+  pbox_issue_log_init
   exec > >(tee -a "$LOG_FILE") 2>&1
+  trap 'pbox_err_trap "$?" "$LINENO" "$BASH_COMMAND"' ERR
+  trap 'pbox_issue_log_finish' EXIT
 
   print_banner
   run_disclaimer_gate

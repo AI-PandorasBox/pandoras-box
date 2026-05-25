@@ -54,7 +54,7 @@ This pulls each file from iCloud back to local disk. Files can be large; expect 
 
 - It installs ~50 LaunchDaemons and LaunchAgents, every one of which does synchronous module loading at startup.
 - Some of these run as macOS service accounts (`mnemosyne`, `argus`, per-company users). LaunchDaemon context cannot complete an on-demand iCloud download — it gets `EAGAIN` and the service exits.
-- The `/opt/pandorasbox` tree is not under iCloud control, but `~/Desktop/ZEUS` (the admin/Zeus tree) is — and that's where deploy scripts, dashboard servers, and the docs site live.
+- The `/opt/pandoras-box` install tree is not under iCloud control, but a copy of this repo cloned into an iCloud-synced location (such as `~/Desktop` or `~/Documents`) can be, and that is where the installer reads scripts, dashboard servers, and the docs site from before staging.
 - Backups (tar + age + B2) silently capture placeholders if any file is dataless at the time of capture.
 
 ## If you've already hit this

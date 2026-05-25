@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-label="Pandora's Box">
+  <rect width="32" height="32" rx="7" fill="#0a0a14"/>
+  <path d="M7 16 L16 20.5 L16 26 L7 21.5 Z" fill="#3a2f6b"/>
+  <path d="M25 16 L16 20.5 L16 26 L25 21.5 Z" fill="#2c2356"/>
+  <path d="M7 16 L16 12 L25 16" fill="none" stroke="#c77dff" stroke-width="2.2" stroke-linejoin="round"/>
+  <circle cx="16" cy="14.5" r="2.4" fill="#FFD700"/>
+  <path d="M8 9.5 L16 6 L24 9.5 L16 13 Z" fill="#7B68EE"/>
+</svg>

@@ -2,65 +2,87 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{{PERSONAL_AI_NAME}}</title>
 <link rel="stylesheet" href="/public/style.css">
 <style>
-  :root {
-    --accent: {{COLOR_ACCENT}};
-    --bg: {{COLOR_BACKGROUND}};
-    --fg: {{COLOR_TEXT}};
-  }
+  :root { --accent: {{COLOR_ACCENT}}; }
 </style>
 <meta name="pbox-voice" content="{{VOICE_ENABLED}}">
 <meta name="pbox-tts" content="{{TTS_ENABLED}}">
 </head>
 <body>
-<aside id="side">
-  <header>
-    <img src="/avatar.gif" alt="" id="side-avatar">
-    <div>
-      <div class="title">{{PERSONAL_AI_NAME}}</div>
-      <div class="sub">{{SYSTEM_NAME}}</div>
-    </div>
-  </header>
-  <div class="actions">
-    <button id="new-conv" class="primary">New chat</button>
-    <button id="show-facts">Facts</button>
-    <button id="show-drops">Drops</button>
-  </div>
-  <nav id="conv-list" aria-label="Conversations"></nav>
-  <footer>
-    <button id="logout">Sign out</button>
-  </footer>
-</aside>
+<!-- chest logo gradients -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="bodyL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f6b"/><stop offset="1" stop-color="#1a1338"/></linearGradient>
+  <linearGradient id="bodyR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2356"/><stop offset="1" stop-color="#140f2c"/></linearGradient>
+  <linearGradient id="lidG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c77dff"/><stop offset="55%" stop-color="#7B68EE"/><stop offset="100%" stop-color="#4b3fa0"/></linearGradient>
+  <linearGradient id="seamG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7B68EE"/><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#c77dff"/></linearGradient>
+  <radialGradient id="lightG" cx="50%" cy="60%" r="60%"><stop offset="0" stop-color="#fff"/><stop offset="40%" stop-color="#9d4edd"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 7 4 3v2H6v-2l4-3z"/><line x1="12" y1="16" x2="12" y2="21"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></symbol>
+</defs></svg>
 
-<main id="chat">
-  <header id="chat-header">
-    <h1 id="conv-title">New chat</h1>
-    <div id="status" class="muted"></div>
-  </header>
-  <section id="messages" aria-live="polite"></section>
-  <form id="composer">
-    <textarea id="input" placeholder="Message {{PERSONAL_AI_NAME}}..." rows="2" autofocus></textarea>
-    <div class="composer-actions">
-      <button type="button" id="mic" hidden>Mic</button>
-      <button type="submit" id="send" class="primary">Send</button>
+<div class="app">
+
+  <div class="mtop">
+    <button class="iconbtn" id="m-menu" aria-label="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+    <div class="mtop-title"><span class="orb sm"><span class="core"></span></span> {{PERSONAL_AI_NAME}}</div>
+    <span style="width:38px"></span>
+  </div>
+
+  <aside id="side">
+    <div class="sbrand">
+      <svg class="logo" viewBox="0 0 64 64" fill="none"><ellipse cx="32" cy="26" rx="13" ry="9" fill="url(#lightG)" opacity=".7"/><path d="M14 30 L32 39 L32 52 L14 44 Z" fill="url(#bodyL)"/><path d="M50 30 L32 39 L32 52 L50 44 Z" fill="url(#bodyR)"/><path d="M14 30 L32 23 L50 30" fill="none" stroke="url(#seamG)" stroke-width="2.6"/><circle cx="32" cy="27" r="2.6" fill="#FFD700"/><path d="M16 19 L32 12 L48 19 L32 26 Z" fill="url(#lidG)"/></svg>
+      <span class="wm">{{SYSTEM_NAME}}</span>
     </div>
-  </form>
-</main>
+    <div class="ident">
+      <span class="orb"><span class="ring"></span><span class="core"></span></span>
+      <div><div class="nm">{{PERSONAL_AI_NAME}}</div><div class="sb">Personal Assistant</div></div>
+    </div>
+    <button id="new-conv" class="primary"><svg class="ic"><use href="#i-plus"/></svg> New chat</button>
+    <div class="quick">
+      <button id="show-facts"><svg class="ic"><use href="#i-pin"/></svg> Facts</button>
+      <button id="show-drops"><svg class="ic"><use href="#i-drop"/></svg> Drops</button>
+    </div>
+    <div class="convlabel">Recent chats</div>
+    <nav id="conv-list" aria-label="Conversations"></nav>
+    <footer><button id="logout">Sign out</button></footer>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main id="chat">
+    <header id="chat-header">
+      <h1 id="conv-title">New chat</h1>
+      <div id="status" class="muted"></div>
+    </header>
+    <section id="messages" aria-live="polite"></section>
+    <form id="composer">
+      <div class="cbox">
+        <textarea id="input" placeholder="Message {{PERSONAL_AI_NAME}}..." rows="1" autofocus></textarea>
+        <button type="button" id="mic" hidden aria-label="Voice"><svg class="ic"><use href="#i-mic"/></svg></button>
+        <button type="submit" id="send" class="primary" aria-label="Send"><svg class="ic"><use href="#i-send"/></svg></button>
+      </div>
+      <div class="hint">{{PERSONAL_AI_NAME}} runs on this Mac and asks before sending anything external.</div>
+    </form>
+  </main>
+</div>
 
 <dialog id="facts-dialog">
-  <header><h2>Important facts</h2><button class="close" data-close>X</button></header>
+  <header><h2>Important facts</h2><button class="close" data-close>&times;</button></header>
   <form id="add-fact-form">
-    <textarea id="new-fact" placeholder="Pin a fact the AI should always remember..." rows="2" required></textarea>
+    <textarea id="new-fact" placeholder="Pin a fact the assistant should always remember..." rows="2" required></textarea>
     <button type="submit" class="primary">Add</button>
   </form>
   <ul id="facts-list"></ul>
 </dialog>
 
 <dialog id="drops-dialog">
-  <header><h2>Drops</h2><button class="close" data-close>X</button></header>
+  <header><h2>Drops</h2><button class="close" data-close>&times;</button></header>
   <form id="add-drop-form">
     <select id="drop-kind">
       <option value="note">Note</option>
@@ -75,6 +97,19 @@
   <ul id="drops-list"></ul>
 </dialog>
 
+<script>
+// drawer (mobile) — does not touch app.js logic
+(function(){
+  var side=document.getElementById('side'), scrim=document.getElementById('scrim'), menu=document.getElementById('m-menu');
+  function open(){side.classList.add('open');scrim.classList.add('show');}
+  function close(){side.classList.remove('open');scrim.classList.remove('show');}
+  menu&&menu.addEventListener('click',open);
+  scrim&&scrim.addEventListener('click',close);
+  // close after picking a chat or starting a new one
+  document.getElementById('conv-list').addEventListener('click',close);
+  document.getElementById('new-conv').addEventListener('click',close);
+})();
+</script>
 <script src="/public/app.js"></script>
 </body>
 </html>

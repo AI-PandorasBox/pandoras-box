@@ -401,7 +401,7 @@ export async function buildBoardPack (input, context) {
 
   try {
     const wb = new ExcelJS.Workbook()
-    wb.creator  = 'Pandoras Box - Muse'
+    wb.creator  = 'Pandoras Box'
     wb.created  = new Date()
     wb.modified = new Date()
 

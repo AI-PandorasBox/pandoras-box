@@ -1,7 +1,7 @@
 // Board pack HTML template -- _SKILL_TENANT_AGNOSTIC_V1
 // Generates print-ready HTML for Chrome headless PDF.
 // Called by skill.mjs Stage 3. Kept in a separate file to avoid template-literal
-// injection issues in patch scripts (AI-MUSE-001 gotcha #8).
+// injection issues in patch scripts.
 //
 // Tenant-agnostic: takes a single `label` string for the cover line. Caller
 // supplies whatever display string they want shown on the PDF.
