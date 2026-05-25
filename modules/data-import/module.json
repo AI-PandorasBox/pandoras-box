@@ -1,0 +1,10 @@
+{
+  "name": "data-import",
+  "version": "0.1.0",
+  "description": "Import existing memories from another assistant into your Personal Assistant.",
+  "kind": "config",
+  "requires": ["module:personal-ai"],
+  "cost_estimate": "free (local)",
+  "uninstall": "uninstall.sh",
+  "author": "AI-PandorasBox"
+}
