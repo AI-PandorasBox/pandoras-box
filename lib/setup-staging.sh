@@ -29,7 +29,12 @@ run_staging() {
   #   3) "v0.0.0-dev" fallback so the file always exists
   if [[ ! -f "$SETUP_DIR/VERSION" ]]; then
     local detected
-    if detected=$(cd "$SETUP_DIR" 2>/dev/null && git describe --tags --abbrev=0 2>/dev/null); then
+    if detected=$(cd "$SETUP_DIR" 2>/dev/null && git describe --tags --abbrev=0 2>/dev/null) && [[ -n "$detected" ]]; then
+      echo "$detected" > "$SETUP_DIR/VERSION"
+    elif detected=$(curl -fsSL "https://api.github.com/repos/AI-PandorasBox/pandoras-box/releases/latest" 2>/dev/null \
+                    | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/') && [[ -n "$detected" ]]; then
+      # clone-from-dev (no reachable tag): anchor to the latest PUBLISHED release
+      # so `pbox-update --check-only` + the weekly notifier actually fire.
       echo "$detected" > "$SETUP_DIR/VERSION"
     else
       echo "v0.0.0-dev" > "$SETUP_DIR/VERSION"

@@ -158,7 +158,7 @@ function renderHtml(s) {
   }).join('') || `<div class="srv"><span class="p">No services yet</span><span class="v warn">run the installer</span></div>`
   const mods = s.installed.map(m => `<span>${esc(m.name)}</span>`).join('') || `<span class="off">none installed</span>`
   const upd = s.update && s.update.available
-    ? `<div class="card update"><h4>Update available</h4><div class="vs"><span class="o">installed ${esc(s.update.current||'?')}</span> &rarr; <span class="n">latest ${esc(s.update.latest||'?')}</span></div><p>Backed up automatically before applying, one-command rollback.</p><a class="btn-gold" href="#">Review &amp; update</a></div>`
+    ? `<div class="card update"><h4>Update available</h4><div class="vs"><span class="o">installed ${esc(s.update.current||'?')}</span> &rarr; <span class="n">latest ${esc(s.update.latest||'?')}</span></div><p>Verified by SHA256, backed up automatically before applying, one-command rollback.</p><p style="font-size:11.5px;color:var(--muted);margin-bottom:6px">In Terminal, run:</p><code class="cmd">pbox-update --apply</code></div>`
     : `<div class="card update upToDate"><h4>Up to date</h4><div class="vs">${esc((s.update&&s.update.current)||'')} is the latest release.</div></div>`
 
   return `<!doctype html><html lang="en"><head>
@@ -200,6 +200,7 @@ nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoratio
 .update{border:1px solid rgba(255,215,0,.35);background:linear-gradient(150deg,rgba(255,215,0,.06),var(--elev))}.update h4{color:var(--gold);border-color:rgba(255,215,0,.25)}.update.upToDate{border-color:var(--rule)}.update.upToDate h4{color:var(--green)}
 .update .vs{font-family:var(--mono);font-size:12.5px;margin:4px 0 12px}.update .vs .o{color:var(--muted)}.update .vs .n{color:var(--gold)}.update p{font-size:12.5px;color:var(--muted);margin-bottom:14px}
 .btn-gold{display:inline-block;font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;background:var(--gold);color:#1a1400;text-decoration:none}
+.cmd{display:block;font-family:var(--mono);font-size:12.5px;background:var(--bg-deep);border:1px solid var(--rule);border-radius:7px;padding:9px 11px;color:var(--gold)}
 .meta{font-family:var(--mono);font-size:11px;color:var(--muted);padding-bottom:40px}.meta a{color:var(--cyan)}
 @media(max-width:920px){nav{display:none}.duo{grid-template-columns:1fr}.cols{grid-template-columns:1fr}}
 </style></head><body>
@@ -257,6 +258,7 @@ const server = http.createServer(async (req, res) => {
   try {
     if (url.pathname === '/api/health') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify({ok:true,time:new Date().toISOString()})); return }
     if (url.pathname === '/api/status') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(s, null, 2)); return }
+    if (url.pathname === '/api/update-status') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(readUpdateStatus() || { available: false })); return }
     if (url.pathname === '/') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderHtml(s)); return }
     res.writeHead(404, {'content-type':'text/plain'}); res.end('not found')
   } catch (e) { res.writeHead(500); res.end(`error: ${e.message}`) }

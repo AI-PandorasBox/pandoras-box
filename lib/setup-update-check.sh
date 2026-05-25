@@ -26,6 +26,14 @@ run_update_check_setup() {
   local update_script="$INSTALL_PATH/scripts/pbox-update.sh"
   [[ -x "$update_script" ]] || { warn_msg "pbox-update.sh missing or non-executable; skipping Layer 3."; return 0; }
 
+  # Put pbox-update on the operator's PATH so `pbox-update --check-only|--apply`
+  # works from any terminal, not just the full $INSTALL_PATH/scripts path.
+  if sudo ln -sf "$update_script" /usr/local/bin/pbox-update 2>/dev/null; then
+    ok "pbox-update is on your PATH (try: pbox-update --check-only)"
+  else
+    info_msg "pbox-update lives at $update_script (could not symlink to /usr/local/bin)"
+  fi
+
   local plist_dir="$HOME/Library/LaunchAgents"
   local plist="$plist_dir/com.pandoras-box.update-check.plist"
   local label="com.pandoras-box.update-check"
