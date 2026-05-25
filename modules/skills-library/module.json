@@ -1,0 +1,10 @@
+{
+  "name": "skills-library",
+  "version": "1.0.0",
+  "description": "Reusable skill primitives the assistant and agents can call.",
+  "kind": "skill-pack",
+  "requires": [],
+  "cost_estimate": "free",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

@@ -1,0 +1,12 @@
+{
+  "name": "offline-kb",
+  "version": "1.0.0",
+  "description": "Local vector knowledge base (offline embeddings + search).",
+  "kind": "service",
+  "ports": [8489],
+  "launchdaemon_label": "${PREFIX}.offline-kb",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

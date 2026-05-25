@@ -1,0 +1,12 @@
+{
+  "name": "dashboard",
+  "version": "1.0.0",
+  "description": "Localhost status + control dashboard for your install.",
+  "kind": "service",
+  "ports": [8181],
+  "launchdaemon_label": "${PREFIX}.dashboard",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

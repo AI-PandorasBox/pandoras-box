@@ -1,0 +1,12 @@
+{
+  "name": "terminal",
+  "version": "1.0.0",
+  "description": "Browser-based terminal for the operator.",
+  "kind": "service",
+  "ports": [8484],
+  "launchdaemon_label": "${PREFIX}.terminal",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

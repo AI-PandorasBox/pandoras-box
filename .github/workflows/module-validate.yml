@@ -1,0 +1,31 @@
+name: Module validate
+
+# Validates every modules/<name>/ against modules/MODULE-SPEC.md:
+# required files, module.json schema, port-collision, security advisories.
+# Uses no GitHub event input in run: steps (static command only).
+
+on:
+  push:
+    paths:
+      - 'modules/**'
+      - 'scripts/validate-modules.mjs'
+      - '.github/workflows/module-validate.yml'
+  pull_request:
+    paths:
+      - 'modules/**'
+      - 'scripts/validate-modules.mjs'
+
+permissions:
+  contents: read
+
+jobs:
+  module-validate:
+    name: Validate modules against MODULE-SPEC
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate modules
+        run: node scripts/validate-modules.mjs

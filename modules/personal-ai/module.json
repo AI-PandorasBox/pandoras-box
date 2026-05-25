@@ -1,0 +1,12 @@
+{
+  "name": "personal-ai",
+  "version": "1.0.0",
+  "description": "Browser-first personal AI assistant (localhost-first, passphrase-gated).",
+  "kind": "service",
+  "ports": [8800],
+  "launchdaemon_label": "${PREFIX}.personal-ai",
+  "requires": [],
+  "cost_estimate": "Anthropic API usage (operator's key)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

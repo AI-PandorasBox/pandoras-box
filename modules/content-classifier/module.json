@@ -1,0 +1,12 @@
+{
+  "name": "content-classifier",
+  "version": "1.0.0",
+  "description": "Localhost content-safety classification sidecar.",
+  "kind": "service",
+  "ports": [8487],
+  "launchdaemon_label": "${PREFIX}.content-classifier",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}
