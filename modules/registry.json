@@ -16,6 +16,7 @@
     { "name": "self-improvement",   "tier": "core",     "kind": "config",  "purpose": "Scheduled self-improvement pipeline." },
     { "name": "admin-shell",        "tier": "official", "kind": "config",  "purpose": "Operator shell helpers." },
     { "name": "data-import",        "tier": "official", "kind": "config",  "purpose": "Import memories from another assistant into your assistant." },
+    { "name": "deck-builder",       "tier": "official", "kind": "config",  "purpose": "Build .pptx decks from a JSON spec (local, python-pptx)." },
     { "name": "vector-kb",          "tier": "official", "kind": "service", "purpose": "Local semantic memory (vector store) via Ollama embeddings." },
     { "name": "vault-graph",        "tier": "official", "kind": "service", "purpose": "Renders memory as a browsable, linked Obsidian vault (graph view)." },
     { "name": "mail-google",        "tier": "official", "kind": "config",  "purpose": "Gmail / Google Workspace mail." },

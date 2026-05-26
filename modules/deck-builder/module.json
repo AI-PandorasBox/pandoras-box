@@ -1,0 +1,10 @@
+{
+  "name": "deck-builder",
+  "version": "0.1.0",
+  "description": "Build PowerPoint decks (.pptx) from a simple JSON spec, locally via python-pptx.",
+  "kind": "config",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "uninstall.sh",
+  "author": "AI-PandorasBox"
+}
