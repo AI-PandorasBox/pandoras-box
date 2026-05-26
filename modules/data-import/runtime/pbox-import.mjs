@@ -39,8 +39,8 @@ for (let i = 0; i < args.length; i++) {
 
 function printHelp() {
   console.log(`pbox-import -- import memories into your Personal Assistant.
-  --from <claude-desktop|openclaw|hermes|jsonl|markdown>
-  --path <file>            source export to read (local file only)
+  --from <obsidian|claude-desktop|openclaw|hermes|jsonl|markdown>
+  --path <file|vault>      source file, or an Obsidian vault folder (--from obsidian)
   --store <dir>            dir containing memory.db (default: auto-detect)
   --tag <name>             label this batch (enables --undo); default: timestamp
   --dry-run                preview only, write nothing
@@ -105,6 +105,38 @@ function fromJsonl(p) {
 function fromMarkdown(p) {
   return readText(p).split(/\n\s*\n/).map(b => b.trim()).filter(Boolean).map(text => ({ text }))
 }
+// Obsidian vault: walk a folder of .md notes; one fact per note (title + body),
+// frontmatter stripped, [[wikilinks]] flattened, ![[embeds]] dropped.
+function noteToRecord(fp, raw) {
+  let body = raw.replace(/^---\n[\s\S]*?\n---\n?/, '')          // YAML frontmatter
+                .replace(/!\[\[[^\]]*\]\]/g, '')                 // embeds
+                .replace(/\[\[([^\]|]+)\|([^\]]+)\]\]/g, '$2')   // [[target|alias]] -> alias
+                .replace(/\[\[([^\]]+)\]\]/g, '$1')              // [[target]] -> target
+                .trim()
+  if (!body) return null
+  const title = path.basename(fp).replace(/\.md$/i, '')
+  return { text: `${title}: ${body}` }
+}
+function fromObsidian(p) {
+  if (fs.statSync(p).isFile()) { const r = noteToRecord(p, readText(p)); return r ? [r] : [] }
+  const skip = new Set(['.obsidian', '.trash', '.git', 'node_modules'])
+  const out = []
+  const walk = (d) => {
+    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+      if (out.length >= opt.limit) return
+      if (e.isDirectory()) { if (!skip.has(e.name)) walk(path.join(d, e.name)) }
+      else if (e.isFile() && /\.md$/i.test(e.name)) {
+        const fp = path.join(d, e.name)
+        let st; try { st = fs.statSync(fp) } catch { continue }
+        if (st.size > 1024 * 1024) continue   // skip notes > 1 MB
+        const r = noteToRecord(fp, readText(fp))
+        if (r) out.push(r)
+      }
+    }
+  }
+  walk(p)
+  return out
+}
 function stub(name) {
   die(`the "${name}" native format is not yet wired (its export shape needs confirming).\n` +
       `  For now: export your ${name} data to JSONL (one {"text": "..."} per line) and run:\n` +
@@ -115,10 +147,11 @@ let records
 switch (opt.from) {
   case 'jsonl': records = fromJsonl(opt.path); break
   case 'markdown': records = fromMarkdown(opt.path); break
+  case 'obsidian': records = fromObsidian(opt.path); break
   case 'claude-desktop': stub('claude-desktop'); break
   case 'openclaw': stub('openclaw'); break
   case 'hermes': stub('hermes'); break
-  default: die(`unknown --from "${opt.from}" (claude-desktop|openclaw|hermes|jsonl|markdown)`)
+  default: die(`unknown --from "${opt.from}" (obsidian|claude-desktop|openclaw|hermes|jsonl|markdown)`)
 }
 
 // normalise: trim, cap length, drop empties, cap count

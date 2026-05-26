@@ -25,7 +25,11 @@ pbox-import --from jsonl --path my-export.jsonl --dry-run
 # Import (label the batch so you can undo it):
 pbox-import --from jsonl --path my-export.jsonl --tag old-assistant
 
-# Markdown notes:
+# Obsidian vault (a whole folder of notes):
+pbox-import --from obsidian --path ~/Documents/MyVault --dry-run
+pbox-import --from obsidian --path ~/Documents/MyVault --tag vault
+
+# A single Markdown file:
 pbox-import --from markdown --path notes.md
 
 # Undo a batch:
@@ -37,7 +41,11 @@ pbox-import --undo old-assistant
 - `jsonl` — one JSON object per line (or a JSON array). Recognised fields:
   `text` / `content` / `message` / `body`, or `role` + `content`. Plain text
   lines work too.
-- `markdown` — split into blocks (paragraphs / sections), one fact each.
+- `obsidian` — point `--path` at your vault folder; recurses every `.md` note
+  (skipping `.obsidian/`, `.trash/`), strips YAML frontmatter, flattens
+  `[[wikilinks]]`, drops `![[embeds]]`, and imports **one fact per note**
+  (`<title>: <body>`). Notes over 1 MB are skipped; `--limit` caps the count.
+- `markdown` — a single `.md` file split into blocks, one fact each.
 - `claude-desktop`, `openclaw`, `hermes` — native parsers are stubbed pending
   confirmation of each tool's export shape. For now, export those to JSONL and
   use `--from jsonl`. (Tracked as the v1.1 follow-up.)
