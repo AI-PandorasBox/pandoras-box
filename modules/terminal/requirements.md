@@ -5,4 +5,4 @@
 | core | Required |
 | Port | 8282 (configurable) |
 | Network | Local network only |
-| Auth | PBKDF2-hashed passphrase stored in /opt/pandoras-box/.zeus-auth |
+| Auth | PBKDF2-hashed passphrase stored in /opt/pandoras-box/.pbox-auth |

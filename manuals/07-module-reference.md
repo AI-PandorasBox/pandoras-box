@@ -260,11 +260,11 @@ accuracy may be lower without the Offline Knowledge Library.
 
 **Prerequisites:**
 - core
-- Qdrant or compatible vector store running and accessible
-- ollama recommended (reduces embedding API costs)
+- Docker (runs the Kiwix container)
+- a ZIM pack (the installer offers Wikipedia and others)
 
-**Monthly cost impact:** Minor additional API usage for embedding generation; Qdrant
-can run locally at no cost
+**Monthly cost impact:** None -- Kiwix runs locally over offline ZIM files.
+(For semantic recall over your own content, see the vector-kb module.)
 
 ---
 

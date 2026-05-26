@@ -290,9 +290,9 @@ Administrator builds it for you.
 
 ### How it works
 
-1. Create a project with a plain description of what you want:
+1. Ask your admin agent to start a project, in plain language:
    ```
-   bash /Users/[admin-user]/Desktop/ZEUS/scripts/zeus-project-create.sh "Description of what you want"
+   Create a project: <describe what you want, e.g. a weekly sales summary emailed every Friday at 17:00>.
    ```
    For example: "Add a weekly sales summary that emails me every Friday at 17:00"
 
@@ -316,7 +316,7 @@ At each stage you may be asked to confirm or provide input.
 ### Checking project status
 
 Open the Admin Shell, navigate to the Projects tab. Or view the project files directly
-in `ZEUS/store/projects/`.
+in the Projects tab.
 
 ---
 

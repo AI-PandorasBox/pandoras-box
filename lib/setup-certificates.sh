@@ -83,7 +83,7 @@ SANEOF
   echo ""
 
   # Write a renewal script
-  sudo bash -c "cat > '$INSTALL_PATH/zeus-renew-cert.sh'" <<RENEWEOF
+  sudo bash -c "cat > '$INSTALL_PATH/pbox-renew-cert.sh'" <<RENEWEOF
 #!/usr/bin/env bash
 # Renew the Pandoras Box server certificate
 # Run this if you see certificate expiry errors
@@ -95,10 +95,10 @@ openssl x509 -req -days 3650 \
   -out server.crt \
   -extfile san.ext -extensions SAN 2>/dev/null
 echo "Done. Restart your services for the new certificate to take effect."
-echo "  sudo launchctl stop com.pandoras-box.muse && sudo launchctl start com.pandoras-box.muse"
+echo "  sudo launchctl stop com.pandoras-box.personal-ai && sudo launchctl start com.pandoras-box.personal-ai"
 RENEWEOF
-  sudo chmod 700 "$INSTALL_PATH/zeus-renew-cert.sh"
-  check_pass "Certificate renewal script created: $INSTALL_PATH/zeus-renew-cert.sh"
+  sudo chmod 700 "$INSTALL_PATH/pbox-renew-cert.sh"
+  check_pass "Certificate renewal script created: $INSTALL_PATH/pbox-renew-cert.sh"
 
   press_enter_to_continue
 }

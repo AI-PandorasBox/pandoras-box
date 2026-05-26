@@ -142,7 +142,7 @@ refresh job may not be running.
 
 **Re-run the token refresh manually:**
 ```
-node /Users/[admin-user]/Desktop/ZEUS/scripts/ms365-reauth-[company].mjs
+bash modules/mail-ms365/install.sh   # re-run to re-authenticate
 ```
 
 Replace `[company]` with the relevant company slug (e.g. `company-a`).
@@ -229,7 +229,7 @@ Full instructions for all devices: `docs/certificates.md`
 **If the certificate has expired:**
 Run the renewal script on the server:
 ```
-sudo bash /opt/pandoras-box/zeus-renew-cert.sh
+sudo bash /opt/pandoras-box/pbox-renew-cert.sh
 ```
 Then reinstall the certificate on your devices.
 

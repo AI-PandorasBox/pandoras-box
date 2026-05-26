@@ -55,7 +55,7 @@ This is optional for personal use but recommended if you've added family-member 
 ## What Pandora's Box uses Tailscale for
 
 - **Personal AI mobile interface** — phone or tablet reaches `https://<mac-hostname>:8888/`.
-- **WatchMuse companion app** (if installed) — talks to mnemosyne over Tailscale on port 8888.
+- **watch companion app** (if installed) — talks to personal-ai over Tailscale on port 8888.
 - **Operator remote access** — if you're away from the Mac, you can still reach the admin agent CLI via SSH over Tailscale.
 
 ## What Tailscale doesn't do
@@ -67,7 +67,7 @@ This is optional for personal use but recommended if you've added family-member 
 ## Troubleshooting
 
 - **Phone can't reach the Mac hostname.** Verify both devices show as "Connected" in the Tailscale admin console. Open the Tailscale app on each and confirm green status.
-- **`https://mac-mini.tailnet-name.ts.net:8888` returns a certificate warning.** Expected on first connect — the Pandora's Box mnemosyne UI uses a self-signed certificate by default. Tap "Show details" then "Visit this website" to accept and pin the cert. The installer can also provision a Tailscale-issued HTTPS cert if you'd like to skip this — see the certs setup step.
+- **`https://mac-mini.tailnet-name.ts.net:8888` returns a certificate warning.** Expected on first connect — the Pandora's Box personal-ai UI uses a self-signed certificate by default. Tap "Show details" then "Visit this website" to accept and pin the cert. The installer can also provision a Tailscale-issued HTTPS cert if you'd like to skip this — see the certs setup step.
 
 ## Revoking access
 

@@ -320,18 +320,19 @@ queue. Draft posts are reviewed via the Personal AI interface before publishing.
 
 **Status:** Optional
 
-Knowledge RAG (Retrieval-Augmented Generation) -- a vector store for document retrieval.
+Offline encyclopedia search -- a local **Kiwix** server over ZIM packs
+(Wikipedia, Wiktionary, Stack Overflow), with a thin search wrapper so agents
+can look things up with no internet connection.
 
-the Offline Knowledge Library indexes documents from configured sources and enables agents to retrieve relevant
-context before generating responses. Reduces hallucination for domain-specific queries.
-Requires a running Qdrant instance (local or remote).
+> For **semantic memory** (embeddings / vector recall), see the **vector-kb**
+> module, not this one. offline-kb is reference content, not your memory.
 
 **Prerequisites:**
 - `core`
-- Qdrant or compatible vector store running and accessible
-- `ollama` recommended (reduces embedding API costs)
+- Docker (runs the Kiwix container)
+- a ZIM pack (the installer offers Wikipedia and others)
 
-**Depends on:** core (ollama recommended)
+**Depends on:** core (Docker)
 
 ---
 

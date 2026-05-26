@@ -2,7 +2,7 @@
 // Stages: 1=calendar pull (retry+checkpoint), 2=xlsx assembly (row-count verify), 3=PDF (Chrome headless)
 // Resumable: pass run_id from a previous call to skip already-completed weeks.
 //
-// Tenant-agnostic: caller supplies mailbox_tenant_key (any valid mnemosyne MCP
+// Tenant-agnostic: caller supplies mailbox_tenant_key (any valid personal-ai MCP
 // tenant) and output_label (used only for file naming + the PDF cover line).
 // The skill does not interpret either string. Activation-layer concern.
 
@@ -13,7 +13,7 @@ import { randomBytes } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 
-// Resolve exceljs from mnemosyne's node_modules (skill runs inside mnemosyne process)
+// Resolve exceljs from personal-ai's node_modules (skill runs inside personal-ai process)
 const _require = createRequire((process.env.PBOX_NODE_BASE || '/opt/pandoras-box/personal-ai/runtime') + '/package.json')
 const ExcelJS = _require('exceljs')
 
@@ -291,7 +291,7 @@ export async function buildBoardPack (input, context) {
   }
 
   if (!mailbox_tenant_key || typeof mailbox_tenant_key !== 'string') {
-    return { error: 'mailbox_tenant_key is required (string). Caller supplies the mnemosyne MCP tenant key directly, e.g. "my-mailbox", "team-calendar".' }
+    return { error: 'mailbox_tenant_key is required (string). Caller supplies the personal-ai MCP tenant key directly, e.g. "my-mailbox", "team-calendar".' }
   }
 
   const label    = safeLabel(_resolvedOutputLabel || mailbox_tenant_key)

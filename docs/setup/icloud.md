@@ -1,6 +1,6 @@
 # macOS iCloud Drive — disable Desktop & Documents sync before install
 
-**One-line summary:** Pandora's Box installs into `~/Desktop` and `/opt/pandorasbox`. If iCloud Drive's "Desktop & Documents Folders" feature is enabled, macOS may evict your installed files to iCloud and replace them with placeholder stubs — silently breaking every service that imports them.
+**One-line summary:** Pandora's Box installs into `~/Desktop` and `/opt/pandoras-box`. If iCloud Drive's "Desktop & Documents Folders" feature is enabled, macOS may evict your installed files to iCloud and replace them with placeholder stubs — silently breaking every service that imports them.
 
 This is the single most important pre-install setting on macOS. Do it before you run `pbox-setup.sh`.
 
@@ -9,8 +9,8 @@ This is the single most important pre-install setting on macOS. Do it before you
 macOS's "Optimize Mac Storage" feature is paired with iCloud Drive's Desktop & Documents folder sync. When local disk pressure rises, macOS evicts older files to iCloud and leaves only metadata behind. On disk the file looks the right size and date — but its content lives in iCloud only. macOS calls these files **dataless**:
 
 ```
-$ ls -lO ~/Desktop/ZEUS/scripts/zeus-lite-server.mjs
--rwxr-xr-x  qwerty  staff  compressed,dataless  115077  ...
+$ ls -lO ~/Desktop/my-project/server.mjs
+-rwxr-xr-x  [user]  staff  compressed,dataless  115077  ...
 ```
 
 Node.js (and other servers) hit `EAGAIN` when their `readFileSync` calls try to materialise a dataless file from a background context. The service exits with code 1, no stack trace, no useful log line:
@@ -53,7 +53,7 @@ This pulls each file from iCloud back to local disk. Files can be large; expect 
 ## Why Pandora's Box is especially exposed
 
 - It installs ~50 LaunchDaemons and LaunchAgents, every one of which does synchronous module loading at startup.
-- Some of these run as macOS service accounts (`mnemosyne`, `argus`, per-company users). LaunchDaemon context cannot complete an on-demand iCloud download — it gets `EAGAIN` and the service exits.
+- Some of these run as macOS service accounts (`personal-ai`, `argus`, per-company users). LaunchDaemon context cannot complete an on-demand iCloud download — it gets `EAGAIN` and the service exits.
 - The `/opt/pandoras-box` install tree is not under iCloud control, but a copy of this repo cloned into an iCloud-synced location (such as `~/Desktop` or `~/Documents`) can be, and that is where the installer reads scripts, dashboard servers, and the docs site from before staging.
 - Backups (tar + age + B2) silently capture placeholders if any file is dataless at the time of capture.
 
@@ -61,7 +61,7 @@ This pulls each file from iCloud back to local disk. Files can be large; expect 
 
 1. Stop. Don't restart services repeatedly — each restart is a chance for the OS to silently re-evict.
 2. Disable Desktop & Documents folder sync and Optimize Mac Storage as above.
-3. Materialise everything: `find ~/Desktop ~/Documents /opt/pandorasbox -type f -flags +dataless -exec cat {} + > /dev/null`
+3. Materialise everything: `find ~/Desktop ~/Documents /opt/pandoras-box -type f -flags +dataless -exec cat {} + > /dev/null`
 4. Verify dataless count is 0.
 5. Take a fresh backup. The previous backups in B2 / Time Machine while the eviction was active are likely corrupted — treat any backup taken during the affected window as suspect.
 
