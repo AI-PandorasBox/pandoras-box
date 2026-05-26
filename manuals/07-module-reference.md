@@ -302,6 +302,21 @@ Slack relay. Receive messages from Slack and reply via the same workspace.
 
 ---
 
+### relay-telegram
+
+**Status:** Optional
+
+Telegram bot relay. Talk to your assistant from Telegram via a long-poll bot,
+with an optional single-chat allowlist so only your chat ID is accepted.
+
+**Prerequisites:**
+- core
+- Telegram bot token (from @BotFather)
+
+**Monthly cost impact:** None
+
+---
+
 ### relay-whatsapp
 
 **Status:** Optional
@@ -415,6 +430,126 @@ for scheduling.
 
 **Monthly cost impact:** ElevenLabs voice synthesis cost depends on script length (typically
 £1-5 per video); Anthropic API for script generation (£2-5 per video)
+
+---
+
+## Memory and Knowledge Modules
+
+---
+
+### vector-kb
+
+**Status:** Optional
+
+Local semantic memory. Embeds your text with a local Ollama model and stores the
+vectors in SQLite for nearest-neighbour search, so the assistant can recall the
+most relevant past context for a query.
+
+**Prerequisites:** core, ollama (for embeddings)
+
+**Monthly cost impact:** None (local embeddings, local store)
+
+---
+
+### vault-graph
+
+**Status:** Optional
+
+Renders the assistant's memory as a browsable, linked Obsidian vault on disk,
+viewable in Obsidian's graph view.
+
+**Prerequisites:** core, personal-ai
+
+**Monthly cost impact:** None
+
+---
+
+### data-import
+
+**Status:** Optional
+
+Imports existing memories from another assistant (Markdown notes, vault exports
+and similar) into your Personal Assistant's memory.
+
+**Prerequisites:** core, personal-ai
+
+**Monthly cost impact:** None
+
+---
+
+## Security Modules
+
+---
+
+### content-classifier
+
+**Status:** Recommended
+
+Localhost content-safety classification sidecar. Screens outbound content across
+six axes (prompt safety, response safety, response refusal, prompt toxicity,
+response toxicity, jailbreak detection). Ships in shadow mode (observe-only) for
+a calibration period before it blocks anything.
+
+**Prerequisites:** core, Python 3.11+ (Homebrew-managed)
+
+**Monthly cost impact:** None (local CPU inference)
+
+---
+
+### argus
+
+**Status:** Always installed
+
+The Security Overseer daemon. Reviews every pending job (via the
+content-classifier) before execution, quarantines repeat offenders, and runs a
+weekly dependency scan. Cannot be instructed by any agent.
+
+**Prerequisites:** core, content-classifier
+
+**Monthly cost impact:** None
+
+---
+
+## Additional Specialist Modules
+
+---
+
+### browser-actions
+
+**Status:** Optional
+
+Interactive browser surface for agents (navigate, read, click, type, screenshot)
+via a local Playwright browser. Gated by an access token, a domain allowlist
+(deny by default), and an audit log.
+
+**Prerequisites:** core, Playwright (installed by the module)
+
+**Monthly cost impact:** None
+
+---
+
+### deck-builder
+
+**Status:** Optional
+
+Builds PowerPoint decks (.pptx) from a simple JSON spec, locally via python-pptx.
+
+**Prerequisites:** core, Python 3.11+ with python-pptx
+
+**Monthly cost impact:** None
+
+---
+
+### skills-library
+
+**Status:** Optional
+
+Reusable skill primitives the assistant and company agents can call (for example,
+building a board pack from a calendar). Add your own under the module's skills dir.
+
+**Prerequisites:** core
+
+**Monthly cost impact:** None
 
 ---
 
