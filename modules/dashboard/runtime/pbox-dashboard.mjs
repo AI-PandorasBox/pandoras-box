@@ -82,7 +82,7 @@ function launchctlList() {
 }
 
 async function probeHttp(env) {
-  const keys = ['PORT','DASHBOARD_PORT','DOCS_PORT','MUSE_PORT','PERSONAL_AI_PORT',
+  const keys = ['PORT','DASHBOARD_PORT','DOCS_PORT','PERSONAL_AI_PORT',
                 'TERMINAL_PORT','ADMIN_LITE_PORT','CONTENT_CLASSIFIER_PORT',
                 'OFFLINE_KB_PORT','VECTOR_KB_PORT','MEDIA_PRODUCTION_PORT','SELF_IMPROVEMENT_PORT']
   let port = null

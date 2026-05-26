@@ -100,7 +100,7 @@ Each service writes to a log file in `/tmp/`. The naming pattern is:
 /tmp/pandoras-box-[company]-mail.log         -- mail agent
 /tmp/pandoras-box-[company]-calendar.log     -- calendar agent
 /tmp/pandoras-box-[company]-files.log        -- files agent
-/tmp/pandoras-box-muse.log                   -- personal assistant
+/tmp/pandoras-box-personal-ai.log                   -- personal assistant
 /tmp/pandoras-box-argus.log                  -- security overseer
 ```
 

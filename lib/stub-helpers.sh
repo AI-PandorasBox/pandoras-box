@@ -57,7 +57,7 @@ stub_validate_slug() {
   for d in "$INSTALL_PATH"/*/; do
     local name=$(basename "$d")
     case "$name" in
-      argus|muse|scripts|certs|secrets|assets|store|logs|*-conductor|*-mail|*-calendar|*-files|*-voice) continue ;;
+      argus|personal-ai|scripts|certs|secrets|assets|store|logs|*-conductor|*-mail|*-calendar|*-files|*-voice) continue ;;
     esac
     if [[ -f "$d/.env" ]]; then
       echo "    - $name"

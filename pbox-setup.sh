@@ -394,9 +394,9 @@ run_system_check() {
 
   # Personal Assistant -- always installed
   _check_http_service \
-    "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.muse" \
+    "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.personal-ai" \
     "Personal Assistant" \
-    "$INSTALL_PATH/muse/.env" "MUSE_PORT" "8800"
+    "$INSTALL_PATH/personal-ai/.env" "PERSONAL_AI_PORT" "8800"
 
   # Dashboard (if installed)
   _check_http_service \

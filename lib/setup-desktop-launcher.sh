@@ -21,7 +21,7 @@ run_desktop_launcher_setup() {
   local hostname="${TAILSCALE_HOSTNAME:-pandoras-box.local}"
   local DASHBOARD_URL="https://${hostname}:8181"
   local TERMINAL_URL="https://${hostname}:8282"
-  local MUSE_URL="https://${hostname}:${MUSE_PORT:-8800}"
+  local PA_URL="https://${hostname}:${PERSONAL_AI_PORT:-8800}"
 
   _make_launcher() {
     local name="$1"
@@ -47,7 +47,7 @@ EOF
 
   _make_launcher "Pandoras Box -- Dashboard" "$DASHBOARD_URL"
   _make_launcher "Pandoras Box -- Terminal"  "$TERMINAL_URL"
-  _make_launcher "Pandoras Box -- Assistant" "$MUSE_URL"
+  _make_launcher "Pandoras Box -- Assistant" "$PA_URL"
 
   echo ""
   info_msg "Note: the first time you click a launcher, macOS may ask if you trust"

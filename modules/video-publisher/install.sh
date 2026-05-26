@@ -52,7 +52,7 @@ YOUTUBE_CLIENT_SECRET=$YT_CLIENT_SECRET
 YOUTUBE_CHANNEL_ID=$YT_CHANNEL_ID
 VIDEO_OUTPUT_DIR=$VIDEO_DIR/output
 VIDEO_QUEUE_DIR=$VIDEO_DIR/queue
-ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_API_KEY=' "$INSTALL_PATH/muse/.env" 2>/dev/null | cut -d= -f2 || echo "")
+ANTHROPIC_API_KEY=$(grep '^ANTHROPIC_API_KEY=' "$INSTALL_PATH/personal-ai/.env" 2>/dev/null | cut -d= -f2 || echo "")
 ENVEOF
 sudo chmod 600 "$VIDEO_ENV"
 ok "Video publisher config written"

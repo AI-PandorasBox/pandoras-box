@@ -34,7 +34,7 @@ A two-company installation:
   argus/
     argus.mjs
     store/
-  muse/
+  personal-ai/
     conductor.mjs
     store/
   company-a/                         # Base dir (node_modules + creds)

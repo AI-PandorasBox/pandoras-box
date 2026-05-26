@@ -23,10 +23,10 @@ run_personal_ai_setup() {
   echo ""
 
   # Core Personal AI choices first
-  local MUSE_PORT MUSE_DISPLAY_NAME
-  prompt_with_default "Personal Assistant port (default fine)" "8800" MUSE_PORT
-  prompt_with_default "Display name for your assistant" "Assistant" MUSE_DISPLAY_NAME
-  export MUSE_PORT MUSE_DISPLAY_NAME
+  local PERSONAL_AI_PORT PERSONAL_AI_NAME
+  prompt_with_default "Personal Assistant port (default fine)" "8800" PERSONAL_AI_PORT
+  prompt_with_default "Display name for your assistant" "Assistant" PERSONAL_AI_NAME
+  export PERSONAL_AI_PORT PERSONAL_AI_NAME
 
   echo ""
   info_msg "Now offering optional add-ons. Each is independent."
@@ -69,7 +69,7 @@ run_obsidian_setup() {
   if [[ "$o_choice" != "yes" ]]; then
     info_msg "Skipping Obsidian. The Personal Assistant still works -- it just"
     info_msg "won't have access to your notes/journal."
-    export MUSE_OBSIDIAN_VAULT=""
+    export PERSONAL_AI_OBSIDIAN_VAULT=""
     return 0
   fi
 
@@ -141,11 +141,11 @@ EOF
   prompt_yes_no "Index the existing vault now (full-text search build)?" idx_now "yes"
   if [[ "$idx_now" == "yes" ]]; then
     info_msg "Vault indexing runs in the background after install completes."
-    info_msg "Track progress: tail -f /tmp/muse-vault-index.log"
+    info_msg "Track progress: tail -f /tmp/personal-ai-vault-index.log"
   fi
 
-  export MUSE_OBSIDIAN_VAULT="$vault_path"
-  export MUSE_OBSIDIAN_WRITABLE="$vault_writable_folder"
+  export PERSONAL_AI_OBSIDIAN_VAULT="$vault_path"
+  export PERSONAL_AI_OBSIDIAN_WRITABLE="$vault_writable_folder"
   echo ""
   success_msg "Obsidian vault connected."
   echo ""
