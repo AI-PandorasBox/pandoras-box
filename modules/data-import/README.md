@@ -32,6 +32,10 @@ pbox-import --from obsidian --path ~/Documents/MyVault --tag vault
 # A single Markdown file:
 pbox-import --from markdown --path notes.md
 
+# Into the semantic vector store (vector-kb module) instead of / as well as facts:
+pbox-import --from obsidian --path ~/Documents/MyVault --target kb
+pbox-import --from obsidian --path ~/Documents/MyVault --target both
+
 # Undo a batch:
 pbox-import --undo old-assistant
 ```
@@ -62,5 +66,5 @@ pbox-import --undo old-assistant
 
 - Native Claude Desktop / OpenClaw / Hermes adapters once their export formats
   are confirmed.
-- Optional `--target kb` to chunk + embed into the offline-kb vector store.
+- `--target kb|both` (DONE) embeds imports into the **vector-kb** module.
 - Import chats as conversations (not only facts).

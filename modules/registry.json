@@ -15,6 +15,7 @@
     { "name": "self-improvement",   "tier": "core",     "kind": "config",  "purpose": "Scheduled self-improvement pipeline." },
     { "name": "admin-shell",        "tier": "official", "kind": "config",  "purpose": "Operator shell helpers." },
     { "name": "data-import",        "tier": "official", "kind": "config",  "purpose": "Import memories from another assistant into your assistant." },
+    { "name": "vector-kb",          "tier": "official", "kind": "service", "purpose": "Local semantic memory (vector store) via Ollama embeddings." },
     { "name": "mail-google",        "tier": "official", "kind": "config",  "purpose": "Gmail / Google Workspace mail." },
     { "name": "mail-ms365",         "tier": "official", "kind": "config",  "purpose": "Microsoft 365 mail." },
     { "name": "calendar",           "tier": "official", "kind": "config",  "purpose": "Calendar capability." },

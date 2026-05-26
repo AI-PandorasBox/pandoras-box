@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Offline encyclopedia search (Kiwix: Wikipedia/Wiktionary/StackOverflow ZIM packs).",
   "kind": "service",
-  "ports": [8489],
+  "ports": [8090],
   "launchdaemon_label": "${PREFIX}.offline-kb",
   "requires": [],
   "cost_estimate": "free (local)",

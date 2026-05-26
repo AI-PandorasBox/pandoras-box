@@ -42,6 +42,7 @@ function printHelp() {
   --from <obsidian|claude-desktop|openclaw|hermes|jsonl|markdown>
   --path <file|vault>      source file, or an Obsidian vault folder (--from obsidian)
   --store <dir>            dir containing memory.db (default: auto-detect)
+  --target facts|kb|both   facts = assistant memory (default); kb = vector-kb semantic memory
   --tag <name>             label this batch (enables --undo); default: timestamp
   --dry-run                preview only, write nothing
   --limit N                cap records (default ${MAX_RECORDS_DEFAULT})
@@ -61,20 +62,28 @@ function resolveMemoryDb() {
 }
 const MEMORY_DB = resolveMemoryDb()
 const IMPORTS_DIR = path.join(path.dirname(MEMORY_DB), 'imports')
+// vector-kb sink (localhost only -- no external egress)
+const VECTOR_KB_URL = (process.env.VECTOR_KB_URL || 'http://127.0.0.1:8486').replace(/\/$/, '')
+if (!/^https?:\/\/(127\.0\.0\.1|localhost)(:\d+)?(\/|$)/.test(VECTOR_KB_URL)) die('VECTOR_KB_URL must be localhost (no external egress)')
 
 // ---- undo ----
 if (opt.undo) {
   const man = path.join(IMPORTS_DIR, opt.undo + '.json')
   if (!fs.existsSync(man)) die(`no import batch "${opt.undo}" (looked for ${man})`)
   const m = JSON.parse(fs.readFileSync(man, 'utf8'))
-  if (!fs.existsSync(MEMORY_DB)) die(`memory.db not found at ${MEMORY_DB}`)
-  const db = new DatabaseSync(MEMORY_DB)
-  const del = db.prepare('DELETE FROM important_facts WHERE id = ?')
   let n = 0
-  for (const id of (m.ids || [])) { try { del.run(id); n++ } catch {} }
-  db.close()
+  const factIds = [].concat(m.facts || [], m.ids || [])   // m.ids = older manifest format
+  if (factIds.length && fs.existsSync(MEMORY_DB)) {
+    const db = new DatabaseSync(MEMORY_DB)
+    const del = db.prepare('DELETE FROM important_facts WHERE id = ?')
+    for (const id of factIds) { try { del.run(id); n++ } catch {} }
+    db.close()
+  }
+  for (const id of (m.kb || [])) {
+    try { await fetch(`${VECTOR_KB_URL}/item?id=${id}`, { method: 'DELETE' }); n++ } catch {}
+  }
   fs.rmSync(man)
-  console.log(`Removed ${n} imported facts from batch "${opt.undo}".`)
+  console.log(`Removed ${n} imported memories from batch "${opt.undo}".`)
   process.exit(0)
 }
 
@@ -168,22 +177,40 @@ for (const r of records.slice(0, 3)) console.log('  - ' + r.text.replace(/\s+/g,
 
 if (opt.dryRun) { console.log(`\n[dry-run] nothing written. Re-run without --dry-run to import into ${MEMORY_DB}.`); process.exit(0) }
 
-// ---- write into memory.db (important_facts), tracked for undo ----
-if (opt.target !== 'facts') die(`--target "${opt.target}" not supported in v1 (only "facts")`)
+// ---- write to the chosen store(s), tracked for undo ----
+const doFacts = opt.target === 'facts' || opt.target === 'both'
+const doKb = opt.target === 'kb' || opt.target === 'both'
+if (!doFacts && !doKb) die(`--target "${opt.target}" must be facts | kb | both`)
+
 fs.mkdirSync(IMPORTS_DIR, { recursive: true })
 const tag = (opt.tag || new Date().toISOString().replace(/[:.]/g, '').slice(0, 15)).replace(/[^A-Za-z0-9_-]/g, '')
 const manPath = path.join(IMPORTS_DIR, tag + '.json')
 if (fs.existsSync(manPath)) die(`batch "${tag}" already exists; choose another --tag or --undo it first.`)
+const manifest = { tag, from: opt.from, source: opt.path, target: opt.target, at: new Date().toISOString(), facts: [], kb: [] }
 
-const db = new DatabaseSync(MEMORY_DB)
-db.prepare('CREATE TABLE IF NOT EXISTS important_facts (id INTEGER PRIMARY KEY AUTOINCREMENT, fact TEXT NOT NULL, created_at INTEGER, source_message_id INTEGER)').run()
-const ins = db.prepare('INSERT INTO important_facts (fact, created_at, source_message_id) VALUES (?, ?, NULL)')
-const ids = []
-const now = Date.now()
-for (const r of records) { const res = ins.run(r.text, now); ids.push(Number(res.lastInsertRowid)) }
-db.close()
+if (doFacts) {
+  const db = new DatabaseSync(MEMORY_DB)
+  db.prepare('CREATE TABLE IF NOT EXISTS important_facts (id INTEGER PRIMARY KEY AUTOINCREMENT, fact TEXT NOT NULL, created_at INTEGER, source_message_id INTEGER)').run()
+  const ins = db.prepare('INSERT INTO important_facts (fact, created_at, source_message_id) VALUES (?, ?, NULL)')
+  const now = Date.now()
+  for (const r of records) manifest.facts.push(Number(ins.run(r.text, now).lastInsertRowid))
+  db.close()
+}
 
-fs.writeFileSync(manPath, JSON.stringify({ tag, from: opt.from, source: opt.path, count: ids.length, ids, at: new Date().toISOString() }, null, 2))
+if (doKb) {
+  const payload = records.map(r => ({ text: r.text, source: opt.from }))
+  for (let i = 0; i < payload.length; i += 100) {
+    const chunk = payload.slice(i, i + 100)
+    let res
+    try { res = await fetch(`${VECTOR_KB_URL}/ingest`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ items: chunk }) }) }
+    catch (e) { die(`could not reach vector-kb at ${VECTOR_KB_URL} (install + start the vector-kb module first): ${e.message}`) }
+    if (!res.ok) die(`vector-kb /ingest returned ${res.status}`)
+    const j = await res.json()
+    if (Array.isArray(j.ids)) manifest.kb.push(...j.ids)
+  }
+}
+
+fs.writeFileSync(manPath, JSON.stringify(manifest, null, 2))
 fs.chmodSync(manPath, 0o600)
-console.log(`\nImported ${ids.length} memories into ${MEMORY_DB} (batch "${tag}").`)
+console.log(`\nImported ${manifest.facts.length} fact(s) + ${manifest.kb.length} vector(s) (batch "${tag}").`)
 console.log(`Undo any time with:  pbox-import --undo ${tag}`)
