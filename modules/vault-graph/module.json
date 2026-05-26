@@ -1,0 +1,11 @@
+{
+  "name": "vault-graph",
+  "version": "0.1.0",
+  "description": "Renders the assistant's memory as a browsable, linked Obsidian vault on disk (graph view).",
+  "kind": "service",
+  "launchdaemon_label": "${PREFIX}.vault-graph",
+  "requires": ["module:personal-ai"],
+  "cost_estimate": "free (local)",
+  "uninstall": "uninstall.sh",
+  "author": "AI-PandorasBox"
+}
