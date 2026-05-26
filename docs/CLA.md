@@ -11,7 +11,7 @@ By signing this agreement, you (the "Contributor") agree to the following terms 
 ## 1. Definitions
 
 - **Project** means Pandora's Box, as published in the `AI-PandorasBox/pandoras-box` repository on GitHub.
-- **Project Maintainers** means the individuals and the IP-holding entity, Hope Inside Limited (UK), who are responsible for accepting Contributions.
+- **Project Maintainers** means the individuals and the IP-holding entity, Hope Inside Limited (UK company number 17228483), who are responsible for accepting Contributions.
 - **Contribution** means any work of authorship intentionally submitted to the Project by you, including code, documentation, designs, configuration files, and any other material.
 - **Submit** means any form of electronic, verbal, or written communication sent to the Project, including but not limited to pull requests, issues, discussions, and direct messages.
 

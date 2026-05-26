@@ -18,7 +18,7 @@ Once finalised, the IP framework is intended to take the following form:
 
 | Asset | Intended owner |
 |---|---|
-| Source code in this repository | Hope Inside Limited (UK) — licensed publicly under Apache 2.0 |
+| Source code in this repository | Hope Inside Limited (UK company number 17228483) — licensed publicly under Apache 2.0 |
 | "Pandora's Box" word mark and logo marks | Same holding entity — see [TRADEMARK.md](TRADEMARK.md) |
 | Domain `ai-pandorasbox.co.uk` | Same holding entity |
 | Published documentation, hero imagery, screenshots, marketing copy | Same holding entity, licensed under Creative Commons (specific variant TBD) |
