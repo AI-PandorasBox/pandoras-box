@@ -44,7 +44,7 @@ else
     done
   fi
   SALT=$(openssl rand -hex 16)
-  HASH=$(/usr/local/bin/node -e "const c=require('crypto'); process.stdout.write(c.pbkdf2Sync('$PIN','$SALT',200000,32,'sha256').toString('hex'))")
+  HASH=$("$NODE_BIN" -e "const c=require('crypto'); process.stdout.write(c.pbkdf2Sync('$PIN','$SALT',200000,32,'sha256').toString('hex'))")
   sudo bash -c "cat > '$AL_ENV'" <<ENVEOF
 ADMIN_LITE_PORT=$AL_PORT
 ADMIN_LITE_BIND=$AL_BIND

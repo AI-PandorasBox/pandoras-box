@@ -263,7 +263,7 @@ PLIST
   <key>Label</key><string>com.pandoras-box.backup-daily-report</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
+    <string>${PBOX_NODE_BIN:-/usr/local/bin/node}</string>
     <string>$SCRIPTS_DIR/pandoras-box-backup-daily-report.mjs</string>
   </array>
   <key>StartCalendarInterval</key>

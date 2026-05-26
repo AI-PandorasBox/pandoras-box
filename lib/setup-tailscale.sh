@@ -20,7 +20,7 @@ run_tailscale_setup() {
 
   if command -v tailscale &>/dev/null && tailscale status &>/dev/null 2>&1; then
     local ts_hostname
-    ts_hostname=$(tailscale status --json 2>/dev/null | /usr/local/bin/node -e \
+    ts_hostname=$(tailscale status --json 2>/dev/null | "${PBOX_NODE_BIN:-$(command -v node)}" -e \
       "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d.Self?.DNSName?.replace(/\\.$/,'') || '')" 2>/dev/null || echo "")
     if [[ -n "$ts_hostname" ]]; then
       check_pass "Tailscale: running ($ts_hostname)"
@@ -65,7 +65,7 @@ run_tailscale_setup() {
   while [[ $attempts -lt 10 ]]; do
     if tailscale status &>/dev/null 2>&1; then
       local ts_hostname
-      ts_hostname=$(tailscale status --json 2>/dev/null | /usr/local/bin/node -e \
+      ts_hostname=$(tailscale status --json 2>/dev/null | "${PBOX_NODE_BIN:-$(command -v node)}" -e \
         "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d.Self?.DNSName?.replace(/\\.$/,'') || '')" 2>/dev/null || echo "")
       if [[ -n "$ts_hostname" ]]; then
         check_pass "Tailscale: connected ($ts_hostname)"
@@ -85,7 +85,7 @@ run_tailscale_setup() {
     echo "  Then press Return to try again."
     press_enter_to_continue
     local ts_hostname
-    ts_hostname=$(tailscale status --json 2>/dev/null | /usr/local/bin/node -e \
+    ts_hostname=$(tailscale status --json 2>/dev/null | "${PBOX_NODE_BIN:-$(command -v node)}" -e \
       "const d=JSON.parse(require('fs').readFileSync('/dev/stdin','utf8'));console.log(d.Self?.DNSName?.replace(/\\.$/,'') || '')" 2>/dev/null || echo "")
     if [[ -n "$ts_hostname" ]]; then
       check_pass "Tailscale: connected ($ts_hostname)"

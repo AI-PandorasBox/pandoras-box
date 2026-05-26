@@ -44,7 +44,7 @@ else
     [[ -z "$PASS" ]] && fail "Empty passphrase"
   fi
   SALT=$(openssl rand -hex 16)
-  HASH=$(/usr/local/bin/node -e "const c=require('crypto'); process.stdout.write(c.pbkdf2Sync('$PASS','$SALT',200000,32,'sha256').toString('hex'))")
+  HASH=$("$NODE_BIN" -e "const c=require('crypto'); process.stdout.write(c.pbkdf2Sync('$PASS','$SALT',200000,32,'sha256').toString('hex'))")
   sudo bash -c "cat > '$TERM_ENV'" <<ENVEOF
 TERMINAL_PORT=$TERM_PORT
 TERMINAL_BIND=$TERM_BIND

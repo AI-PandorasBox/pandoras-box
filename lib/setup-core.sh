@@ -178,7 +178,7 @@ write_plist() {
   <string>$label</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
+    <string>${PBOX_NODE_BIN:-/usr/local/bin/node}</string>
     <string>$program</string>
   </array>
   <key>UserName</key>

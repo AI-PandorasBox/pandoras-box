@@ -9,6 +9,24 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed -- macOS-portability bugs found by a clean-room VM install
+
+A clean-room install in a fresh macOS VM (no Homebrew, no prior state) surfaced
+two bugs that never showed on the development machine:
+
+- **BSD `sed` in-place edit.** `stub-helpers.sh` used `sed -i''` (glued empty
+  suffix), which on macOS/BSD `sed` consumes the next argument as the backup
+  suffix and mis-parses the filename as the script. This aborted the `.env`
+  credential write for every relay + mail module (`mail-google`, `mail-ms365`,
+  `relay-discord`, `relay-slack`, `relay-telegram`, `relay-whatsapp`). Fixed to
+  the macOS-correct `sed -i '' ...` form.
+- **Hardcoded `/usr/local/bin/node`.** `admin-lite` and `terminal` hardcoded the
+  Intel-Homebrew node path when hashing the PIN/passphrase, breaking on Apple
+  Silicon (`/opt/homebrew/bin/node`) and any custom Node location; both now use
+  the already-discovered `$NODE_BIN`. The bootstrap + backup LaunchDaemon plists,
+  the Tailscale hostname probe, and the backup runtime script likewise no longer
+  assume `/usr/local/bin/node` (they use `$PBOX_NODE_BIN` / a resolver).
+
 ### Added -- Skills Library module
 
 A new optional module (`modules/skills-library`) ships reusable, tenant-agnostic
