@@ -216,6 +216,20 @@ function loadImportantFacts() {
   return rows.map(r => r.fact)
 }
 
+// Semantic recall from the vector-kb module (localhost, best-effort). If the
+// module is not installed/reachable, recall is simply empty. _VECTOR_RECALL_V1
+const VECTOR_KB_URL = (process.env.VECTOR_KB_URL || 'http://127.0.0.1:8486').replace(/\/$/, '')
+async function recallMemories(query) {
+  if (!query) return []
+  try {
+    const r = await fetch(`${VECTOR_KB_URL}/search?q=${encodeURIComponent(String(query).slice(0, 500))}&k=5`,
+      { signal: AbortSignal.timeout(2500) })
+    if (!r.ok) return []
+    const j = await r.json()
+    return (j.results || []).filter(x => x.score > 0.3).map(x => x.text)
+  } catch { return [] }
+}
+
 let AnthropicCtor = null
 async function getAnthropic() {
   if (AnthropicCtor) return AnthropicCtor
@@ -224,14 +238,17 @@ async function getAnthropic() {
   return AnthropicCtor
 }
 
-function buildSystemPrompt() {
+function buildSystemPrompt(recalled = []) {
   const facts = loadImportantFacts()
   const factsBlock = facts.length
     ? '\n\nUser facts pinned as important:\n' + facts.map(f => '- ' + f).join('\n')
     : ''
+  const recallBlock = recalled.length
+    ? '\n\nRelevant memories (semantic recall):\n' + recalled.map(f => '- ' + f).join('\n')
+    : ''
   return `You are ${THEME.PERSONAL_AI_NAME}, a personal AI assistant running on the operator's machine. ` +
     `Be concise, accurate, and useful. Avoid filler. Never invent facts about the operator -- ` +
-    `if you do not know, say so.${factsBlock}`
+    `if you do not know, say so.${factsBlock}${recallBlock}`
 }
 
 async function callClaude({ history, userContent, stream = false }) {
@@ -244,10 +261,11 @@ async function callClaude({ history, userContent, stream = false }) {
     if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content })
   }
   messages.push({ role: 'user', content: userContent })
+  const recalled = await recallMemories(userContent)
   const opts = {
     model: MODEL,
     max_tokens: 2048,
-    system: buildSystemPrompt(),
+    system: buildSystemPrompt(recalled),
     messages,
   }
   if (stream) return client.messages.stream(opts)
