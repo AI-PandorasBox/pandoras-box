@@ -21,7 +21,7 @@
 //   7. Graceful SIGTERM/SIGINT closes DBs, flushes audit log, disconnects relay.
 
 import { DatabaseSync } from 'node:sqlite'
-import { existsSync, mkdirSync, appendFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, appendFileSync, writeFileSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import http from 'node:http'
 import crypto from 'node:crypto'
@@ -62,6 +62,30 @@ const CONDUCTOR_BIND   = process.env.CONDUCTOR_HTTP_BIND || '127.0.0.1'
 const JOB_POLL_MS      = parseInt(process.env.JOB_POLL_MS || '3000', 10)
 const HEARTBEAT_MS     = parseInt(process.env.HEARTBEAT_MS || '15000', 10)
 const AGENT_DISPLAY    = process.env.AGENT_DISPLAY_NAME || COMPANY_SLUG
+
+// _ACTIVATION_MATRIX_V1 -- enforce per-agent activation from shared/agent-activation.json.
+// Keyed by AGENT_ACTIVATION_KEY (default COMPANY_SLUG). Absent file/entry => allow all.
+const AGENT_KEY = process.env.AGENT_ACTIVATION_KEY || COMPANY_SLUG
+const TASKTYPE_MODULE = { mail: 'mail', calendar: 'calendar', files: 'files', voice: 'voice-agent' }
+let ACTIVATION = null
+function loadActivation () {
+  try {
+    const all = JSON.parse(readFileSync(path.join(INSTALL_PATH, 'shared', 'agent-activation.json'), 'utf8'))
+    const entry = all[AGENT_KEY]
+    if (entry && Array.isArray(entry.modules_active)) {
+      ACTIVATION = entry
+      log('info', 'activation matrix loaded', { agent: AGENT_KEY, modules_active: entry.modules_active })
+    } else {
+      log('info', 'activation matrix: no entry for this agent; allowing all', { agent: AGENT_KEY })
+    }
+  } catch { log('info', 'activation matrix: none present; allowing all') }
+}
+function moduleActive (taskType) {
+  if (!ACTIVATION) return true                 // no matrix -> allow all (back-compat)
+  const mod = TASKTYPE_MODULE[taskType]
+  if (!mod) return true                        // non-task types (general) are not module-gated
+  return ACTIVATION.modules_active.includes(mod)
+}
 
 if (!process.env.ANTHROPIC_API_KEY) {
   // Allowed: SDK may fall back to macOS Keychain. Warn only.
@@ -304,6 +328,15 @@ async function handleInbound ({ channelRef, messageId, text, source }) {
     taskType,
     bytes: cleanText.length,
   })
+
+  // Activation-matrix gate: reject task-types whose module is not active for this agent.
+  if (!moduleActive(taskType)) {
+    const mod = TASKTYPE_MODULE[taskType]
+    updateJobStatus(jobId, 'REJECTED', { reviewer_note: `module '${mod}' not active for this agent (activation matrix)` })
+    insertEvent(jobId, 'reviewed', 'activation-matrix', { decision: 'rejected', reason: 'module-not-active', module: mod })
+    auditWrite({ event: 'activation_blocked', jobId, taskType, module: mod })
+    return { jobId, taskType, conductorRef, blocked: true }
+  }
 
   if (!CONTENT_CLASSIFIER_INSTALLED) {
     // Auto-approve: single-operator deployment with no review layer.
@@ -760,6 +793,8 @@ process.on('uncaughtException',  (err) => log('error', 'uncaughtException',  { e
   })
   auditWrite({ event: 'conductor_start', relay: RELAY_TYPE || 'browser-default' })
   writeHeartbeat()
+
+  loadActivation()
 
   try {
     activeRelay = await startRelay()
