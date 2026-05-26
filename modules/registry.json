@@ -28,6 +28,7 @@
     { "name": "personal-sensor",    "tier": "official", "kind": "config",  "purpose": "Personal sensor / watch layer." },
     { "name": "relay-slack",        "tier": "official", "kind": "config",  "purpose": "Slack relay." },
     { "name": "relay-discord",      "tier": "official", "kind": "config",  "purpose": "Discord relay." },
-    { "name": "relay-whatsapp",     "tier": "official", "kind": "config",  "purpose": "WhatsApp relay." }
+    { "name": "relay-whatsapp",     "tier": "official", "kind": "config",  "purpose": "WhatsApp relay." },
+    { "name": "relay-telegram",     "tier": "official", "kind": "config",  "purpose": "Telegram bot relay (long-poll, single-chat allowlist)." }
   ]
 }

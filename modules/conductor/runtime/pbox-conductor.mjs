@@ -639,17 +639,74 @@ async function startBrowserDefaultRelay () {
   }
 }
 
+// Telegram long-poll relay. No SDK -- the Bot API is plain HTTPS. Optional
+// TELEGRAM_CHAT_ID restricts the bot to a single chat (recommended).
+async function startTelegramRelay () {
+  const token = process.env.TELEGRAM_BOT_TOKEN
+  if (!token) die('RELAY_TYPE=telegram but TELEGRAM_BOT_TOKEN not set')
+  const allowChatId = (process.env.TELEGRAM_CHAT_ID || '').trim()
+  const API = `https://api.telegram.org/bot${token}`
+  let running = true
+  let offset = 0
+
+  async function tg (method, body) {
+    const r = await fetch(`${API}/${method}`, {
+      method: 'POST', headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body || {}),
+    })
+    return r.json()
+  }
+
+  async function poll () {
+    while (running) {
+      try {
+        const res = await fetch(`${API}/getUpdates?timeout=30&offset=${offset}`, { signal: AbortSignal.timeout(40000) })
+        const data = await res.json()
+        if (!data.ok) { await new Promise(r => setTimeout(r, 3000)); continue }
+        for (const u of data.result || []) {
+          offset = u.update_id + 1
+          const msg = u.message
+          if (!msg || !msg.text) continue
+          const chatId = String(msg.chat.id)
+          if (allowChatId && chatId !== allowChatId) continue   // auth: only the allowed chat
+          try {
+            await tg('sendChatAction', { chat_id: chatId, action: 'typing' })
+            await handleInbound({ channelRef: `telegram/${chatId}`, messageId: String(msg.message_id), text: msg.text, source: 'telegram' })
+          } catch (e) { log('error', 'telegram inbound error', { error: e.message }) }
+        }
+      } catch (e) {
+        if (running) { log('warn', 'telegram poll error', { error: e.message }); await new Promise(r => setTimeout(r, 3000)) }
+      }
+    }
+  }
+  poll()
+  log('info', 'telegram relay ready', { allowlisted: !!allowChatId })
+
+  return {
+    name: 'telegram',
+    async send (channelRef, text) {
+      const chatId = channelRef.includes('/') ? channelRef.split('/')[1] : channelRef
+      const MAX = 4000   // Telegram message cap is 4096
+      for (let i = 0; i < text.length; i += MAX) {
+        await tg('sendMessage', { chat_id: chatId, text: text.slice(i, i + MAX) })
+      }
+    },
+    async shutdown () { running = false },
+  }
+}
+
 async function startRelay () {
   switch (RELAY_TYPE) {
     case 'discord':   return startDiscordRelay()
     case 'slack':     return startSlackRelay()
     case 'whatsapp':  return startWhatsappRelay()
+    case 'telegram':  return startTelegramRelay()
     case '':
     case 'browser':
     case 'browser-default':
       return startBrowserDefaultRelay()
     default:
-      die(`Unknown RELAY_TYPE=${RELAY_TYPE} (expected: discord, slack, whatsapp, or unset)`)
+      die(`Unknown RELAY_TYPE=${RELAY_TYPE} (expected: discord, slack, whatsapp, telegram, or unset)`)
   }
 }
 
