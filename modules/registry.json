@@ -19,6 +19,7 @@
     { "name": "deck-builder",       "tier": "official", "kind": "config",  "purpose": "Build .pptx decks from a JSON spec (local, python-pptx)." },
     { "name": "vector-kb",          "tier": "official", "kind": "service", "purpose": "Local semantic memory (vector store) via Ollama embeddings." },
     { "name": "vault-graph",        "tier": "official", "kind": "service", "purpose": "Renders memory as a browsable, linked Obsidian vault (graph view)." },
+    { "name": "browser-actions",    "tier": "official", "kind": "service", "purpose": "Interactive browser surface for agents (Playwright; token + allowlist + audit)." },
     { "name": "mail-google",        "tier": "official", "kind": "config",  "purpose": "Gmail / Google Workspace mail." },
     { "name": "mail-ms365",         "tier": "official", "kind": "config",  "purpose": "Microsoft 365 mail." },
     { "name": "calendar",           "tier": "official", "kind": "config",  "purpose": "Calendar capability." },

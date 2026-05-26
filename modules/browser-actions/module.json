@@ -1,0 +1,12 @@
+{
+  "name": "browser-actions",
+  "version": "0.1.0",
+  "description": "Interactive browser surface for agents (navigate/read/click/type/screenshot) via local Playwright; token + domain allowlist + audit.",
+  "kind": "service",
+  "ports": [8483],
+  "launchdaemon_label": "${PREFIX}.browser-actions",
+  "requires": [],
+  "cost_estimate": "free (local headless Chromium)",
+  "uninstall": "uninstall.sh",
+  "author": "AI-PandorasBox"
+}
