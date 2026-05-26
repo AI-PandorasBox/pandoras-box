@@ -1,7 +1,7 @@
 {
   "name": "offline-kb",
   "version": "1.0.0",
-  "description": "Local vector knowledge base (offline embeddings + search).",
+  "description": "Offline encyclopedia search (Kiwix: Wikipedia/Wiktionary/StackOverflow ZIM packs).",
   "kind": "service",
   "ports": [8489],
   "launchdaemon_label": "${PREFIX}.offline-kb",

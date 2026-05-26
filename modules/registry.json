@@ -7,7 +7,7 @@
     { "name": "dashboard",          "tier": "core",     "kind": "service", "purpose": "Localhost status + control dashboard." },
     { "name": "docs-server",        "tier": "core",     "kind": "service", "purpose": "Serves the operator docs site." },
     { "name": "personal-ai",        "tier": "core",     "kind": "service", "purpose": "Browser-first personal assistant." },
-    { "name": "offline-kb",         "tier": "core",     "kind": "service", "purpose": "Local vector knowledge base." },
+    { "name": "offline-kb",         "tier": "core",     "kind": "service", "purpose": "Offline encyclopedia (Kiwix) search." },
     { "name": "terminal",           "tier": "core",     "kind": "service", "purpose": "Browser terminal." },
     { "name": "admin-lite",         "tier": "core",     "kind": "service", "purpose": "Lightweight admin surface." },
     { "name": "content-classifier", "tier": "core",     "kind": "service", "purpose": "Localhost content-safety sidecar." },
