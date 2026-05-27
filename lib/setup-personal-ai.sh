@@ -60,8 +60,8 @@ run_personal_ai_setup() {
 run_obsidian_setup() {
   print_module_info_card \
     "Obsidian vault (notes/journal context)" \
-    "Connects your Personal Assistant to an Obsidian vault on this Mac. The assistant gets four tools: vault_read (open a specific note), vault_write (create or update a note), vault_search (full-text search), vault_list (browse folders). Useful for: daily notes that the morning briefing pulls in, project pages that meeting prep can reference, journal entries the assistant can summarise on request, and idea capture that survives the chat session. Read access is broad; write access is scoped to a 'Pandoras Box' subfolder by default so the assistant cannot edit your existing notes unless you ask explicitly." \
-    "An Obsidian vault on this Mac (any local folder Obsidian recognises). The full path to the vault root. Optional: a subfolder name where the assistant is allowed to write (default: 'Pandoras Box')." \
+    "Connects your Personal Assistant to an Obsidian vault on this machine. The assistant gets four tools: vault_read (open a specific note), vault_write (create or update a note), vault_search (full-text search), vault_list (browse folders). Useful for: daily notes that the morning briefing pulls in, project pages that meeting prep can reference, journal entries the assistant can summarise on request, and idea capture that survives the chat session. Read access is broad; write access is scoped to a 'Pandoras Box' subfolder by default so the assistant cannot edit your existing notes unless you ask explicitly." \
+    "An Obsidian vault on this machine (any local folder Obsidian recognises). The full path to the vault root. Optional: a subfolder name where the assistant is allowed to write (default: 'Pandoras Box')." \
     "Free. Obsidian itself is free for personal use. No third-party API." \
     "~2 minutes"
 

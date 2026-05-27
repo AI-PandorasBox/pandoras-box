@@ -334,7 +334,7 @@ check_module_dep() {
     return 0
   fi
   echo ""
-  warn_msg "$mod requires '$dep' but it's not installed on this Mac."
+  warn_msg "$mod requires '$dep' but it's not installed on this machine."
   echo "  Install hint: $hint"
   echo ""
   echo "  [1] Pause installer; install '$dep' in another terminal, then continue"

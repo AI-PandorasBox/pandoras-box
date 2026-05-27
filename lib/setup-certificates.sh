@@ -19,10 +19,10 @@ run_certificate_setup() {
   echo "  without it."
   echo ""
   echo "  What we are about to do:"
-  echo "  1. Generate a private Certificate Authority (CA) on this Mac"
+  echo "  1. Generate a private Certificate Authority (CA) on this machine"
   echo "     (a CA is like a trusted authority that signs the certificate)"
   echo "  2. Generate a server certificate signed by that CA"
-  echo "  3. Install the CA certificate on this Mac automatically"
+  echo "  3. Install the CA certificate on this machine automatically"
   echo "  4. Copy the CA certificate to your Desktop so you can install it"
   echo "     on your other devices"
   echo ""
@@ -69,14 +69,19 @@ SANEOF
   check_pass "CA certificate installed and trusted on this machine."
 
   echo ""
-  echo "  Copying CA certificate to your Desktop..."
-  local desktop_cert="$HOME/Desktop/PandorasBox-CA.crt"
-  cp "$ca_cert" "$desktop_cert"
-  chmod 644 "$desktop_cert"
-  success_msg "CA certificate saved to: $desktop_cert"
+  echo "  Saving the CA certificate where you can grab it..."
+  # CERT_DIR is root-owned 0700, so the source is unreadable to the operator.
+  # Copy via sudo, then hand the copy back to the operator. Prefer the Desktop;
+  # fall back to the home dir on a headless box with no Desktop.
+  local cert_out
+  if [[ -d "$HOME/Desktop" ]]; then cert_out="$HOME/Desktop/PandorasBox-CA.crt"; else cert_out="$HOME/PandorasBox-CA.crt"; fi
+  sudo cp "$ca_cert" "$cert_out"
+  sudo chown "$(id -un):$(id -gn)" "$cert_out" 2>/dev/null || true
+  sudo chmod 644 "$cert_out"
+  success_msg "CA certificate saved to: $cert_out"
   echo ""
   echo "  You need to install this file on every other device that will access"
-  echo "  your system (phone, iPad, other Mac, etc.)."
+  echo "  your system (phone, iPad, other computer, etc.)."
   echo ""
   echo "  Full installation guide for each device type: docs/certificates.md"
   echo ""

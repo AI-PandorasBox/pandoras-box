@@ -77,7 +77,7 @@ run_module_selection() {
   # ──── Module: admin-shell ────────────────────────────────────────────────
   if offer_module "[OPTIONAL] Admin Shell (Chrome desktop app)" \
     "Standalone Chrome desktop app for the Admin Shell -- opens as its own window (not a browser tab) for focused administration. Same auth surface as admin-lite, different UX." \
-    "Google Chrome installed on this Mac." \
+    "Google Chrome installed on this machine." \
     "Free." \
     "~2 minutes"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST admin-shell"

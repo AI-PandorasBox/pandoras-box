@@ -67,7 +67,7 @@ run_disclaimer_gate() {
   echo "     Use professional judgement on anything that matters."
   echo ""
   echo "  ${C_BOLD}6. Data on your machine, your responsibility.${C_RESET}"
-  echo "     Pandoras Box runs locally and stores data on this Mac. Backup,"
+  echo "     Pandoras Box runs locally and stores data on this machine. Backup,"
   echo "     encryption, physical security, and OS account hygiene are your"
   echo "     responsibility. The optional backups module helps with the first."
   echo ""

@@ -41,9 +41,9 @@ run_tailscale_setup() {
   echo ""
   press_enter_to_continue
 
-  echo "  Step 2: Install Tailscale on this Mac"
+  echo "  Step 2: Install Tailscale on this machine"
   echo "  ----------------------------------------"
-  echo "  Go to: https://tailscale.com/download/mac"
+  echo "  Go to: https://tailscale.com/download"
   echo "  Download and open the installer (.pkg file)."
   echo "  Click through the installation steps (Next, Agree, Install)."
   echo "  When it finishes, you will see a Tailscale icon appear in your menu bar"
@@ -80,7 +80,7 @@ run_tailscale_setup() {
   if [[ -z "${TAILSCALE_HOSTNAME:-}" ]]; then
     warn_msg "Tailscale does not appear to be running yet."
     echo "  Please make sure you have:"
-    echo "  - Installed Tailscale from tailscale.com/download/mac"
+    echo "  - Installed Tailscale from tailscale.com/download"
     echo "  - Clicked the menu bar icon and signed in"
     echo "  Then press Return to try again."
     press_enter_to_continue
@@ -100,7 +100,7 @@ run_tailscale_setup() {
   echo "  Now install Tailscale on your phone and other devices:"
   echo "  - iPhone/iPad: App Store -> search 'Tailscale' -> install and sign in"
   echo "  - Android: Play Store -> search 'Tailscale' -> install and sign in"
-  echo "  - Other Mac: tailscale.com/download/mac"
+  echo "  - Other computer: tailscale.com/download"
   echo ""
   echo "  Full guide: docs/tailscale.md"
   echo ""
