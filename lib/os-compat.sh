@@ -100,6 +100,30 @@ pbox_create_service() {
     unit_path="${PBOX_PLIST_DIR:-/tmp}/${unit}.service"
     _pbox_compat_log "systemd unit -> $unit_path (dry-run: written, not enabled)"
   fi
+
+  # Real-deployment hardening: daemon agents run as a dedicated per-service
+  # account, never root. (Zeus/admin is the operator's own login, not a daemon,
+  # so it is never provisioned here.) Caller may pass an explicit non-root user
+  # to override. Group 'pbox' + 0750 lets Argus oversee peers via the shared group.
+  if [[ "$user" == "root" || -z "$user" ]]; then
+    user="$unit"
+    if ! _pbox_dry; then
+      getent group pbox >/dev/null 2>&1 || sudo groupadd pbox
+      if ! id "$user" &>/dev/null; then
+        sudo useradd --system --gid pbox --shell /usr/sbin/nologin \
+          --home-dir "$workdir" --no-create-home \
+          --comment "Pandoras Box ${label##*.}" "$user" \
+          || { check_fail "could not create service user $user"; return 1; }
+      fi
+      if [[ -d "$workdir" ]]; then
+        sudo chown -R "$user:pbox" "$workdir" 2>/dev/null || true
+        sudo chmod 750 "$workdir" 2>/dev/null || true
+      fi
+    else
+      _pbox_compat_log "would create service user '$user' + chown '$workdir' (dry-run)"
+    fi
+  fi
+
   local envline=""
   [[ -n "$env_file" ]] && envline="EnvironmentFile=-${env_file}"
   sudo tee "$unit_path" >/dev/null <<UNIT
