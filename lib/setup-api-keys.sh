@@ -7,13 +7,29 @@ run_api_key_collection() {
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi
+  # Claude auth is already handled in the Claude step (run_claude_install):
+  #   subscription (Pro/Max via the CLI) -> no API key, no per-token billing
+  #   api-key                            -> key already collected + stored there
+  # An Anthropic API key is therefore OPTIONAL here; only the api-key path needs
+  # the spend-limits walkthrough. Subscription users reason through the Claude CLI.
+  case "${PBOX_CLAUDE_AUTH_MODE:-}" in
+    subscription|subscription-pending|existing)
+      section_header "API keys"
+      success_msg "Claude is authenticated via your subscription -- no API key required."
+      info_msg "Agents reason through the Claude CLI; there is no per-token bill to cap."
+      echo ""
+      return 0 ;;
+    api-key)
+      section_header "API keys"
+      check_pass "Anthropic API key already collected in the Claude step."
+      run_spend_limits_walkthrough
+      return 0 ;;
+  esac
+
   section_header "API keys and service accounts"
-  echo "  Pandoras Box needs API keys to connect to AI services."
-  echo "  An API key is like a password that lets the software access a service"
-  echo "  on your behalf. We will collect each key and test it before continuing."
-  echo ""
-  echo "  Your keys are stored only on this Mac, in protected files that only"
-  echo "  the agent software can read."
+  echo "  You did not choose the subscription sign-in, so an Anthropic API key is"
+  echo "  needed (or leave it blank to skip). Keys are stored only on this machine,"
+  echo "  in protected files only the agent software can read."
   echo ""
 
   collect_anthropic_key
@@ -43,8 +59,8 @@ collect_anthropic_key() {
     read -rsp "  Paste your Anthropic API key (input hidden): " key
     echo ""
     if [[ -z "$key" ]]; then
-      warn_msg "Key cannot be empty. Please try again."
-      continue
+      warn_msg "No key entered -- skipping (fine if you authenticated via subscription)."
+      return 0
     fi
     if [[ ! "$key" =~ ^sk-ant- ]]; then
       warn_msg "That does not look like an Anthropic key (should start with 'sk-ant-'). Please check and try again."
