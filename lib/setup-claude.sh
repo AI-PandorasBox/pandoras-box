@@ -40,12 +40,23 @@ run_claude_install() {
   else
     info_msg "Claude CLI not detected. Installing via npm..."
     if ! command -v npm &>/dev/null; then
-      error_msg "npm not found. Install Node.js (and npm) first: brew install node"
+      error_msg "npm not found. Install Node.js (and npm) first."
+      [[ "$PBOX_OS" == Darwin ]] && info_msg "  macOS: brew install node" \
+        || info_msg "  Linux: curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs"
       return 1
     fi
-    if ! npm install -g @anthropic-ai/claude-code; then
+    # macOS Homebrew node has a user-writable global prefix; Linux (apt/NodeSource)
+    # uses a root-owned prefix (/usr) so the global install needs sudo. -H keeps
+    # root's HOME so the npm cache does not land root-owned in the operator's home.
+    local -a NPM_GI
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      NPM_GI=(npm install -g @anthropic-ai/claude-code)
+    else
+      NPM_GI=(sudo -H npm install -g @anthropic-ai/claude-code)
+    fi
+    if ! "${NPM_GI[@]}"; then
       error_msg "npm install of @anthropic-ai/claude-code failed."
-      info_msg  "Try manually: npm install -g @anthropic-ai/claude-code"
+      info_msg  "Try manually: ${NPM_GI[*]}"
       info_msg  "Or see https://docs.claude.com/en/docs/claude-code/installation"
       return 1
     fi
