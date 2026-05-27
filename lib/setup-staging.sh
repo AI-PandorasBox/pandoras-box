@@ -70,6 +70,15 @@ run_staging() {
     fi
   done
 
+  # _ADMIN_OPERATING_DOC_V1: give the admin agent (Layer 0) its day-1 operating
+  # loop. The admin agent reads CLAUDE.md from its working dir ($INSTALL_PATH);
+  # without this it has no session-start / deploy-gate / session-close workflow.
+  # Don't clobber an operator-customised CLAUDE.md on re-runs.
+  if [[ -f "$SETUP_DIR/config/admin-CLAUDE.md.template" && ! -f "$INSTALL_PATH/CLAUDE.md" ]]; then
+    sudo cp "$SETUP_DIR/config/admin-CLAUDE.md.template" "$INSTALL_PATH/CLAUDE.md"
+    check_pass "staged admin operating guide: $INSTALL_PATH/CLAUDE.md"
+  fi
+
   # Permissions: lib + scripts + modules executable; everything readable.
   sudo find "$INSTALL_PATH/lib" "$INSTALL_PATH/scripts" "$INSTALL_PATH/modules" \
        -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
