@@ -5,13 +5,13 @@
 # =============================================================================
 
 # Colour codes
-C_RESET="\033[0m"
-C_GREEN="\033[0;32m"
-C_RED="\033[0;31m"
-C_YELLOW="\033[1;33m"
-C_CYAN="\033[0;36m"
-C_BOLD="\033[1m"
-C_DIM="\033[2m"
+C_RESET=$'\033[0m'
+C_GREEN=$'\033[0;32m'
+C_RED=$'\033[0;31m'
+C_YELLOW=$'\033[1;33m'
+C_CYAN=$'\033[0;36m'
+C_BOLD=$'\033[1m'
+C_DIM=$'\033[2m'
 
 check_pass()   { echo -e "  ${C_GREEN}[PASS]${C_RESET} $*"; }
 check_fail()   { echo -e "  ${C_RED}[FAIL]${C_RESET} $*"; }

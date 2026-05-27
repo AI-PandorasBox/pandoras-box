@@ -137,7 +137,7 @@ print_banner() {
   echo "  ╚══════════════════════════════════════════════════════════════╝"
   echo ""
   echo "  Welcome. This installer will walk you through setting up Pandoras"
-  echo "  Box on your Mac, one step at a time."
+  echo "  Box on your machine, one step at a time."
   echo ""
   echo "  ${C_BOLD}You do not need any technical knowledge to complete this setup.${C_RESET}"
   echo "  Every step explains what is happening, what you'll need to provide,"
