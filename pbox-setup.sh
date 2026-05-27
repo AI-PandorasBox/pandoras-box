@@ -28,6 +28,7 @@ STEP_TOTAL=11
 # core next so the prompt helpers exist, then everything else.)
 source "$LIB_DIR/setup-dry-run.sh"
 source "$LIB_DIR/setup-core.sh"
+source "$LIB_DIR/os-compat.sh"   # OS portability layer (macOS/Linux); after core so its helpers exist
 # Install-issue logging: persistent transcript + structured issue/fix records +
 # a sanitised, attachable bug report. _INSTALL_ISSUE_LOG_V1
 source "$LIB_DIR/setup-issue-log.sh"
@@ -158,27 +159,17 @@ print_banner() {
 }
 
 check_requirements() {
-  section_header "Checking your Mac meets the requirements"
+  section_header "Checking your machine meets the requirements"
   echo "  Before we start, we need to check a few things..."
   echo ""
 
   local ok=true
 
-  local macos_version
-  macos_version=$(sw_vers -productVersion)
-  local macos_major
-  macos_major=$(echo "$macos_version" | cut -d. -f1)
-  if [[ "$macos_major" -ge 14 ]]; then
-    check_pass "macOS version: $macos_version"
-  else
-    check_fail "macOS version: $macos_version (requires 14.0 or later)"
-    echo "  Fix: Apple menu -> System Settings -> General -> Software Update."
-    ok=false
-  fi
+  # OS + version gate (macOS 14+ on Darwin, Debian 13+/Ubuntu 24.04+ on Linux)
+  pbox_os_check || ok=false
 
-  # Find Node. Some shells don't have brew's PATH set up; check common install
-  # locations directly. Order: PATH, then /opt/homebrew (Apple Silicon brew),
-  # then /usr/local/bin (Intel brew or manual install), then /usr/bin.
+  # Find Node. Order: PATH, then /opt/homebrew (Apple Silicon brew),
+  # /usr/local/bin (Intel brew / manual), then /usr/bin (Linux apt/NodeSource).
   local node_bin=""
   for candidate in "$(command -v node 2>/dev/null)" /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
     if [[ -n "$candidate" && -x "$candidate" ]]; then
@@ -191,31 +182,45 @@ check_requirements() {
     local node_major=$(echo "$node_version" | tr -d 'v' | cut -d. -f1)
     if [[ "$node_major" -ge 20 ]]; then
       check_pass "Node.js: $node_version  ($node_bin)"
-      # Export so later steps don't need to re-discover.
       export PBOX_NODE_BIN="$node_bin"
     else
       check_fail "Node.js: $node_version (requires v20 or later)"
-      echo "  Fix: brew upgrade node"
+      [[ "$PBOX_OS" == Darwin ]] && echo "  Fix: brew upgrade node" \
+        || echo "  Fix: install Node 20+ via NodeSource (deb.nodesource.com)."
       ok=false
     fi
   else
-    check_fail "Node.js: not found in PATH or at /opt/homebrew/bin/node or /usr/local/bin/node"
-    echo "  Fix: open a terminal, run 'brew install node', then re-run this installer."
+    check_fail "Node.js: not found"
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      echo "  Fix: run 'brew install node', then re-run this installer."
+    else
+      echo "  Fix: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs; then re-run."
+    fi
     ok=false
   fi
 
-  if command -v brew &>/dev/null; then
-    check_pass "Homebrew: found"
+  # Package-manager / service-manager presence
+  if [[ "$PBOX_OS" == Darwin ]]; then
+    if command -v brew &>/dev/null; then
+      check_pass "Homebrew: found"
+    else
+      check_fail "Homebrew: not found"
+      echo "  Fix: visit https://brew.sh and follow the on-screen install command."
+      ok=false
+    fi
   else
-    check_fail "Homebrew: not found"
-    echo "  Fix: visit https://brew.sh and follow the on-screen install command."
-    ok=false
+    if command -v systemctl &>/dev/null; then
+      check_pass "systemd: present"
+    else
+      check_fail "systemd: not found (this installer targets systemd-based distributions)"
+      ok=false
+    fi
   fi
 
   if sudo -n true 2>/dev/null; then
     check_pass "Admin access: confirmed"
   else
-    info_msg "Admin access: you'll be asked for your Mac password during setup."
+    info_msg "Admin access: you'll be asked for your password during setup."
     echo "  This is needed to create service accounts and install system services."
     echo "  Your password is never stored anywhere."
   fi
@@ -283,8 +288,8 @@ print_done() {
   echo "       see $INSTALL_PATH/docs/watch-setup.md"
   echo "  4. Send a test message to your assistant via Telegram or the browser UI."
   echo ""
-  if [[ -d "$HOME/Desktop/Pandoras Box -- Assistant.app" ]]; then
-    echo "  Click ${C_BOLD}'Pandoras Box -- Assistant'${C_RESET} on your Desktop to open"
+  if ls "$HOME/Desktop/"*[Aa]ssistant* >/dev/null 2>&1; then
+    echo "  Click the ${C_BOLD}Assistant${C_RESET} shortcut on your Desktop to open"
     echo "  your Personal Assistant."
     echo ""
   fi
@@ -336,8 +341,8 @@ run_system_check() {
     local default_port="$5"
     local optional="${6:-no}"   # "yes" = just warn, don't fail all_pass
 
-    # Is the service registered?
-    if ! launchctl list 2>/dev/null | grep -q "$label"; then
+    # Is the service registered? (launchd on macOS, systemd on Linux)
+    if ! pbox_service_running "$label"; then
       if [[ "$optional" == "yes" ]]; then
         info_msg "$pretty: not installed (skipped)"
       else
@@ -366,7 +371,7 @@ run_system_check() {
         check_pass "$pretty: registered AND responding on :$port (HTTP $code)"
         ;;
       *)
-        warn_msg "$pretty: launchctl-registered but port $port not responding (HTTP $code) -- bind failed?"
+        warn_msg "$pretty: service registered but port $port not responding (HTTP $code) -- bind failed?"
         all_pass=false
         ;;
     esac
@@ -376,11 +381,7 @@ run_system_check() {
   _check_cron_service() {
     local label="$1" pretty="$2" optional="${3:-no}" domain="${4:-user}"
     local found="no"
-    if [[ "$domain" == "system" ]]; then
-      if launchctl print "system/$label" >/dev/null 2>&1; then found="yes"; fi
-    else
-      if launchctl list 2>/dev/null | grep -q "$label"; then found="yes"; fi
-    fi
+    if pbox_service_running "$label"; then found="yes"; fi
     if [[ "$found" == "yes" ]]; then
       check_pass "$pretty: registered (cron-driven, no HTTP surface)"
     else
@@ -464,7 +465,11 @@ run_system_check() {
   else
     warn_msg "Some checks did not pass. See above for details."
     echo "  This may be normal if some services need a moment to start."
-    echo "  Wait 30 seconds and run: launchctl list | grep pandoras-box"
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      echo "  Wait 30 seconds and run: launchctl list | grep pandoras-box"
+    else
+      echo "  Wait 30 seconds and run: systemctl list-units 'pbox-*'"
+    fi
   fi
   echo ""
   press_enter_to_continue

@@ -26,7 +26,7 @@ REPORT_MJS="$SCRIPTS_DIR/pandoras-box-backup-daily-report.mjs"
 RECOVERY_TEMPLATE="$SCRIPTS_DIR/RECOVERY-template.md"
 NODE="$(command -v node 2>/dev/null)"
 [ -x "$NODE" ] || for _c in /opt/homebrew/bin/node /usr/local/bin/node; do [ -x "$_c" ] && NODE="$_c" && break; done
-AGE="/opt/homebrew/bin/age"
+AGE="$(command -v age || echo /usr/bin/age)"
 SQLITE3="/usr/bin/sqlite3"
 STAMP=$(date +%Y-%m-%d)
 
@@ -70,7 +70,7 @@ FATAL_REASON=""
 record () {
   local name="$1"; local path="$2"; local status="$3"
   local bytes=0
-  [[ -f "$path" ]] && bytes=$(stat -f%z "$path" 2>/dev/null || echo 0)
+  [[ -f "$path" ]] && bytes=$(wc -c < "$path" 2>/dev/null | tr -d ' ' || echo 0)
   COMP_NAMES+=("$name"); COMP_PATHS+=("$path")
   COMP_BYTES+=("$bytes"); COMP_STATUS+=("$status")
   echo "  -> $name: $status ($bytes bytes)"
@@ -173,7 +173,7 @@ tar -C "$BACKUP_VOL" -cf "$TARTMP" "$STAMP" 2>>"$LOG" || true
 rm -f "$TARTMP"
 
 ENC_SIZE=0
-[[ -f "$ENCRYPTED" ]] && ENC_SIZE=$(stat -f%z "$ENCRYPTED" 2>/dev/null || echo 0)
+[[ -f "$ENCRYPTED" ]] && ENC_SIZE=$(wc -c < "$ENCRYPTED" 2>/dev/null | tr -d ' ' || echo 0)
 echo "encrypted: $ENCRYPTED ($ENC_SIZE bytes)"
 
 if [[ -z "$FATAL_REASON" && "$ENC_SIZE" -ge "$MIN_BLOB_SIZE_BYTES" ]]; then

@@ -23,35 +23,14 @@ run_desktop_launcher_setup() {
   local TERMINAL_URL="https://${hostname}:8282"
   local PA_URL="https://${hostname}:${PERSONAL_AI_PORT:-8800}"
 
-  _make_launcher() {
-    local name="$1"
-    local url="$2"
-    local app_path="$HOME/Desktop/${name}.app"
-    if [[ -d "$app_path" ]]; then
-      info_msg "$name.app already exists -- skipping."
-      return 0
-    fi
-    local script
-    script=$(cat <<EOF
-on run
-    tell application "System Events" to open location "${url}"
-end run
-EOF
-)
-    osacompile -o "$app_path" -e "$script" 2>/dev/null || {
-      warn_msg "Could not create $name.app. Skipping."
-      return 1
-    }
-    check_pass "Created Desktop launcher: $app_path"
-  }
-
-  _make_launcher "Pandoras Box -- Dashboard" "$DASHBOARD_URL"
-  _make_launcher "Pandoras Box -- Terminal"  "$TERMINAL_URL"
-  _make_launcher "Pandoras Box -- Assistant" "$PA_URL"
+  # pbox_make_launcher builds a .app on macOS and a .desktop entry on Linux.
+  pbox_make_launcher "Pandoras Box -- Dashboard" "$DASHBOARD_URL"
+  pbox_make_launcher "Pandoras Box -- Terminal"  "$TERMINAL_URL"
+  pbox_make_launcher "Pandoras Box -- Assistant" "$PA_URL"
 
   echo ""
-  info_msg "Note: the first time you click a launcher, macOS may ask if you trust"
-  info_msg "the app. Click Open. The CA certificate must be trusted on this Mac"
+  info_msg "Note: the first time you click a launcher, the OS may ask if you trust"
+  info_msg "it. Allow it. The CA certificate must be trusted on this machine"
   info_msg "(Step 'Security certificates' in this installer) for the URLs to load."
   echo ""
   success_msg "Desktop launchers created."

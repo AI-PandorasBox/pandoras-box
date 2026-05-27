@@ -34,6 +34,17 @@ run_update_check_setup() {
     info_msg "pbox-update lives at $update_script (could not symlink to /usr/local/bin)"
   fi
 
+  # The weekly poll is a launchd LaunchAgent below. On Linux this needs a
+  # systemd --user timer (not yet in os-compat). Defer it, consistent with the
+  # backups + self-improvement schedule deferrals; the pbox-update command above
+  # still works for manual checks.
+  if [[ "${PBOX_OS:-$(uname -s)}" != Darwin ]]; then
+    info_msg "Update-check schedule: Linux support pending (systemd timer); weekly poll not scheduled."
+    info_msg "  Run 'pbox-update --check-only' manually, or add your own cron/systemd timer."
+    echo ""
+    return 0
+  fi
+
   local plist_dir="$HOME/Library/LaunchAgents"
   local plist="$plist_dir/com.pandoras-box.update-check.plist"
   local label="com.pandoras-box.update-check"
@@ -45,7 +56,7 @@ run_update_check_setup() {
   # the operator population. host id seeds the hash; falls back to 9 if
   # md5 is missing for any reason.
   local hour
-  hour="$( (hostname; whoami) | md5 2>/dev/null | head -c 2 | xargs -I{} printf '%d\n' "0x{}" 2>/dev/null )"
+  hour="$( (hostname; whoami) | (md5sum 2>/dev/null || md5 2>/dev/null) | head -c 2 | xargs -I{} printf '%d\n' "0x{}" 2>/dev/null )"
   if [[ -z "$hour" || ! "$hour" =~ ^[0-9]+$ ]]; then hour=9; fi
   hour=$(( hour % 24 ))
 

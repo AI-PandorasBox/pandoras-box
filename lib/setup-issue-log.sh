@@ -60,15 +60,27 @@ pbox_sanitise() {
 # Append a non-secret environment snapshot as the first jsonl record.
 pbox_env_snapshot() {
   local os_ver os_build arch model ncpu mem_gb node_bin node_ver brew_ver free_disk
-  os_ver="$(sw_vers -productVersion 2>/dev/null || echo '?')"
-  os_build="$(sw_vers -buildVersion 2>/dev/null || echo '?')"
+  if [[ "${PBOX_OS:-$(uname -s)}" == Darwin ]]; then
+    os_ver="$(sw_vers -productVersion 2>/dev/null || echo '?')"
+    os_build="$(sw_vers -buildVersion 2>/dev/null || echo '?')"
+    model="$(sysctl -n hw.model 2>/dev/null || echo '?')"
+    ncpu="$(sysctl -n hw.ncpu 2>/dev/null || echo '?')"
+    mem_gb="$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1073741824 ))"
+    brew_ver="$(brew --version 2>/dev/null | head -1 || echo none)"
+  else
+    # Linux: distro from /etc/os-release, kernel from uname, mem from /proc.
+    local distro="Linux"
+    [[ -r /etc/os-release ]] && distro="$(. /etc/os-release 2>/dev/null; echo "${PRETTY_NAME:-Linux}")"
+    os_ver="$distro"
+    os_build="$(uname -r 2>/dev/null || echo '?')"
+    model="$(uname -a 2>/dev/null || echo '?')"
+    ncpu="$(nproc 2>/dev/null || echo '?')"
+    mem_gb="$(( $(awk '/MemTotal/{print $2}' /proc/meminfo 2>/dev/null || echo 0) / 1048576 ))"
+    brew_ver="none"
+  fi
   arch="$(uname -m 2>/dev/null || echo '?')"
-  model="$(sysctl -n hw.model 2>/dev/null || echo '?')"
-  ncpu="$(sysctl -n hw.ncpu 2>/dev/null || echo '?')"
-  mem_gb="$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1073741824 ))"
   node_bin="${PBOX_NODE_BIN:-$(command -v node 2>/dev/null || echo none)}"
   node_ver="$("$node_bin" --version 2>/dev/null || echo none)"
-  brew_ver="$(brew --version 2>/dev/null | head -1 || echo none)"
   free_disk="$(df -h / 2>/dev/null | awk 'NR==2{print $4" free of "$2}')"
   printf '{"type":"env","ts":"%s","installer_version":"%s","macos":"%s (%s)","arch":"%s","model":"%s","cpu":"%s","ram_gb":"%s","node":"%s","node_path":"%s","brew":"%s","disk":"%s","shell":"%s","lang":"%s"}\n' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \

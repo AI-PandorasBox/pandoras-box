@@ -140,23 +140,8 @@ offer_module() {
 }
 
 create_service_account() {
-  local username="$1"
-  local uid="$2"
-  local display_name="$3"
-
-  if id "$username" &>/dev/null; then
-    info_msg "Service account '$username' already exists -- skipping creation."
-    return 0
-  fi
-
-  echo "  Creating service account: $username (UID $uid)"
-  sudo dscl . -create "/Users/$username"
-  sudo dscl . -create "/Users/$username" UserShell /usr/bin/false
-  sudo dscl . -create "/Users/$username" RealName "$display_name"
-  sudo dscl . -create "/Users/$username" UniqueID "$uid"
-  sudo dscl . -create "/Users/$username" PrimaryGroupID 20
-  sudo dscl . -create "/Users/$username" NFSHomeDirectory "/opt/pandoras-box/$username"
-  check_pass "Service account '$username' created."
+  # OS-aware: delegates to the portability layer (dscl on macOS, useradd on Linux).
+  pbox_create_service_account "$@"
 }
 
 write_plist() {

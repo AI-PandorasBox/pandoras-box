@@ -76,7 +76,7 @@ stub_env_set() {
   local env_file="$1"
   local key="$2"
   local val="$3"
-  sudo sed -i '' "/^${key}=/d" "$env_file"   # BSD/macOS sed: '' is a separate empty-suffix arg
+  sudo sed -i.bak "/^${key}=/d" "$env_file" && sudo rm -f "${env_file}.bak"   # -i.bak works on both BSD and GNU sed
   sudo bash -c "echo '${key}=${val}' >> '$env_file'"
   sudo chmod 600 "$env_file"
 }

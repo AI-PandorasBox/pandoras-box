@@ -24,6 +24,15 @@ run_backups_setup() {
     return 0
   fi
 
+  # Linux support deferred: this module relies on inline launchd plists,
+  # `launchctl bootstrap system`, /Users/Shared, and a 03:30 schedule that
+  # needs a systemd .timer unit -- a primitive the portability layer does not
+  # yet provide. Skip cleanly on non-Darwin until timer support lands.
+  if [[ "$PBOX_OS" != Darwin ]]; then
+    info_msg "Backups module: Linux support pending (systemd timer); skipped."
+    return 0
+  fi
+
   print_module_info_card \
     "Encrypted backups" \
     "Every night at 03:30, a root LaunchDaemon dumps your CRM databases, agent stores, configs, and selected directories into a single tarball, encrypts it with age, and writes it to /Users/Shared/pandoras-box-backups/. A per-component size assertion refuses to update the 'latest' symlink if any piece came back empty. An optional daily email reports [OK] or [FAIL]." \
@@ -46,8 +55,8 @@ run_backups_setup() {
   echo ""
   info_msg "Step 1 of 7: Install age (offline encryption tool)"
   if ! command -v age &>/dev/null; then
-    if ! brew install age 2>&1 | tail -3; then
-      error_exit "Could not install age via Homebrew. Resolve and re-run."
+    if ! pbox_install_pkg age 2>&1 | tail -3; then
+      error_exit "Could not install age. Resolve and re-run."
     fi
   fi
   check_pass "age installed: $(age --version 2>&1 | head -1)"
@@ -70,12 +79,8 @@ run_backups_setup() {
     sudo chown root:wheel "$PUBKEY_FILE"
     sudo chmod 644        "$PUBKEY_FILE"
 
-    if security add-generic-password \
-        -s "pbox-backup-age" \
-        -a "$(whoami)" \
-        -w "$(cat "$TMP_PRIVKEY")" \
-        -U 2>/dev/null; then
-      check_pass "Private key stored in macOS Keychain (item 'pbox-backup-age')."
+    if pbox_store_secret "pbox-backup-age" "$(cat "$TMP_PRIVKEY")"; then
+      check_pass "Private key stored in OS secret store (item 'pbox-backup-age')."
     else
       warn_msg "Could not store private key in Keychain. Saving to ~/Desktop/PBOX-BACKUP-PRIVKEY-DELETE-AFTER-COPYING.txt"
       cp "$TMP_PRIVKEY" "$HOME/Desktop/PBOX-BACKUP-PRIVKEY-DELETE-AFTER-COPYING.txt"
@@ -97,7 +102,7 @@ run_backups_setup() {
   echo ""
   prompt_yes_no "Print the private key now?" show_key "no"
   if [[ "$show_key" == "yes" ]]; then
-    local key; key=$(security find-generic-password -s "pbox-backup-age" -w 2>/dev/null || echo "")
+    local key; key=$(pbox_retrieve_secret "pbox-backup-age" || echo "")
     if [[ -n "$key" ]]; then
       echo ""
       echo "  ${C_BOLD}── COPY THIS KEY TO A SAFE PLACE ──${C_RESET}"

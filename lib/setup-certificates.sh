@@ -64,10 +64,9 @@ SANEOF
   check_pass "Server certificate generated for: $hostname"
 
   echo ""
-  echo "  Installing the CA certificate on this Mac..."
-  sudo security add-trusted-cert -d -r trustRoot \
-    -k /Library/Keychains/System.keychain "$ca_cert" 2>/dev/null
-  check_pass "CA certificate installed and trusted on this Mac."
+  echo "  Installing the CA certificate on this machine..."
+  pbox_trust_ca "$ca_cert" 2>/dev/null
+  check_pass "CA certificate installed and trusted on this machine."
 
   echo ""
   echo "  Copying CA certificate to your Desktop..."
@@ -82,7 +81,14 @@ SANEOF
   echo "  Full installation guide for each device type: docs/certificates.md"
   echo ""
 
-  # Write a renewal script
+  # Write a renewal script. The "restart your services" hint is OS-aware so it
+  # reflects the platform this install is running on (launchctl vs systemctl).
+  local renew_restart_hint
+  if [[ "$PBOX_OS" == Darwin ]]; then
+    renew_restart_hint="  sudo launchctl stop com.pandoras-box.personal-ai && sudo launchctl start com.pandoras-box.personal-ai"
+  else
+    renew_restart_hint="  sudo systemctl restart pbox-personal-ai"
+  fi
   sudo bash -c "cat > '$INSTALL_PATH/pbox-renew-cert.sh'" <<RENEWEOF
 #!/usr/bin/env bash
 # Renew the Pandoras Box server certificate
@@ -95,7 +101,7 @@ openssl x509 -req -days 3650 \
   -out server.crt \
   -extfile san.ext -extensions SAN 2>/dev/null
 echo "Done. Restart your services for the new certificate to take effect."
-echo "  sudo launchctl stop com.pandoras-box.personal-ai && sudo launchctl start com.pandoras-box.personal-ai"
+echo "$renew_restart_hint"
 RENEWEOF
   sudo chmod 700 "$INSTALL_PATH/pbox-renew-cert.sh"
   check_pass "Certificate renewal script created: $INSTALL_PATH/pbox-renew-cert.sh"

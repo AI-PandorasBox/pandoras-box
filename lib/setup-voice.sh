@@ -87,9 +87,7 @@ run_voice_setup() {
        -o /tmp/voice-test.mp3 \
        -d '{"text":"Hello. This is your assistant on Pandoras Box.","model_id":"eleven_turbo_v2"}' 2>/dev/null; then
     check_pass "Sample saved to /tmp/voice-test.mp3"
-    if command -v afplay &>/dev/null; then
-      afplay /tmp/voice-test.mp3 2>/dev/null || true
-    fi
+    pbox_play_audio /tmp/voice-test.mp3
     rm -f /tmp/voice-test.mp3
   else
     warn_msg "Could not generate a sample. Voice ID may be invalid or quota exceeded."

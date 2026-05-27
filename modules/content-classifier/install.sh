@@ -9,6 +9,7 @@ TOTAL_STEPS=6
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -72,26 +73,34 @@ ENVEOF
 fi
 
 step 5 "Installing plist"
-SERVICE_USER="${CONTENT_CLASSIFIER_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing"
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
-plutil -lint "$RENDERED" >/dev/null || fail "plist invalid"
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-  sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+SERVICE_USER="${CONTENT_CLASSIFIER_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
+  plutil -lint "$RENDERED" >/dev/null || fail "plist invalid"
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
+  rm -f "$RENDERED"
+  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  fi
+  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+  ok "Plist installed + loaded"
+else
+  # Linux: systemd unit via the portability layer. This module runs a Python
+  # venv interpreter, not Node -- pass the venv python as the "node_bin" arg.
+  pbox_create_service "$PLIST_LABEL" "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/classifier.py" \
+    "$SERVICE_USER" "/tmp/${LOG_PREFIX}-content-classifier.log" "$TARGET_DIR" "$CC_ENV" || fail "systemd service install failed"
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
-sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-ok "Plist installed + loaded"
 
 step 6 "Verifying /api/health"
 # First request triggers model download; allow generous time on real install.

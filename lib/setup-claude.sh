@@ -172,11 +172,13 @@ run_claude_api_key_auth() {
   rm -f /tmp/pbox-claude-validate.json
   check_pass "Anthropic API key validated."
 
-  # Store in macOS Keychain + write to $INSTALL_PATH/.env-claude (referenced by agents).
-  if security add-generic-password -a "$USER" -s "pbox-anthropic-api-key" -w "$key" -U 2>/dev/null; then
-    check_pass "Key stored in macOS Keychain (service: pbox-anthropic-api-key)."
+  # Store the key via the portability layer (macOS Keychain on Darwin, a 600
+  # file under $INSTALL_PATH/.secrets on Linux) + write to $INSTALL_PATH/.env-claude
+  # (referenced by agents).
+  if pbox_store_secret "pbox-anthropic-api-key" "$key"; then
+    check_pass "Key stored in OS secret store (service: pbox-anthropic-api-key)."
   else
-    warn_msg "Could not write to Keychain -- key will only live in the .env file."
+    warn_msg "Could not write to OS secret store -- key will only live in the .env file."
   fi
 
   sudo mkdir -p "$INSTALL_PATH"
