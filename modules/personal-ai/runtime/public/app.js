@@ -153,8 +153,50 @@
     while (node.firstChild) node.removeChild(node.firstChild)
   }
 
+  // Build a small "hint" row with a leading dot, a label (rendered bold) and
+  // trailing text -- explicit DOM nodes so no innerHTML is ever needed here.
+  function makeHintRow(boldLabel, trailingText) {
+    const row = document.createElement('div')
+    row.className = 'hint-row'
+    const dot = document.createElement('span')
+    dot.className = 'hint-dot'
+    row.appendChild(dot)
+    const span = document.createElement('span')
+    if (boldLabel) {
+      const b = document.createElement('b')
+      b.textContent = boldLabel
+      span.appendChild(b)
+      span.appendChild(document.createTextNode(' ' + trailingText))
+    } else {
+      span.textContent = trailingText
+    }
+    row.appendChild(span)
+    return row
+  }
+
   function renderConversationList() {
     clearChildren(el.convList)
+    if (!state.conversations.length) {
+      // Friendly empty state so a fresh install does not look broken.
+      const empty = document.createElement('div')
+      empty.className = 'conv-empty'
+      const title = document.createElement('div')
+      title.className = 'conv-empty-title'
+      title.textContent = 'No chats yet'
+      const body = document.createElement('div')
+      body.className = 'conv-empty-body'
+      body.textContent = 'Send a message below to start your first conversation. It will appear here.'
+      const hints = document.createElement('div')
+      hints.className = 'conv-empty-hints'
+      hints.appendChild(makeHintRow('Facts', 'pin things the assistant should always remember.'))
+      hints.appendChild(makeHintRow('Drops', 'share links, notes, or files for later recall.'))
+      hints.appendChild(makeHintRow(null, 'The assistant runs locally; nothing is sent without your prompt.'))
+      empty.appendChild(title)
+      empty.appendChild(body)
+      empty.appendChild(hints)
+      el.convList.appendChild(empty)
+      return
+    }
     for (const c of state.conversations) {
       const div = document.createElement('div')
       div.className = 'conv-item'

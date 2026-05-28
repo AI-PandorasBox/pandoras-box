@@ -195,35 +195,91 @@ function renderPage(title, contentHtml, currentPath) {
     return `<div class="nav-section"><h3>${escapeHtml(s.section)}</h3><ul>${items}</ul></div>`
   }).join('')
 
+  // Design tokens match the dashboard so Docs and Dashboard feel like one app.
+  // _DOCS_UI_V2 — design ported from the Mac internal pbox-docs-server.
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
-<title>${escapeHtml(title)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${escapeHtml(title)} · Pandoras Box Docs</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; display: flex; min-height: 100vh; }
-  aside { width: 280px; background: #f5f5f5; padding: 24px; border-right: 1px solid #ddd; overflow-y: auto; font-size: 14px; }
-  aside h3 { margin: 16px 0 8px; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: #888; }
-  aside ul { list-style: none; padding: 0; margin: 0; }
-  aside li { margin: 0 0 4px; }
-  aside a { color: #333; text-decoration: none; }
-  aside a:hover { text-decoration: underline; }
-  aside li.active a { font-weight: 600; color: #06f; }
-  main { flex: 1; padding: 40px 56px; max-width: 920px; line-height: 1.55; }
-  main h1, main h2, main h3, main h4 { line-height: 1.2; }
-  main h1 { font-size: 2.2rem; border-bottom: 2px solid #eee; padding-bottom: 12px; }
-  main h2 { margin-top: 36px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
-  main pre { background: #f6f8fa; padding: 14px 18px; border-radius: 6px; overflow-x: auto; font-size: 13px; }
-  main code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.92em; }
-  main p code, main li code { background: #f1f1f1; padding: 1px 5px; border-radius: 3px; }
-  main table { border-collapse: collapse; margin: 16px 0; }
-  main table th, main table td { padding: 8px 14px; border: 1px solid #ddd; text-align: left; }
-  main table th { background: #f6f8fa; font-weight: 600; }
-  main blockquote { border-left: 3px solid #06f; padding: 4px 16px; color: #555; margin: 12px 0; background: #f9f9fb; }
-  main hr { border: none; border-top: 1px solid #e0e0e0; margin: 28px 0; }
-  main a { color: #06f; }
+:root{
+  --bg:#0a0a14;--bg-deep:#07070f;--elev:#14141f;--surface:#1f1f2e;
+  --rule:#2a2a40;--fg:#f0f0ff;--fg-soft:#c8c8e0;--muted:#8888aa;
+  --brand:#7B68EE;--cyan:#00B4FF;--gold:#FFD700;--green:#7BFF7B;
+  --grad-spec:linear-gradient(120deg,var(--brand),var(--cyan) 50%,var(--gold));
+  --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
+  --mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sw:260px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:var(--font);font-weight:300;background:var(--bg);color:var(--fg);display:flex;min-height:100vh;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 600px at 82% -10%,rgba(123,104,238,.18),transparent 60%),radial-gradient(760px 520px at 8% 108%,rgba(0,180,255,.10),transparent 60%)}
+
+aside{width:var(--sw);background:var(--bg-deep);border-right:1px solid var(--rule);padding:24px 18px;overflow-y:auto;font-size:13px;position:sticky;top:0;height:100vh;z-index:2}
+aside .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+aside .brand .logo{width:26px;height:26px;flex:none}
+aside .brand .name{font-family:var(--font);font-weight:700;font-size:13.5px;letter-spacing:1px;background:var(--grad-spec);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+aside .home{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:6px 8px;border-radius:5px;margin-bottom:14px}
+aside .home:hover{color:var(--cyan);background:var(--elev)}
+aside h3{margin:18px 8px 8px;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:var(--muted);font-weight:600}
+aside ul{list-style:none}
+aside li{margin:0}
+aside li a{display:block;color:var(--fg-soft);text-decoration:none;padding:6px 10px;border-radius:5px;font-size:12.5px;line-height:1.45;font-family:var(--mono)}
+aside li a:hover{background:var(--elev);color:var(--cyan)}
+aside li.active a{background:var(--surface);color:var(--fg);font-weight:500;border-left:2px solid var(--brand);padding-left:10px}
+
+main{flex:1;padding:48px clamp(24px,5vw,72px);max-width:980px;line-height:1.6;position:relative;z-index:1}
+main h1,main h2,main h3,main h4,main h5,main h6{font-family:var(--font);font-weight:600;line-height:1.2;color:var(--fg)}
+main h1{font-size:clamp(26px,4vw,36px);letter-spacing:-.6px;padding-bottom:14px;border-bottom:1px solid var(--rule);margin-bottom:20px}
+main h2{font-size:1.45rem;margin-top:42px;margin-bottom:14px;padding-bottom:6px;border-bottom:1px solid var(--rule)}
+main h3{font-size:1.15rem;margin-top:30px;margin-bottom:10px;color:var(--fg-soft)}
+main h4{font-size:1rem;margin-top:22px;margin-bottom:8px;color:var(--fg-soft)}
+main p{margin:0 0 14px;color:var(--fg-soft);font-size:14.5px}
+main ul,main ol{margin:0 0 16px;padding-left:26px;color:var(--fg-soft);font-size:14.5px}
+main li{margin-bottom:5px}
+main a{color:var(--cyan);text-decoration:none;border-bottom:1px solid transparent;transition:.15s}
+main a:hover{border-bottom-color:var(--cyan)}
+main hr{border:none;border-top:1px solid var(--rule);margin:32px 0}
+
+main pre{background:var(--bg-deep);border:1px solid var(--rule);padding:14px 18px;border-radius:8px;overflow-x:auto;font-family:var(--mono);font-size:12.5px;color:var(--fg-soft);margin:0 0 16px;line-height:1.55}
+main pre code{background:none;border:none;padding:0;color:inherit;font-size:inherit}
+main code{font-family:var(--mono);font-size:.92em;color:var(--gold)}
+main p code,main li code,main td code,main h1 code,main h2 code,main h3 code,main h4 code{background:var(--elev);border:1px solid var(--rule);padding:1px 6px;border-radius:4px;color:var(--gold);font-weight:400}
+
+main table{border-collapse:collapse;margin:18px 0;font-size:13.5px;width:100%;font-family:var(--font)}
+main table th,main table td{padding:9px 14px;border:1px solid var(--rule);text-align:left;color:var(--fg-soft)}
+main table th{background:var(--elev);color:var(--fg);font-weight:600;font-size:12.5px;text-transform:uppercase;letter-spacing:.5px}
+main blockquote{border-left:3px solid var(--brand);padding:8px 16px;color:var(--fg-soft);margin:14px 0;background:rgba(123,104,238,.04);border-radius:0 4px 4px 0}
+main strong{color:var(--fg);font-weight:600}
+main em{color:var(--fg-soft);font-style:italic}
+main img{max-width:100%;border-radius:6px;border:1px solid var(--rule)}
+
+.meta{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:48px;padding-top:18px;border-top:1px solid var(--rule)}
+.meta a{color:var(--cyan)}
+
+@media(max-width:760px){aside{display:none}main{padding:24px 18px}}
 </style></head>
 <body>
-<aside><h2 style="margin:0 0 20px;font-size:1.1rem">Pandoras Box Docs</h2>${navHtml}</aside>
-<main>${contentHtml}</main>
+<aside>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 64 64" fill="none">
+      <ellipse cx="32" cy="26" rx="14" ry="10" fill="#7B68EE" opacity=".4"/>
+      <path d="M14 30 L32 39 L32 52 L14 44 Z" fill="#3a2f6b" stroke="#6a5acd" stroke-width="1"/>
+      <path d="M50 30 L32 39 L32 52 L50 44 Z" fill="#2c2356" stroke="#6a5acd" stroke-width="1"/>
+      <path d="M14 30 L32 23 L50 30" fill="none" stroke="#fff" stroke-width="2"/>
+      <circle cx="32" cy="27" r="2.4" fill="#FFD700"/>
+      <path d="M16 19 L32 12 L48 19 L32 26 Z" fill="#7B68EE"/>
+    </svg>
+    <span class="name">PANDORAS BOX · DOCS</span>
+  </div>
+  <a class="home" href="/">← Home</a>
+  ${navHtml}
+</aside>
+<main>${contentHtml}
+<div class="meta">Served locally · <a href="/api/health">health</a></div>
+</main>
 </body></html>`
 }
 
@@ -243,10 +299,15 @@ function safeResolve(rootLabel, relFile) {
 
 const server = http.createServer((req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`)
+  if (url.pathname === '/api/health') {
+    res.writeHead(200, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ ok: true, files: NAV.reduce((a, s) => a + s.files.length, 0), time: new Date().toISOString() }))
+    return
+  }
   if (url.pathname === '/') {
-    const intro = `# Pandoras Box Documentation\n\nUse the sidebar to navigate the manuals and architecture docs.\n\nFor the latest release notes and live install, see [ai-pandorasbox.co.uk](https://ai-pandorasbox.co.uk).\n`
+    const intro = `# Pandoras Box Documentation\n\nLocal documentation server. Browse the manuals and architecture docs from the sidebar on the left.\n\n## What lives here\n\n- **manuals/** — installation guides, operator handbook, FAQ.\n- **docs/** — architecture references, module specs, deeper internals.\n\nThis server is read-only and bound to localhost. For the latest release notes and downloads, see [ai-pandorasbox.co.uk](https://ai-pandorasbox.co.uk).\n`
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
-    res.end(renderPage('Pandoras Box Docs', renderMarkdown(intro), '/'))
+    res.end(renderPage('Home', renderMarkdown(intro), '/'))
     return
   }
   if (url.pathname === '/view') {
