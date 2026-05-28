@@ -61,7 +61,12 @@ function parseEnv(p) {
   return out
 }
 
-function launchctlList() {
+// OS-aware service inventory. macOS reads launchctl; Linux reads systemd.
+// On Linux we list units matching `pbox-*` (the prefix used by
+// pbox_create_service in lib/os-compat.sh) and key by the bare module name.
+const IS_LINUX = process.platform === 'linux'
+
+function _launchctlList() {
   let raw = ''
   try { raw = execFileSync('launchctl', ['list'], { encoding: 'utf8', timeout: 3000 }) }
   catch { return [] }
@@ -73,6 +78,7 @@ function launchctlList() {
     if (!label.startsWith(PREFIX + '.')) continue
     out.push({
       label,
+      module: label.slice(PREFIX.length + 1),
       pid: pid === '-' ? null : parseInt(pid, 10),
       last_exit: exit === '-' ? null : parseInt(exit, 10),
       running: pid !== '-' && pid !== '0',
@@ -80,6 +86,39 @@ function launchctlList() {
   }
   return out
 }
+
+function _systemctlList() {
+  // list-units --type=service --all --no-legend --plain "pbox-*"
+  let raw = ''
+  try {
+    raw = execFileSync('systemctl',
+      ['list-units', '--type=service', '--all', '--no-legend', '--plain', 'pbox-*'],
+      { encoding: 'utf8', timeout: 3000 })
+  } catch { return [] }
+  const out = []
+  for (const line of raw.split('\n')) {
+    const parts = line.trim().split(/\s+/)
+    if (parts.length < 4) continue
+    const [unit, , active, sub] = parts  // [UNIT, LOAD, ACTIVE, SUB, ...]
+    if (!unit.startsWith('pbox-') || !unit.endsWith('.service')) continue
+    const mod = unit.slice('pbox-'.length, -'.service'.length)
+    // Best-effort PID via `systemctl show -p MainPID`. Cheap, single-fork.
+    let pid = null
+    try {
+      const show = execFileSync('systemctl', ['show', '-p', 'MainPID', '--value', unit],
+        { encoding: 'utf8', timeout: 1500 }).trim()
+      if (show && show !== '0') pid = parseInt(show, 10)
+    } catch {}
+    out.push({
+      label: unit, module: mod, pid,
+      last_exit: null,
+      running: active === 'active' && sub === 'running',
+    })
+  }
+  return out
+}
+
+const serviceList = IS_LINUX ? _systemctlList : _launchctlList
 
 async function probeHttp(env) {
   const keys = ['PORT','DASHBOARD_PORT','DOCS_PORT','PERSONAL_AI_PORT',
@@ -111,13 +150,15 @@ function readUpdateStatus() {
 }
 
 async function gatherStatus() {
-  const services = launchctlList()
+  const services = serviceList()
   const modules = discoverModules()
   const installed = []
   for (const m of modules) {
     const env = parseEnv(m.env)
-    const label = `${PREFIX}.${m.name}`
-    const svc = services.find(s => s.label === label) || null
+    // launchd uses `${PREFIX}.${name}` labels; systemd uses `pbox-${name}.service`.
+    // We match by the bare module name on both via svc.module.
+    const label = IS_LINUX ? `pbox-${m.name}.service` : `${PREFIX}.${m.name}`
+    const svc = services.find(s => s.module === m.name) || null
     const probe = await probeHttp(env)
     installed.push({
       name: m.name, label,
@@ -127,11 +168,11 @@ async function gatherStatus() {
     })
   }
   return {
-    install_path: INSTALL_PATH, prefix: PREFIX,
+    install_path: INSTALL_PATH, prefix: PREFIX, platform: process.platform,
     system: THEME.system, admin: THEME.admin, assistant: THEME.assistant, overseer: THEME.overseer,
     generated_at: new Date().toISOString(),
     installed,
-    other_services: services.filter(s => !installed.some(m => m.label === s.label)),
+    other_services: services.filter(s => !installed.some(m => m.name === s.module)),
     update: readUpdateStatus(),
   }
 }
@@ -159,7 +200,7 @@ function renderHtml(s) {
   const mods = s.installed.map(m => `<span>${esc(m.name)}</span>`).join('') || `<span class="off">none installed</span>`
   const upd = s.update && s.update.available
     ? `<div class="card update"><h4>Update available</h4><div class="vs"><span class="o">installed ${esc(s.update.current||'?')}</span> &rarr; <span class="n">latest ${esc(s.update.latest||'?')}</span></div><p>Verified by SHA256, backed up automatically before applying, one-command rollback.</p><p style="font-size:11.5px;color:var(--muted);margin-bottom:6px">In Terminal, run:</p><code class="cmd">pbox-update --apply</code></div>`
-    : `<div class="card update upToDate"><h4>Up to date</h4><div class="vs">${esc((s.update&&s.update.current)||'')} is the latest release.</div></div>`
+    : `<div class="card update upToDate"><h4>Up to date</h4><div class="vs">${esc((s.update&&s.update.current)||'(release tag pending)')} is the latest release.</div></div>`
 
   return `<!doctype html><html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -222,17 +263,17 @@ nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoratio
   <div class="brand">${LOGO}<span class="bname">${esc(s.system)}</span></div>
   <nav>
     <a href="/" class="on"><svg class="ic"><use href="#i-home"/></svg>Home</a>
-    <a href="#"><svg class="ic"><use href="#i-agents"/></svg>Agents</a>
-    <a href="#"><svg class="ic"><use href="#i-projects"/></svg>Projects</a>
-    <a href="#"><svg class="ic"><use href="#i-blocks"/></svg>Modules</a>
-    <a href="#"><svg class="ic"><use href="#i-book"/></svg>Docs</a>
-    <a href="#"><svg class="ic"><use href="#i-shield"/></svg>Security</a>
+    <a href="http://127.0.0.1:${esc(String((s.installed.find(m=>m.name==='personal-ai')||{}).port||8800))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-agents"/></svg>Assistant</a>
+    <a href="#modules"><svg class="ic"><use href="#i-blocks"/></svg>Modules</a>
+    <a href="http://127.0.0.1:${esc(String((s.installed.find(m=>m.name==='docs-server')||{}).port||8485))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-book"/></svg>Docs</a>
+    <a href="http://127.0.0.1:${esc(String((s.installed.find(m=>m.name==='terminal')||{}).port||8484))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-projects"/></svg>Terminal</a>
+    <a href="/api/status" target="_blank" rel="noopener"><svg class="ic"><use href="#i-shield"/></svg>Status</a>
   </nav>
   <div class="bar-right"><span class="pill ${anyRunning?'on':'off'}"><span class="d"></span>${anyRunning?'ONLINE':'IDLE'}</span></div>
 </header>
 
 <section class="welcome">
-  <h1>Welcome back. Everything runs <span class="g">on your Mac.</span></h1>
+  <h1>Welcome back. Everything runs <span class="g">on this machine.</span></h1>
   <p>No cloud middleman. Talk to your assistant, hand work to your agents, and watch over the whole system from here.</p>
 </section>
 
@@ -245,7 +286,7 @@ nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoratio
 <div class="lbl"><h2>System</h2><div class="ln"></div><span class="ct">watched by ${esc(s.admin)}</span></div>
 <section class="cols">
   <div class="card"><h4>Service status</h4>${services}</div>
-  <div class="card"><h4>Modules</h4><div class="mods">${mods}</div></div>
+  <div class="card" id="modules"><h4>Modules</h4><div class="mods">${mods}</div></div>
   ${upd}
 </section>
 
