@@ -206,24 +206,10 @@ const pretty = n => n.replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase(
 
 const LOGO = `<svg class="logo" viewBox="0 0 64 64" fill="none"><ellipse cx="32" cy="26" rx="14" ry="10" fill="url(#lightG)" opacity=".8"/><path d="M14 30 L32 39 L32 52 L14 44 Z" fill="url(#bodyL)" stroke="#6a5acd" stroke-width="1"/><path d="M50 30 L32 39 L32 52 L50 44 Z" fill="url(#bodyR)" stroke="#6a5acd" stroke-width="1"/><path d="M14 30 L32 23 L50 30" fill="none" stroke="url(#seamG)" stroke-width="2.4"/><circle cx="32" cy="27" r="2.6" fill="#FFD700"/><path d="M16 19 L32 12 L48 19 L32 26 Z" fill="url(#lidG)" stroke="#c77dff" stroke-width="1"/></svg>`
 
-function renderHtml(s) {
-  const anyRunning = s.installed.some(m => m.running)
-  const services = s.installed.map(m => {
-    const st = stateOf(m)
-    return `<div class="srv"><span class="p">${esc(pretty(m.name))}</span><span class="v ${st.cls}">${esc(st.s)}</span></div>`
-  }).join('') || `<div class="srv"><span class="p">No services yet</span><span class="v warn">run the installer</span></div>`
-  const mods = s.installed.map(m => `<span>${esc(m.name)}</span>`).join('') || `<span class="off">none installed</span>`
-  const upd = s.update && s.update.available
-    ? `<div class="card update"><h4>Update available</h4><div class="vs"><span class="o">installed ${esc(s.update.current||'?')}</span> &rarr; <span class="n">latest ${esc(s.update.latest||'?')}</span></div><p>Verified by SHA256, backed up automatically before applying, one-command rollback.</p><p style="font-size:11.5px;color:var(--muted);margin-bottom:6px">In Terminal, run:</p><code class="cmd">pbox-update --apply</code></div>`
-    : `<div class="card update upToDate"><h4>Up to date</h4><div class="vs">${esc((s.update&&s.update.current)||'(release tag pending)')} is the latest release.</div></div>`
-
-  return `<!doctype html><html lang="en"><head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta http-equiv="refresh" content="30">
-<title>${esc(s.system)} · Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-:root{--bg:#0a0a14;--bg-deep:#07070f;--elev:#14141f;--surface:#1f1f2e;--rule:#2a2a40;--fg:#f0f0ff;--fg-soft:#c8c8e0;--muted:#8888aa;--grey:#9aa4b8;--brand:#7B68EE;--cyan:#00B4FF;--gold:#FFD700;--green:#7BFF7B;--accent:${esc(THEME.accent)};--grad:linear-gradient(135deg,var(--brand),var(--cyan));--grad-spec:linear-gradient(120deg,var(--brand),var(--cyan) 50%,var(--gold));--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace}
+// Shared CSS for every page. Centralised so /modules, /status, /projects
+// share the design tokens with /. _DASHBOARD_UI_V2_SHARED.
+const SHARED_CSS = () => `<style>
+:root{--bg:#0a0a14;--bg-deep:#07070f;--elev:#14141f;--surface:#1f1f2e;--rule:#2a2a40;--fg:#f0f0ff;--fg-soft:#c8c8e0;--muted:#8888aa;--grey:#9aa4b8;--brand:#7B68EE;--cyan:#00B4FF;--gold:#FFD700;--green:#7BFF7B;--red:#ff6b6b;--accent:${esc(THEME.accent)};--grad:linear-gradient(135deg,var(--brand),var(--cyan));--grad-spec:linear-gradient(120deg,var(--brand),var(--cyan) 50%,var(--gold));--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono',monospace}
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--font);font-weight:300;min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
 body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(900px 600px at 82% -10%,rgba(123,104,238,.18),transparent 60%),radial-gradient(760px 520px at 8% 108%,rgba(0,180,255,.12),transparent 60%)}
@@ -231,7 +217,7 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;bac
 .ic{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
 header{display:flex;align-items:center;gap:18px;padding:16px 0;border-bottom:1px solid var(--rule)}
 .brand{display:flex;align-items:center;gap:11px}.logo{width:32px;height:32px;filter:drop-shadow(0 3px 9px rgba(123,104,238,.45))}
-.bname{font-weight:700;font-size:16px;letter-spacing:1.2px}.bname .a{background:var(--grad-spec);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.bname{font-weight:700;font-size:16px;letter-spacing:1.2px}
 nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoration:none;font-size:13.5px;display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:8px;transition:.2s}nav a:hover{color:var(--cyan);background:var(--elev)}nav a.on{color:var(--fg);background:var(--surface)}nav a.on .ic{color:var(--accent)}
 .bar-right{margin-left:auto;display:flex;align-items:center;gap:14px;font-family:var(--mono);font-size:11px;color:var(--muted)}
 .pill{display:flex;align-items:center;gap:8px}.pill.on{color:var(--green)}.pill .d{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}.pill.off .d{background:var(--muted);box-shadow:none}
@@ -249,17 +235,42 @@ nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoratio
 @keyframes watch{0%,100%{transform:translateX(-2px)}25%{transform:translateX(2px)}50%{transform:scaleY(.2)}55%{transform:scaleY(1)}}
 .feat .role{font-family:var(--mono);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted)}.feat h3{font-weight:600;font-size:19px;margin:2px 0 4px}.feat p{color:var(--muted);font-size:12.5px;line-height:1.45}
 .cols{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:16px;margin-bottom:50px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:50px}
 .card{background:var(--elev);border:1px solid var(--rule);border-radius:14px;padding:20px}
+.card h3{font-weight:600;font-size:15px;margin-bottom:6px}
 .card h4{font-family:var(--mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--rule)}
+.card p{color:var(--fg-soft);font-size:13.5px;line-height:1.5;margin-bottom:8px}
+.card .row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,0.04)}.card .row:last-child{border-bottom:0}
+.card .row .k{color:var(--muted);font-family:var(--mono);font-size:11px}.card .row .v{font-family:var(--mono);font-size:11.5px;color:var(--fg-soft)}
+.card .row .v.ok{color:var(--green)}.card .row .v.warn{color:var(--gold)}.card .row .v.down{color:var(--muted)}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:40px}
 .srv{display:flex;justify-content:space-between;align-items:center;padding:8px 0;font-size:13px}.srv .p{color:var(--fg-soft)}.srv .v{font-family:var(--mono);font-size:11px}.srv .v.ok{color:var(--green)}.srv .v.warn{color:var(--gold)}.srv .v.down{color:var(--muted)}
 .mods{display:flex;flex-wrap:wrap;gap:7px}.mods span{font-family:var(--mono);font-size:10.5px;padding:5px 9px;border:1px solid var(--rule);border-radius:6px;color:var(--fg-soft)}.mods span.off{color:var(--muted);border-style:dashed}
 .update{border:1px solid rgba(255,215,0,.35);background:linear-gradient(150deg,rgba(255,215,0,.06),var(--elev))}.update h4{color:var(--gold);border-color:rgba(255,215,0,.25)}.update.upToDate{border-color:var(--rule)}.update.upToDate h4{color:var(--green)}
 .update .vs{font-family:var(--mono);font-size:12.5px;margin:4px 0 12px}.update .vs .o{color:var(--muted)}.update .vs .n{color:var(--gold)}.update p{font-size:12.5px;color:var(--muted);margin-bottom:14px}
 .btn-gold{display:inline-block;font-weight:600;font-size:13px;padding:9px 16px;border-radius:8px;background:var(--gold);color:#1a1400;text-decoration:none}
+.btn{display:inline-block;font-size:12px;padding:6px 12px;border-radius:6px;background:var(--surface);color:var(--fg-soft);border:1px solid var(--rule);cursor:pointer;font-family:var(--mono);text-decoration:none}.btn:hover{background:var(--elev);color:var(--cyan)}
+.btn.danger{color:var(--red);border-color:rgba(255,107,107,.3)}.btn.danger:hover{background:rgba(255,107,107,.08)}
 .cmd{display:block;font-family:var(--mono);font-size:12.5px;background:var(--bg-deep);border:1px solid var(--rule);border-radius:7px;padding:9px 11px;color:var(--gold)}
 .meta{font-family:var(--mono);font-size:11px;color:var(--muted);padding-bottom:40px}.meta a{color:var(--cyan)}
-@media(max-width:920px){nav{display:none}.duo{grid-template-columns:1fr}.cols{grid-template-columns:1fr}}
-</style></head><body>
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}.dot.on{background:var(--green);box-shadow:0 0 6px var(--green)}.dot.off{background:var(--muted)}.dot.warn{background:var(--gold)}
+.placeholder{padding:60px 40px;text-align:center;color:var(--muted);font-size:14px}
+@media(max-width:920px){nav{display:none}.duo{grid-template-columns:1fr}.cols{grid-template-columns:1fr}.grid2{grid-template-columns:1fr}}
+</style>`
+
+// Shared <head> + <header> + <nav>. currentPath highlights the active nav.
+function pageShell(s, { title, currentPath = '/' }, bodyHtml) {
+  const anyRunning = s.installed.some(m => m.running)
+  const paPort = (s.installed.find(m => m.name === 'personal-ai') || {}).port || 8800
+  const docsPort = (s.installed.find(m => m.name === 'docs-server') || {}).port || 8485
+  const termPort = (s.installed.find(m => m.name === 'terminal') || {}).port || 8484
+  const on = p => currentPath === p ? ' class="on"' : ''
+  return `<!doctype html><html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>${esc(s.system)} · ${esc(title)}</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+${SHARED_CSS()}
+</head><body>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
 <linearGradient id="bodyL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f6b"/><stop offset="1" stop-color="#1a1338"/></linearGradient>
 <linearGradient id="bodyR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2356"/><stop offset="1" stop-color="#140f2c"/></linearGradient>
@@ -272,21 +283,38 @@ nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoratio
 <symbol id="i-blocks" viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="8" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/><rect x="13" y="13" width="8" height="8" rx="1.5"/></symbol>
 <symbol id="i-book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 0-2 2z"/><line x1="9" y1="7" x2="15" y2="7"/></symbol>
 <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/></symbol>
+<symbol id="i-term" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></symbol>
 </defs></svg>
 <div class="wrap">
 <header>
   <div class="brand">${LOGO}<span class="bname">${esc(s.system)}</span></div>
   <nav>
-    <a href="/" class="on"><svg class="ic"><use href="#i-home"/></svg>Home</a>
-    <a href="http://127.0.0.1:${esc(String((s.installed.find(m=>m.name==='personal-ai')||{}).port||8800))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-agents"/></svg>Assistant</a>
-    <a href="#modules"><svg class="ic"><use href="#i-blocks"/></svg>Modules</a>
-    <a href="http://127.0.0.1:${esc(String((s.installed.find(m=>m.name==='docs-server')||{}).port||8485))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-book"/></svg>Docs</a>
-    <a href="http://127.0.0.1:${esc(String((s.installed.find(m=>m.name==='terminal')||{}).port||8484))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-projects"/></svg>Terminal</a>
-    <a href="/api/status" target="_blank" rel="noopener"><svg class="ic"><use href="#i-shield"/></svg>Status</a>
+    <a href="/"${on('/')}><svg class="ic"><use href="#i-home"/></svg>Home</a>
+    <a href="http://127.0.0.1:${esc(String(paPort))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-agents"/></svg>Assistant</a>
+    <a href="/modules"${on('/modules')}><svg class="ic"><use href="#i-blocks"/></svg>Modules</a>
+    <a href="/projects"${on('/projects')}><svg class="ic"><use href="#i-projects"/></svg>Projects</a>
+    <a href="http://127.0.0.1:${esc(String(docsPort))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-book"/></svg>Docs</a>
+    <a href="http://127.0.0.1:${esc(String(termPort))}/" target="_blank" rel="noopener"><svg class="ic"><use href="#i-term"/></svg>Terminal</a>
+    <a href="/status"${on('/status')}><svg class="ic"><use href="#i-shield"/></svg>Status</a>
   </nav>
   <div class="bar-right"><span class="pill ${anyRunning?'on':'off'}"><span class="d"></span>${anyRunning?'ONLINE':'IDLE'}</span></div>
 </header>
+${bodyHtml}
+<div class="meta">Install: <code>${esc(s.install_path)}</code> &middot; ${esc(s.prefix)} &middot; refreshed ${esc(s.generated_at)} &middot; <a href="/api/status">JSON</a> &middot; <a href="/api/health">health</a></div>
+</div></body></html>`
+}
 
+function renderHtml(s) {
+  const services = s.installed.map(m => {
+    const st = stateOf(m)
+    return `<div class="srv"><span class="p">${esc(pretty(m.name))}</span><span class="v ${st.cls}">${esc(st.s)}</span></div>`
+  }).join('') || `<div class="srv"><span class="p">No services yet</span><span class="v warn">run the installer</span></div>`
+  const mods = s.installed.map(m => `<span>${esc(m.name)}</span>`).join('') || `<span class="off">none installed</span>`
+  const upd = s.update && s.update.available
+    ? `<div class="card update"><h4>Update available</h4><div class="vs"><span class="o">installed ${esc(s.update.current||'?')}</span> &rarr; <span class="n">latest ${esc(s.update.latest||'?')}</span></div><p>Verified by SHA256, backed up automatically before applying, one-command rollback.</p><p style="font-size:11.5px;color:var(--muted);margin-bottom:6px">In Terminal, run:</p><code class="cmd">pbox-update --apply</code></div>`
+    : `<div class="card update upToDate"><h4>Up to date</h4><div class="vs">${esc((s.update&&s.update.current)||'(release tag pending)')} is the latest release.</div></div>`
+
+  const body = `
 <section class="welcome">
   <h1>Welcome back. Everything runs <span class="g">on this machine.</span></h1>
   <p>No cloud middleman. Talk to your assistant, hand work to your agents, and watch over the whole system from here.</p>
@@ -303,10 +331,129 @@ nav{display:flex;gap:3px;margin-left:6px}nav a{color:var(--muted);text-decoratio
   <div class="card"><h4>Service status</h4>${services}</div>
   <div class="card" id="modules"><h4>Modules</h4><div class="mods">${mods}</div></div>
   ${upd}
-</section>
+</section>`
+  return pageShell(s, { title: 'Dashboard', currentPath: '/' }, body)
+}
 
-<div class="meta">Install: <code>${esc(s.install_path)}</code> &middot; ${esc(s.prefix)} &middot; refreshed ${esc(s.generated_at)} &middot; <a href="/api/status">JSON</a> &middot; <a href="/api/health">health</a></div>
-</div></body></html>`
+// /modules -- per-module card grid with port, status, log path, restart link.
+function renderModulesPage(s) {
+  if (!s.installed.length) {
+    return pageShell(s, { title: 'Modules', currentPath: '/modules' },
+      `<div class="welcome"><h1>Modules</h1><p>No modules installed yet. Run the installer to add capabilities.</p></div>`)
+  }
+  const cards = s.installed.map(m => {
+    const st = stateOf(m)
+    const portLine = m.port
+      ? `<div class="row"><span class="k">Port</span><span class="v">${esc(String(m.port))}</span></div>`
+      : ''
+    const httpLine = m.http != null
+      ? `<div class="row"><span class="k">HTTP</span><span class="v ${m.http >= 200 && m.http < 500 ? 'ok' : 'warn'}">${esc(String(m.http))}</span></div>`
+      : ''
+    const pidLine = m.pid
+      ? `<div class="row"><span class="k">PID</span><span class="v">${esc(String(m.pid))}</span></div>`
+      : ''
+    const link = m.port
+      ? `<a class="btn" href="http://127.0.0.1:${esc(String(m.port))}/" target="_blank" rel="noopener">Open</a>`
+      : ''
+    return `<div class="card">
+  <h3><span class="dot ${st.cls === 'ok' ? 'on' : (st.cls === 'warn' ? 'warn' : 'off')}"></span>${esc(pretty(m.name))}</h3>
+  <p style="color:var(--muted);font-size:12px;font-family:var(--mono);margin-bottom:14px">${esc(m.label)}</p>
+  <div class="row"><span class="k">State</span><span class="v ${st.cls}">${esc(st.s)}</span></div>
+  ${portLine}
+  ${httpLine}
+  ${pidLine}
+  <div class="row"><span class="k">Log</span><span class="v">/tmp/pandoras-box-${esc(m.name)}.log</span></div>
+  <div style="margin-top:14px;display:flex;gap:8px">${link}</div>
+</div>`
+  }).join('\n')
+  const body = `
+<section class="welcome">
+  <h1>Modules</h1>
+  <p>Every service installed on this box. Click Open to visit, or use the Terminal page to tail logs / restart.</p>
+</section>
+<div class="lbl"><h2>${s.installed.length} installed</h2><div class="ln"></div><span class="ct">refreshed live</span></div>
+<section class="card-grid">${cards}</section>`
+  return pageShell(s, { title: 'Modules', currentPath: '/modules' }, body)
+}
+
+// /status -- same data as /api/status but rendered with the dashboard's design.
+function renderStatusPage(s) {
+  const rows = s.installed.map(m => {
+    const st = stateOf(m)
+    return `<div class="card">
+  <h3><span class="dot ${st.cls === 'ok' ? 'on' : (st.cls === 'warn' ? 'warn' : 'off')}"></span>${esc(pretty(m.name))}</h3>
+  <div class="row"><span class="k">Unit</span><span class="v">${esc(m.label)}</span></div>
+  <div class="row"><span class="k">Registered</span><span class="v ${m.registered?'ok':'down'}">${m.registered?'yes':'no'}</span></div>
+  <div class="row"><span class="k">Running</span><span class="v ${m.running?'ok':'down'}">${m.running?'yes':'no'}</span></div>
+  <div class="row"><span class="k">Port</span><span class="v">${esc(m.port?String(m.port):'--')}</span></div>
+  <div class="row"><span class="k">HTTP</span><span class="v ${m.http!=null && m.http<500?'ok':'down'}">${esc(m.http!=null?String(m.http):'--')}</span></div>
+  <div class="row"><span class="k">PID</span><span class="v">${esc(m.pid?String(m.pid):'--')}</span></div>
+</div>`
+  }).join('\n')
+  const body = `
+<section class="welcome">
+  <h1>System status</h1>
+  <p>Live state across every installed module. Auto-refresh every 15s.</p>
+</section>
+<div class="lbl"><h2>Modules (${s.installed.length})</h2><div class="ln"></div><span class="ct">platform ${esc(s.platform||'')}</span></div>
+<section class="card-grid">${rows}</section>
+<script>setTimeout(() => location.reload(), 15000)</script>`
+  return pageShell(s, { title: 'Status', currentPath: '/status' }, body)
+}
+
+// /projects -- placeholder. The autonomous Projects pipeline is a separate,
+// optional layer not shipped in the public installer's MVP. Stub explains.
+function renderProjectsPage(s) {
+  const projectsDir = path.join(INSTALL_PATH, 'projects')
+  let projects = []
+  try {
+    if (fs.existsSync(projectsDir)) {
+      for (const d of fs.readdirSync(projectsDir, { withFileTypes: true })) {
+        if (!d.isDirectory()) continue
+        const pj = path.join(projectsDir, d.name, 'project.json')
+        if (!fs.existsSync(pj)) continue
+        try { projects.push(JSON.parse(fs.readFileSync(pj, 'utf8'))) } catch {}
+      }
+    }
+  } catch {}
+
+  let body
+  if (projects.length) {
+    const cards = projects.map(p => `<div class="card">
+  <h3>${esc(p.title || p.id || '(untitled)')}</h3>
+  <p style="color:var(--muted);font-size:12px;font-family:var(--mono);margin-bottom:14px">${esc(p.id || '')}</p>
+  <div class="row"><span class="k">Status</span><span class="v ${p.status==='deployed'?'ok':(p.status==='blocked'?'warn':'')}">${esc(p.status||'unknown')}</span></div>
+  <div class="row"><span class="k">Updated</span><span class="v">${esc(p.updated_at||p.created_at||'--')}</span></div>
+</div>`).join('\n')
+    body = `
+<section class="welcome">
+  <h1>Projects</h1>
+  <p>Tracked work, each with its own staged files, build log, and deploy gate.</p>
+</section>
+<div class="lbl"><h2>${projects.length} project${projects.length===1?'':'s'}</h2><div class="ln"></div></div>
+<section class="card-grid">${cards}</section>`
+  } else {
+    body = `
+<section class="welcome">
+  <h1>Projects</h1>
+  <p>The autonomous Projects pipeline is a separate, optional layer. It is not enabled on this build.</p>
+</section>
+<div class="lbl"><h2>What this would do</h2><div class="ln"></div></div>
+<section class="grid2">
+  <div class="card">
+    <h3>Track work</h3>
+    <p>Each project is a JSON file with a status flow: pending &rarr; in_progress &rarr; review_needed &rarr; approved &rarr; deployed. The dashboard would list them here, with build.log + staged-files links.</p>
+  </div>
+  <div class="card">
+    <h3>Autonomous runner</h3>
+    <p>A background runner polls the project store every 60 s, picks up pending tasks, pre-builds deploy + test scripts under <code>staged/</code>, and waits for your gate before flipping any DRY_RUN off.</p>
+  </div>
+</section>
+<div class="placeholder">
+  This module ships in the internal stack only. To bring it online here, a future installer step would create <code>${esc(projectsDir)}</code> and add a runner service.
+</div>`
+  }
+  return pageShell(s, { title: 'Projects', currentPath: '/projects' }, body)
 }
 
 const server = http.createServer(async (req, res) => {
@@ -316,6 +463,9 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/api/status') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(s, null, 2)); return }
     if (url.pathname === '/api/update-status') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(readUpdateStatus() || { available: false })); return }
     if (url.pathname === '/') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderHtml(s)); return }
+    if (url.pathname === '/modules') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderModulesPage(s)); return }
+    if (url.pathname === '/status') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderStatusPage(s)); return }
+    if (url.pathname === '/projects') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderProjectsPage(s)); return }
     res.writeHead(404, {'content-type':'text/plain'}); res.end('not found')
   } catch (e) { res.writeHead(500); res.end(`error: ${e.message}`) }
 })
