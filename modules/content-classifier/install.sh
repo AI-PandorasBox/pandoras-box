@@ -22,13 +22,41 @@ PLIST_DIR="${PBOX_PLIST_DIR:-/Library/LaunchDaemons}"
 PLIST_PATH="${PLIST_DIR}/${PLIST_LABEL}.plist"
 
 step 1 "Prerequisites (Python 3.11+)"
-command -v python3 &>/dev/null || fail "python3 not found (brew install python@3.11)"
+if ! command -v python3 &>/dev/null; then
+  if [[ "$PBOX_OS" == Linux ]]; then
+    fail "python3 not found (apt install python3 python3-venv python3-pip)"
+  else
+    fail "python3 not found (brew install python@3.11)"
+  fi
+fi
 PYVER=$(python3 --version | awk '{print $2}')
 PY_MAJ=$(echo "$PYVER" | cut -d. -f1); PY_MIN=$(echo "$PYVER" | cut -d. -f2)
 if [[ "$PY_MAJ" -lt 3 || ( "$PY_MAJ" -eq 3 && "$PY_MIN" -lt 11 ) ]]; then
-  fail "Python $PYVER too old; need 3.11+ (brew install python@3.11)"
+  if [[ "$PBOX_OS" == Linux ]]; then
+    fail "Python $PYVER too old; need 3.11+ (apt install python3.11 python3.11-venv)"
+  else
+    fail "Python $PYVER too old; need 3.11+ (brew install python@3.11)"
+  fi
 fi
 ok "Python $PYVER"
+
+# Debian/Ubuntu ship python3 without the venv + ensurepip modules; install the
+# matching python3<MAJ>.<MIN>-venv package up-front so step 3 does not fail.
+if [[ "$PBOX_OS" == Linux ]]; then
+  if ! python3 -c 'import ensurepip' &>/dev/null; then
+    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+      ok "(dry-run) would apt-install python${PY_MAJ}.${PY_MIN}-venv + python3-pip"
+    else
+      echo "  Installing python${PY_MAJ}.${PY_MIN}-venv + python3-pip (needed for venv create)..."
+      if ! sudo apt-get install -y "python${PY_MAJ}.${PY_MIN}-venv" python3-pip 2>&1 | tail -5; then
+        # Fall back to the generic python3-venv meta-package on older Debians.
+        sudo apt-get install -y python3-venv python3-pip 2>&1 | tail -5 \
+          || fail "could not apt-install python3-venv (run: sudo apt install python${PY_MAJ}.${PY_MIN}-venv python3-pip)"
+      fi
+      ok "python3-venv + python3-pip installed"
+    fi
+  fi
+fi
 
 step 2 "Staging runtime"
 sudo mkdir -p "$TARGET_DIR/store" "$TARGET_DIR/model-cache" "$TARGET_DIR/logs"

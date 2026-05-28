@@ -18,20 +18,33 @@ run_desktop_launcher_setup() {
     return 0
   fi
 
-  local hostname="${TAILSCALE_HOSTNAME:-pandoras-box.local}"
-  local DASHBOARD_URL="https://${hostname}:8181"
-  local TERMINAL_URL="https://${hostname}:8282"
-  local PA_URL="https://${hostname}:${PERSONAL_AI_PORT:-8800}"
+  # Launchers target loopback by default: services bind 127.0.0.1 and serve
+  # plain HTTP. Remote access via Tailscale is configured separately and uses
+  # different URLs (the Tailscale hostname + cert is for the optional public-
+  # mode setup). Using loopback here means the launchers Just Work on the box.
+  local DASHBOARD_PORT="${DASHBOARD_PORT:-8181}"
+  local TERMINAL_PORT="${TERMINAL_PORT:-8484}"
+  local PA_PORT="${PERSONAL_AI_PORT:-8800}"
+  local DASHBOARD_URL="http://127.0.0.1:${DASHBOARD_PORT}/"
+  local TERMINAL_URL="http://127.0.0.1:${TERMINAL_PORT}/"
+  local PA_URL="http://127.0.0.1:${PA_PORT}/"
 
   # pbox_make_launcher builds a .app on macOS and a .desktop entry on Linux.
-  pbox_make_launcher "Pandoras Box -- Dashboard" "$DASHBOARD_URL"
-  pbox_make_launcher "Pandoras Box -- Terminal"  "$TERMINAL_URL"
-  pbox_make_launcher "Pandoras Box -- Assistant" "$PA_URL"
+  # Name uses single-word separators -- multi-dash forms produced ugly
+  # mangled .desktop filenames on Linux.
+  pbox_make_launcher "Pandoras Box Dashboard" "$DASHBOARD_URL"
+  pbox_make_launcher "Pandoras Box Terminal"  "$TERMINAL_URL"
+  pbox_make_launcher "Pandoras Box Assistant" "$PA_URL"
 
   echo ""
-  info_msg "Note: the first time you click a launcher, the OS may ask if you trust"
-  info_msg "it. Allow it. The CA certificate must be trusted on this machine"
-  info_msg "(Step 'Security certificates' in this installer) for the URLs to load."
+  if [[ "$PBOX_OS" == Linux ]]; then
+    info_msg "Linux note: launchers appear in the Activities menu / app drawer."
+    info_msg "GNOME 43+ (incl. Debian 13) hides the ~/Desktop folder by default;"
+    info_msg "install a 'desktop-icons-ng' extension if you want them on the desktop."
+  else
+    info_msg "Note: the first time you click a launcher, the OS may ask if you trust"
+    info_msg "it. Allow it."
+  fi
   echo ""
   success_msg "Desktop launchers created."
 }

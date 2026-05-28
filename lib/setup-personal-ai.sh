@@ -89,26 +89,41 @@ run_obsidian_setup() {
     return 0
   fi
 
-  local vault_path=""
-  while [[ -z "$vault_path" ]]; do
-    read -rp "  Full path to your Obsidian vault root: " vault_path
-    # Expand ~ if present
+  # Skip cleanly on a blank line, stdin EOF, or after 3 failed attempts.
+  # The earlier loop spun forever on EOF / blank input, filling the install log
+  # with WARNING lines (10+ GB observed on a real install).
+  local vault_path="" attempts=0
+  echo "  (press Enter on a blank line to skip Obsidian)"
+  while [[ -z "$vault_path" && "$attempts" -lt 3 ]]; do
+    if ! read -rp "  Full path to your Obsidian vault root: " vault_path; then
+      info_msg "No input -- skipping Obsidian."
+      export PERSONAL_AI_OBSIDIAN_VAULT=""
+      return 0
+    fi
+    if [[ -z "$vault_path" ]]; then
+      info_msg "Blank -- skipping Obsidian."
+      export PERSONAL_AI_OBSIDIAN_VAULT=""
+      return 0
+    fi
     vault_path="${vault_path/#\~/$HOME}"
     if [[ ! -d "$vault_path" ]]; then
-      warn_msg "Path '$vault_path' does not exist. Try again or press Ctrl+C to skip."
-      vault_path=""
-      continue
+      warn_msg "Path '$vault_path' does not exist. Try again (or blank-Enter to skip)."
+      vault_path=""; attempts=$(( attempts + 1 )); continue
     fi
-    # Sanity: does it look like a vault?
     if [[ ! -d "$vault_path/.obsidian" ]]; then
       warn_msg "No .obsidian folder inside '$vault_path' -- this may not be a vault. Continue anyway? [y/N]"
-      read -r confirm
+      local confirm=""
+      read -r confirm || confirm=""
       if [[ ! "$confirm" =~ ^[Yy] ]]; then
-        vault_path=""
-        continue
+        vault_path=""; attempts=$(( attempts + 1 )); continue
       fi
     fi
   done
+  if [[ -z "$vault_path" ]]; then
+    warn_msg "Could not validate a vault after $attempts attempts -- skipping."
+    export PERSONAL_AI_OBSIDIAN_VAULT=""
+    return 0
+  fi
   check_pass "Vault root: $vault_path"
 
   echo ""

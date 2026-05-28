@@ -241,19 +241,37 @@ end run" 2>/dev/null || return 1 ;;
     Linux)
       local apps="$HOME/.local/share/applications" desk="$HOME/Desktop"
       mkdir -p "$apps" "$desk"
-      local f="$apps/pbox-$(echo "$name" | tr '[:upper:] ' '[:lower:]-').desktop"
+      # Filename: lowercase, spaces -> '-', collapse repeated '-', strip trailing '-'.
+      local slug; slug=$(echo "$name" | tr '[:upper:] ' '[:lower:]-' | tr -s '-' | sed 's/-*$//')
+      local f="$apps/pbox-${slug}.desktop"
+      # Three-way browser fallback so a minimal GNOME / X11 install without a
+      # configured default still launches: xdg-open -> gio open -> x-www-browser.
       cat > "$f" <<DESK
 [Desktop Entry]
 Version=1.0
 Type=Application
 Name=${name}
 Comment=Open ${name}
-Exec=xdg-open ${url}
+Exec=sh -c 'xdg-open "${url}" || gio open "${url}" || x-www-browser "${url}"'
 Icon=${icon}
 Terminal=false
-Categories=Network;
+StartupNotify=true
+Categories=Network;WebBrowser;
 DESK
-      chmod +x "$f"; cp "$f" "$desk/" 2>/dev/null && chmod +x "$desk/$(basename "$f")" 2>/dev/null || true ;;
+      chmod +x "$f"
+      # Refresh the application database so the launcher appears in Activities
+      # / app drawer immediately. Best-effort.
+      command -v update-desktop-database &>/dev/null \
+        && update-desktop-database "$apps" 2>/dev/null || true
+      # Drop a copy in ~/Desktop too -- only renders if the user has a
+      # desktop-icons extension installed (GNOME 43+ ships WITHOUT one by
+      # default). Mark it trusted so it launches without the right-click dance
+      # when the extension is present.
+      if cp "$f" "$desk/" 2>/dev/null; then
+        chmod +x "$desk/$(basename "$f")" 2>/dev/null || true
+        command -v gio &>/dev/null \
+          && gio set "$desk/$(basename "$f")" metadata::trusted true 2>/dev/null || true
+      fi ;;
   esac
   check_pass "Created launcher: $name"
 }

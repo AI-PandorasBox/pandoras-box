@@ -29,7 +29,7 @@ run_update_check_setup() {
   # Put pbox-update on the operator's PATH so `pbox-update --check-only|--apply`
   # works from any terminal, not just the full $INSTALL_PATH/scripts path.
   if sudo ln -sf "$update_script" /usr/local/bin/pbox-update 2>/dev/null; then
-    ok "pbox-update is on your PATH (try: pbox-update --check-only)"
+    check_pass "pbox-update is on your PATH (try: pbox-update --check-only)"
   else
     info_msg "pbox-update lives at $update_script (could not symlink to /usr/local/bin)"
   fi
