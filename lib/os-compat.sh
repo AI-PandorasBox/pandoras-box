@@ -278,3 +278,30 @@ pbox_play_audio() {
       else info_msg "No audio player found; saved at $file"; fi ;;
   esac
 }
+
+# --- distribute Claude subscription creds to a service account --------------
+# Lets a daemon agent's service user authenticate the `claude` CLI bridge (no API
+# key). Copies the operator's ~/.claude credentials into the service user's home.
+# Linux only; no-op on macOS (single-user) and when no operator creds exist.
+# pbox_distribute_claude_creds <service_user> <service_home>
+pbox_distribute_claude_creds() {
+  local svc_user="$1" svc_home="$2"
+  [[ "$PBOX_OS" == Darwin ]] && return 0
+  if _pbox_dry; then _pbox_compat_log "would distribute Claude creds to $svc_user (dry-run)"; return 0; fi
+  local op_user op_home
+  op_user="${SUDO_USER:-$USER}"
+  op_home="$(getent passwd "$op_user" 2>/dev/null | cut -d: -f6)"
+  [[ -z "$op_home" ]] && op_home="$HOME"
+  local src="$op_home/.claude"
+  if [[ ! -f "$src/.credentials.json" ]]; then
+    info_msg "No subscription credentials at $src/.credentials.json -- CLI bridge not provisioned (API-key mode?)."
+    return 0
+  fi
+  sudo install -d -m 700 "$svc_home/.claude"
+  sudo cp "$src/.credentials.json" "$svc_home/.claude/.credentials.json"
+  [[ -f "$src/settings.json" ]] && sudo cp "$src/settings.json" "$svc_home/.claude/settings.json" 2>/dev/null || true
+  sudo chown -R "$svc_user:pbox" "$svc_home/.claude" 2>/dev/null || sudo chown -R "$svc_user" "$svc_home/.claude"
+  sudo chmod 700 "$svc_home/.claude"
+  sudo chmod 600 "$svc_home/.claude/.credentials.json"
+  check_pass "Claude subscription credentials provisioned for $svc_user (CLI bridge)."
+}

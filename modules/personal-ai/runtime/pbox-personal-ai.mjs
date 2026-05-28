@@ -7,7 +7,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, execFile } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 
@@ -251,9 +251,45 @@ function buildSystemPrompt(recalled = []) {
     `if you do not know, say so.${factsBlock}${recallBlock}`
 }
 
+// CLI bridge: with no API key, reason through the `claude` CLI using the operator's
+// subscription auth (the CLI reads $HOME/.claude). No per-token billing, no key on
+// disk. This path is plain chat (no tool-use), so the conversation is rendered into a
+// single prompt. _CLI_BRIDGE_V1
+const CLAUDE_BIN = process.env.PBOX_CLAUDE_BIN || 'claude'
+async function callClaudeViaCLI({ history, userContent }) {
+  let recalled = []
+  try { recalled = await recallMemories(userContent) } catch {}
+  const system = buildSystemPrompt(recalled)
+  const lines = []
+  for (const m of history) {
+    if (m.role === 'user') lines.push(`User: ${m.content}`)
+    else if (m.role === 'assistant') lines.push(`Assistant: ${m.content}`)
+  }
+  lines.push(`User: ${userContent}`)
+  const prompt = lines.join('\n\n')
+  const args = ['-p', '--model', MODEL, '--append-system-prompt', system, '--output-format', 'json']
+  return await new Promise((resolve, reject) => {
+    const child = execFile(CLAUDE_BIN, args, { timeout: 120000, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(`claude CLI bridge failed: ${String(stderr || err.message).slice(0, 300)}`))
+      let text = ''
+      try {
+        const j = JSON.parse(stdout)
+        if (j && j.is_error) return reject(new Error(`claude CLI error: ${String(j.result || j.subtype || 'unknown').slice(0, 300)}`))
+        text = (j && (j.result || j.text)) || ''
+      } catch { text = String(stdout).trim() }
+      if (!text) return reject(new Error('claude CLI bridge returned empty output'))
+      resolve(text)
+    })
+    try { child.stdin.write(prompt); child.stdin.end() } catch (e) { reject(e) }
+  })
+}
+
 async function callClaude({ history, userContent, stream = false }) {
   const apiKey = getApiKey()
-  if (!apiKey) throw new Error('No Anthropic API key found. Set ANTHROPIC_API_KEY or add to macOS Keychain (service=pbox-anthropic-key).')
+  if (!apiKey) {
+    // Subscription / CLI bridge path (returns full text; no token stream).
+    return await callClaudeViaCLI({ history, userContent })
+  }
   const Ctor = await getAnthropic()
   const client = new Ctor({ apiKey })
   const messages = []
@@ -456,6 +492,21 @@ async function handleChatStream(req, res, url) {
     'x-accel-buffering': 'no',
   })
   res.write(`event: start\ndata: ${JSON.stringify({ conversation_id: cid })}\n\n`)
+
+  // Bridge mode (no API key): the CLI path returns the full reply, not a token
+  // stream. Emit it as a single SSE token, then end. _CLI_BRIDGE_V1
+  if (!getApiKey()) {
+    try {
+      const text = await callClaude({ history, userContent: content, stream: false })
+      res.write(`event: token\ndata: ${JSON.stringify({ text })}\n\n`)
+      const mid = recordMessage(cid, 'assistant', text)
+      res.write(`event: end\ndata: ${JSON.stringify({ message_id: mid })}\n\n`)
+    } catch (e) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: String(e.message || e) })}\n\n`)
+    }
+    return res.end()
+  }
+
   let acc = ''
   try {
     const stream = await callClaude({ history, userContent: content, stream: true })

@@ -152,6 +152,10 @@ else
   PA_LOG="/tmp/${LOG_PREFIX}-personal-ai.log"
   pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
     "$SERVICE_USER" "$PA_LOG" "$TARGET_DIR" "$PA_ENV" || fail "systemd service install failed"
+  # CLI bridge: hand the service account the operator's Claude subscription creds
+  # (no-op in API-key mode), then restart so the runtime picks them up.
+  pbox_distribute_claude_creds "pbox-${PLIST_LABEL##*.}" "$TARGET_DIR"
+  sudo systemctl restart "pbox-${PLIST_LABEL##*.}" 2>/dev/null || true
   ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
 
