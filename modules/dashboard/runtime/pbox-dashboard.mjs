@@ -87,12 +87,19 @@ function _launchctlList() {
   return out
 }
 
+// Modules that ship as upstream third-party services (not pbox-prefixed).
+// Map module dir name -> actual systemd unit. Lets the dashboard recognise them.
+const LINUX_UPSTREAM_UNITS = {
+  ollama: 'ollama.service',
+}
+
 function _systemctlList() {
-  // list-units --type=service --all --no-legend --plain "pbox-*"
+  // list-units pbox-* covers our own units; merge in any mapped upstream units.
+  const patterns = ['pbox-*', ...Object.values(LINUX_UPSTREAM_UNITS)]
   let raw = ''
   try {
     raw = execFileSync('systemctl',
-      ['list-units', '--type=service', '--all', '--no-legend', '--plain', 'pbox-*'],
+      ['list-units', '--type=service', '--all', '--no-legend', '--plain', ...patterns],
       { encoding: 'utf8', timeout: 3000 })
   } catch { return [] }
   const out = []
@@ -100,8 +107,16 @@ function _systemctlList() {
     const parts = line.trim().split(/\s+/)
     if (parts.length < 4) continue
     const [unit, , active, sub] = parts  // [UNIT, LOAD, ACTIVE, SUB, ...]
-    if (!unit.startsWith('pbox-') || !unit.endsWith('.service')) continue
-    const mod = unit.slice('pbox-'.length, -'.service'.length)
+    if (!unit.endsWith('.service')) continue
+    let mod
+    if (unit.startsWith('pbox-')) {
+      mod = unit.slice('pbox-'.length, -'.service'.length)
+    } else {
+      // Reverse-lookup upstream unit -> module dir name.
+      const entry = Object.entries(LINUX_UPSTREAM_UNITS).find(([, u]) => u === unit)
+      if (!entry) continue
+      mod = entry[0]
+    }
     // Best-effort PID via `systemctl show -p MainPID`. Cheap, single-fork.
     let pid = null
     try {
