@@ -15,6 +15,10 @@
 # sanitised report.
 # =============================================================================
 
+# $HOME may be unset when the installer is invoked from a stripped environment
+# (e.g. systemd-nspawn shell, fresh root container). Fall back to the eUID home.
+: "${HOME:=$(getent passwd "$(id -u)" 2>/dev/null | cut -d: -f6)}"
+: "${HOME:=/root}"
 PBOX_LOG_DIR="${HOME}/Library/Logs/PandorasBox"
 PBOX_RUN_TS=""
 PBOX_INSTALL_LOG=""

@@ -27,19 +27,30 @@ run_staging() {
   #   1) $SETUP_DIR/VERSION already exists (release tarball ships one)
   #   2) git describe in $SETUP_DIR (clone-from-source operators)
   #   3) "v0.0.0-dev" fallback so the file always exists
-  if [[ ! -f "$SETUP_DIR/VERSION" ]]; then
-    local detected
+  # The VERSION anchor is preferred at $SETUP_DIR/VERSION (the release tarball
+  # ships one). When the installer runs from a read-only source (bind-ro mount,
+  # squashfs, system-managed packages), we cannot write there. Fall back to
+  # $INSTALL_PATH/VERSION which is always writable, and only attempt the
+  # $SETUP_DIR write when the dir is writable AND no file exists yet.
+  _pbox_resolve_version() {
     if detected=$(cd "$SETUP_DIR" 2>/dev/null && git describe --tags --abbrev=0 2>/dev/null) && [[ -n "$detected" ]]; then
-      echo "$detected" > "$SETUP_DIR/VERSION"
-    elif detected=$(curl -fsSL "https://api.github.com/repos/AI-PandorasBox/pandoras-box/releases/latest" 2>/dev/null \
-                    | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/') && [[ -n "$detected" ]]; then
-      # clone-from-dev (no reachable tag): anchor to the latest PUBLISHED release
-      # so `pbox-update --check-only` + the weekly notifier actually fire.
-      echo "$detected" > "$SETUP_DIR/VERSION"
-    else
-      echo "v0.0.0-dev" > "$SETUP_DIR/VERSION"
+      echo "$detected"; return
     fi
+    if detected=$(curl -fsSL "https://api.github.com/repos/AI-PandorasBox/pandoras-box/releases/latest" 2>/dev/null \
+                  | grep -m1 '"tag_name"' | sed -E 's/.*"tag_name"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/') && [[ -n "$detected" ]]; then
+      echo "$detected"; return
+    fi
+    echo "v0.0.0-dev"
+  }
+  local detected
+  if [[ ! -f "$SETUP_DIR/VERSION" ]] && [[ -w "$SETUP_DIR" ]]; then
+    detected=$(_pbox_resolve_version)
+    echo "$detected" > "$SETUP_DIR/VERSION"
   fi
+  # Always also write the install-path copy so pbox-update + dashboard can
+  # find it on a read-only source layout.
+  if [[ -z "${detected:-}" ]]; then detected=$(_pbox_resolve_version); fi
+  sudo bash -c "echo '$detected' > '$INSTALL_PATH/VERSION'" 2>/dev/null || true
 
   local copied=0 skipped=0 dirs_done=0
   for sub in "${_STAGE_DIRS[@]}"; do
