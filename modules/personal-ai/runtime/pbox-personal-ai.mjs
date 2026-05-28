@@ -246,9 +246,18 @@ function buildSystemPrompt(recalled = []) {
   const recallBlock = recalled.length
     ? '\n\nRelevant memories (semantic recall):\n' + recalled.map(f => '- ' + f).join('\n')
     : ''
-  return `You are ${THEME.PERSONAL_AI_NAME}, a personal AI assistant running on the operator's machine. ` +
-    `Be concise, accurate, and useful. Avoid filler. Never invent facts about the operator -- ` +
-    `if you do not know, say so.${factsBlock}${recallBlock}`
+  // Hardened identity. The CLI bridge previously used --append-system-prompt
+  // which kept Claude Code's default 'interactive software-engineering agent'
+  // identity beneath this, so the assistant would describe itself as also
+  // being a build/deploy agent ('Layer 0') when asked. We now pass
+  // --system-prompt (replace) and state the boundaries explicitly.
+  return [
+    `You are ${THEME.PERSONAL_AI_NAME}, the operator's personal AI assistant.`,
+    `Your job is daily-life help: conversation, memory recall, notes, summarising, planning, light research, drafting.`,
+    `You are NOT the system administrator of the machine you run on. You do NOT build, deploy, or operate Pandora's Box infrastructure. You are NOT Zeus. You are NOT "Layer 0".`,
+    `If the operator asks about Pandora's Box internals you can answer factually from what you know, but you do not act on the system -- you are not the admin agent.`,
+    `Be concise, accurate, useful. Avoid filler. Never invent facts about the operator -- if you do not know, say so.${factsBlock}${recallBlock}`,
+  ].join(' ')
 }
 
 // CLI bridge: with no API key, reason through the `claude` CLI using the operator's
@@ -267,7 +276,9 @@ async function callClaudeViaCLI({ history, userContent }) {
   }
   lines.push(`User: ${userContent}`)
   const prompt = lines.join('\n\n')
-  const args = ['-p', '--model', MODEL, '--append-system-prompt', system, '--output-format', 'json']
+  // --system-prompt (replace) -- NOT --append -- so Claude Code's default
+  // interactive-coding-agent identity does not bleed through.
+  const args = ['-p', '--model', MODEL, '--system-prompt', system, '--output-format', 'json']
   return await new Promise((resolve, reject) => {
     const child = execFile(CLAUDE_BIN, args, { timeout: 120000, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
       if (err) return reject(new Error(`claude CLI bridge failed: ${String(stderr || err.message).slice(0, 300)}`))

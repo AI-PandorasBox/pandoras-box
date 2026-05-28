@@ -87,6 +87,25 @@ else
   pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
     "$SERVICE_USER" "$TERM_LOG" "$TARGET_DIR" "$TERM_ENV" || fail "systemd service install failed"
   ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
+
+  # Sudoers drop-in: allow the pbox-terminal service user to restart any
+  # pbox-* unit without a password. Scoped to systemctl restart pbox-*; no
+  # other commands granted. Validates with visudo -c before installation.
+  SUDOERS_FILE=/etc/sudoers.d/pbox-terminal
+  TMP_SUDO=$(mktemp)
+  cat > "$TMP_SUDO" <<SUDOEOF
+# Pandoras Box terminal -- per-service restart capability.
+pbox-terminal ALL=(root) NOPASSWD: /bin/systemctl restart pbox-*, /usr/bin/systemctl restart pbox-*
+SUDOEOF
+  if sudo visudo -cf "$TMP_SUDO" >/dev/null 2>&1; then
+    sudo cp "$TMP_SUDO" "$SUDOERS_FILE"
+    sudo chmod 440 "$SUDOERS_FILE"
+    sudo chown root:root "$SUDOERS_FILE"
+    ok "sudoers drop-in installed: $SUDOERS_FILE"
+  else
+    echo "[$MODULE_NAME] WARN: visudo rejected the sudoers fragment; restart button disabled"
+  fi
+  rm -f "$TMP_SUDO"
 fi
 
 step 5 "Verifying HTTP response"

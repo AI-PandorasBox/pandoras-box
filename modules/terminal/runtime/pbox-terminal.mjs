@@ -65,8 +65,28 @@ function validSession(req) {
   return true
 }
 
-// Allowed service labels: discovered from launchctl list filtered by prefix.
+// OS-aware service discovery. macOS reads launchctl; Linux reads systemd.
+// On Linux the dropdown is keyed by `pbox-<name>.service`; on macOS by the
+// LAUNCHDAEMON_PREFIX.<name> label. The "label" string returned here is what
+// the UI shows AND what gets passed to /api/tail + /api/restart.
+const IS_LINUX = process.platform === 'linux'
+
 function allowedLabels() {
+  if (IS_LINUX) {
+    try {
+      const raw = execFileSync('systemctl',
+        ['list-units', '--type=service', '--all', '--no-legend', '--plain', 'pbox-*'],
+        { encoding: 'utf8', timeout: 3000 })
+      const labels = new Set()
+      for (const line of raw.split('\n')) {
+        const parts = line.trim().split(/\s+/)
+        if (parts.length >= 1 && parts[0].startsWith('pbox-') && parts[0].endsWith('.service')) {
+          labels.add(parts[0])
+        }
+      }
+      return labels
+    } catch { return new Set() }
+  }
   try {
     const raw = execFileSync('launchctl', ['list'], { encoding: 'utf8', timeout: 3000 })
     const labels = new Set()
@@ -76,6 +96,20 @@ function allowedLabels() {
     }
     return labels
   } catch { return new Set() }
+}
+
+// Resolve a label string back to its log file path. Module logs follow the
+// pattern /tmp/<LOG_PREFIX>-<name>.log on both platforms.
+function labelToLogPath(label) {
+  let name
+  if (IS_LINUX && label.startsWith('pbox-') && label.endsWith('.service')) {
+    name = label.slice('pbox-'.length, -'.service'.length)
+  } else if (label.startsWith(PREFIX + '.')) {
+    name = label.slice(PREFIX.length + 1)
+  } else {
+    return null
+  }
+  return `/tmp/${LOG_PREFIX}-${name}.log`
 }
 
 function tailLog(file, lines = 200) {
@@ -176,8 +210,8 @@ const server = http.createServer((req, res) => {
     if (url.pathname === '/api/tail') {
       const label = url.searchParams.get('label') || ''
       if (!allowedLabels().has(label)) { res.writeHead(404); res.end('unknown label'); return }
-      const suffix = label.slice(PREFIX.length + 1)
-      const file = `/tmp/${LOG_PREFIX}-${suffix}.log`
+      const file = labelToLogPath(label)
+      if (!file) { res.writeHead(400); res.end('bad label'); return }
       res.writeHead(200, {'content-type':'text/plain; charset=utf-8'})
       res.end(tailLog(file))
       return
@@ -186,8 +220,16 @@ const server = http.createServer((req, res) => {
       const label = url.searchParams.get('label') || ''
       if (!allowedLabels().has(label)) { res.writeHead(404); res.end('unknown label'); return }
       try {
-        execFileSync('launchctl', ['stop', label], { timeout: 5000 })
-        execFileSync('launchctl', ['start', label], { timeout: 5000 })
+        if (IS_LINUX) {
+          // systemctl restart needs root; the terminal service does not run as
+          // root. Use sudo with a NOPASSWD rule installed by setup-terminal.
+          // (Falls back to a plain systemctl call which will fail informatively
+          // if the rule is missing.)
+          execFileSync('sudo', ['-n', 'systemctl', 'restart', label], { timeout: 8000 })
+        } else {
+          execFileSync('launchctl', ['stop', label], { timeout: 5000 })
+          execFileSync('launchctl', ['start', label], { timeout: 5000 })
+        }
         res.writeHead(200); res.end('ok')
       } catch (e) { res.writeHead(500); res.end(`restart failed: ${e.message}`) }
       return

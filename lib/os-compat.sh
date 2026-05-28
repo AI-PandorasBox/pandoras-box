@@ -125,7 +125,16 @@ pbox_create_service() {
   fi
 
   local envline=""
-  [[ -n "$env_file" ]] && envline="EnvironmentFile=-${env_file}"
+  if [[ -n "$env_file" ]]; then
+    envline="EnvironmentFile=-${env_file}"
+    # Make the .env file group-readable so peer services (notably pbox-dashboard
+    # and pbox-admin-lite) can read PORT keys to render status rows. Group is
+    # 'pbox' so only members of that group can read; world stays 0.
+    if [[ -f "$env_file" ]] && ! _pbox_dry; then
+      sudo chown "root:pbox" "$env_file" 2>/dev/null || true
+      sudo chmod 640 "$env_file" 2>/dev/null || true
+    fi
+  fi
   sudo tee "$unit_path" >/dev/null <<UNIT
 [Unit]
 Description=Pandoras Box -- ${unit}

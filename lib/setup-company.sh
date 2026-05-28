@@ -7,20 +7,42 @@ run_company_setup() {
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi
-  section_header "Setting up your company agents"
-  echo "  Each company gets its own set of AI agents."
-  echo "  The agents handle your email, calendar, and documents."
-  echo "  Each agent runs in isolation -- agents for one company cannot"
-  echo "  access anything belonging to another company."
+  section_header "Mailboxes, calendars, and chat relays"
+  echo "  This step connects one or more email/calendar accounts to your"
+  echo "  Personal Assistant. Each one can be Microsoft 365 or Google."
+  echo "  Telegram / Slack / Discord / WhatsApp relays for each account are"
+  echo "  offered inside this step."
+  echo ""
+  echo "  You can call an account anything you like:"
+  echo "    -  'Personal' for your own mail / calendar"
+  echo "    -  a company name for a work account"
+  echo "    -  add several (each runs in its own isolated agent)"
+  echo ""
+  echo "  ${C_YELLOW}If you enter 0, the assistant will run as chat-only.${C_RESET}"
+  echo "  ${C_YELLOW}No mail, calendar, or chat relay setup will run.${C_RESET}"
   echo ""
 
-  prompt_with_default "How many companies do you want to connect?" "1" COMPANY_COUNT
+  prompt_with_default "How many mailboxes / calendars to connect?" "1" COMPANY_COUNT
   export COMPANY_COUNT
+
+  if [[ "$COMPANY_COUNT" == "0" ]]; then
+    echo ""
+    warn_msg "You chose 0. The assistant will start with no mail or calendar."
+    info_msg "You can add accounts later: bash $INSTALL_PATH/lib/setup-company.sh"
+    echo ""
+    local confirm
+    prompt_yes_no "Continue with no mailboxes / calendars?" confirm "no"
+    if [[ "$confirm" != "yes" ]]; then
+      info_msg "OK -- back to the count prompt."
+      prompt_with_default "How many mailboxes / calendars to connect?" "1" COMPANY_COUNT
+      export COMPANY_COUNT
+    fi
+  fi
 
   local i
   for i in $(seq 1 "$COMPANY_COUNT"); do
     echo ""
-    echo "  ── Company $i of $COMPANY_COUNT ──"
+    echo "  ── Account $i of $COMPANY_COUNT ──"
     echo ""
     setup_single_company "$i"
   done
@@ -29,21 +51,24 @@ run_company_setup() {
 setup_single_company() {
   local company_index="$1"
 
-  prompt_required "Company name (e.g. 'Acme Ltd')" COMPANY_DISPLAY_NAME
+  echo "  Label for this account (use 'Personal' for your own, or a company name):"
+  prompt_with_default "  Account label" "Personal" COMPANY_DISPLAY_NAME
   local company_slug
   company_slug=$(echo "$COMPANY_DISPLAY_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
-  info_msg "Company slug: $company_slug (used in file and service names)"
+  info_msg "Account slug: $company_slug (used in file and service names)"
   echo ""
 
-  echo "  What email system does $COMPANY_DISPLAY_NAME use?"
-  echo "  1) Microsoft 365 (Outlook, Exchange)"
-  echo "  2) Google Workspace (Gmail)"
+  echo "  What email system does this account use?"
+  echo "  1) Microsoft 365 (Outlook / Exchange / Hotmail / Live)"
+  echo "  2) Google (Gmail / Workspace)"
+  echo "  3) Skip mail + calendar for this account (just create the slot)"
   echo ""
-  read -rp "  Enter 1 or 2: " email_choice
+  read -rp "  Enter 1, 2, or 3: " email_choice
 
   case "$email_choice" in
     1) setup_company_ms365 "$company_slug" "$COMPANY_DISPLAY_NAME" ;;
     2) setup_company_google "$company_slug" "$COMPANY_DISPLAY_NAME" ;;
+    3) info_msg "Skipping mail/calendar -- account slot will be chat-only." ;;
     *) warn_msg "Invalid choice. Defaulting to Microsoft 365."
        setup_company_ms365 "$company_slug" "$COMPANY_DISPLAY_NAME" ;;
   esac
