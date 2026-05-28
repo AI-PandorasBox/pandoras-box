@@ -10,6 +10,15 @@ TOTAL_STEPS=3
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh 2>/dev/null || true
+
+# admin-shell creates a macOS .app bundle that launches Chrome in app mode.
+# The Linux equivalent (a .desktop file + xdg-open) is a follow-up; skip cleanly
+# on Linux for now so the wider install does not flag it as a failure.
+if [[ "${PBOX_OS:-$(uname -s)}" != Darwin ]]; then
+  echo "[admin-shell] Linux support pending (macOS .app bundle); skipped."
+  exit 0
+fi
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }

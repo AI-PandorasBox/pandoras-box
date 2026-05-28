@@ -8,6 +8,10 @@ run_personal_sensor_setup() {
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi
+  if [[ "${PBOX_OS:-$(uname -s)}" != Darwin ]]; then
+    info_msg "Personal Sensor Layer: Linux support pending (geofencing uses macOS corelocationcli); skipped."
+    return 0
+  fi
   print_module_info_card \
     "the Personal Sensor Layer + Watch (personal intelligence layer)" \
     "the Personal Sensor Layer is a passive sensor daemon: it watches your calendar proximity, unread email count, named places (geofencing), step count, heart rate, and free-time gaps. It surfaces signals to your Personal Assistant, who decides whether to push them to you (no LLM cost at the sensor layer; LLM only fires when the assistant decides to act). The Watch companion is the surface where many of those signals land -- voice input, notification cards, urgent-item pings -- on Wear OS or Apple Watch. They install together because the Personal Sensor Layer is most useful with a watch you check often." \
@@ -29,7 +33,7 @@ run_personal_sensor_setup() {
   echo "  in 20 min based on traffic'). Skip the prompt by pressing Return."
   echo ""
 
-  declare -a PERSONAL_SENSOR_PLACES
+  declare -a PERSONAL_SENSOR_PLACES=()
   while true; do
     local p_label=""
     read -rp "  Place name (e.g. Home, Office) -- blank to finish: " p_label

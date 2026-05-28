@@ -8,6 +8,7 @@ MODULE_NAME="relay-telegram"
 TOTAL_STEPS=3
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)/lib
 [[ -f "$INSTALL_PATH/lib/stub-helpers.sh" ]] && source "$INSTALL_PATH/lib/stub-helpers.sh" \
@@ -48,9 +49,7 @@ ok "Telegram credentials written (chmod 600)"
 
 step 3 "Restarting conductor (if installed)"
 if stub_check_conductor "$COMPANY_SLUG"; then
-  sudo launchctl stop "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
-  sleep 1
-  sudo launchctl start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
+  pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
   ok "Conductor restarted; Telegram relay active for $COMPANY_SLUG"
 else
   ok "Credentials saved. Relay goes live when the conductor for '$COMPANY_SLUG' is installed."

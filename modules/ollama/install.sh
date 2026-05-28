@@ -33,12 +33,15 @@ else
 fi
 
 step 2 "Starting ollama service"
-if [[ "$PBOX_OS" == Darwin ]]; then
+if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  ok "(dry-run) ollama service start skipped"
+elif [[ "$PBOX_OS" == Darwin ]]; then
   brew services start ollama 2>&1 | head -3 || true
+  ok "ollama service started"
 else
   sudo systemctl enable --now ollama 2>&1 | head -3 || true
+  ok "ollama service started"
 fi
-ok "ollama service started"
 
 step 3 "Verifying ollama is reachable"
 sleep 2

@@ -11,6 +11,7 @@ TOTAL_STEPS=3
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)/lib
 [[ -f "$INSTALL_PATH/lib/stub-helpers.sh" ]] && source "$INSTALL_PATH/lib/stub-helpers.sh" \
@@ -58,9 +59,7 @@ fi
 step 3 "Enabling calendar agent + restarting conductor (if installed)"
 stub_env_set "$BASE_ENV" "CALENDAR_ENABLED" "true"
 if stub_check_conductor "$COMPANY_SLUG"; then
-  sudo launchctl stop "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
-  sleep 1
-  sudo launchctl start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
+  pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
   ok "Conductor restarted; calendar agent enabled for $COMPANY_SLUG"
 else
   ok "Credentials saved. Conductor not yet installed (v0.5.x). Agent goes live when v0.5.x ships."

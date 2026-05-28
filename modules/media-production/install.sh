@@ -10,6 +10,7 @@ TOTAL_STEPS=5
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -75,39 +76,57 @@ fi
 
 # -----------------------------------------------------------------------------
 step 4 "Generating + installing LaunchDaemon plist"
-SERVICE_USER="${MEDIA_PRODUCTION_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/com.pandoras-box.media-production.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
-plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
+SERVICE_USER="${MEDIA_PRODUCTION_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/com.pandoras-box.media-production.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
+  plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
 
-# Ownership of files written by the daemon must match the service user.
-sudo chown -R "$SERVICE_USER" "$TARGET_DIR/store" "$TARGET_DIR/output" 2>/dev/null || true
+  # Ownership of files written by the daemon must match the service user.
+  sudo chown -R "$SERVICE_USER" "$TARGET_DIR/store" "$TARGET_DIR/output" 2>/dev/null || true
 
-if [[ "$DRY_RUN" == "1" ]]; then
-  ok "[DRY-RUN] plist rendered + validated at $RENDERED -- not installed"
-  echo "[$MODULE_NAME] PASS (dry-run)"
-  exit 0
+  if [[ "$DRY_RUN" == "1" ]]; then
+    ok "[DRY-RUN] plist rendered + validated at $RENDERED -- not installed"
+    echo "[$MODULE_NAME] PASS (dry-run)"
+    exit 0
+  fi
+
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
+  rm -f "$RENDERED"
+  ok "Plist installed: $PLIST_PATH"
+
+  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  fi
+  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+  ok "LaunchDaemon loaded"
+else
+  # Ownership of files written by the daemon must match the service user
+  # (pbox_create_service will also chown the workdir, but store/output are
+  # separately created above and may need a refresh).
+  sudo chown -R "$SERVICE_USER" "$TARGET_DIR/store" "$TARGET_DIR/output" 2>/dev/null || true
+
+  if [[ "$DRY_RUN" == "1" ]]; then
+    ok "[DRY-RUN] systemd unit not installed"
+    echo "[$MODULE_NAME] PASS (dry-run)"
+    exit 0
+  fi
+
+  MP_LOG="/tmp/${LOG_PREFIX}-media-production.log"
+  pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
+    "$SERVICE_USER" "$MP_LOG" "$TARGET_DIR" "$MEDIA_ENV" || fail "systemd service install failed"
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
-
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-ok "Plist installed: $PLIST_PATH"
-
-if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-  sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
-fi
-sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-ok "LaunchDaemon loaded"
 
 # -----------------------------------------------------------------------------
 step 5 "Verifying daemon"
@@ -122,10 +141,10 @@ if [[ "$HTTP_VAL" == "1" ]]; then
   fi
 else
   # No HTTP surface; confirm the daemon is registered + running.
-  if launchctl list | grep -q "$PLIST_LABEL"; then
+  if pbox_service_running "$PLIST_LABEL"; then
     ok "Daemon registered ($PLIST_LABEL)"
   else
-    echo "[$MODULE_NAME] WARN: daemon not visible in launchctl list"
+    echo "[$MODULE_NAME] WARN: daemon not running"
   fi
 fi
 

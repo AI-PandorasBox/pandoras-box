@@ -16,6 +16,7 @@ QRCODE_TERMINAL_VERSION="^0.12"
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)/lib
 [[ -f "$INSTALL_PATH/lib/stub-helpers.sh" ]] && source "$INSTALL_PATH/lib/stub-helpers.sh" \
@@ -66,7 +67,7 @@ step 2 "Installing whatsapp-web.js bridge per-tenant (pinned)"
 # linked-device record. Multi-tenant on the same Mac is supported.
 BRIDGE_DIR="$INSTALL_PATH/$COMPANY_SLUG/whatsapp-bridge"
 sudo mkdir -p "$BRIDGE_DIR"
-SERVICE_USER="${BRIDGE_USER:-$(stat -f '%Su' "$INSTALL_PATH" 2>/dev/null || echo $USER)}"
+SERVICE_USER="${BRIDGE_USER:-$(pbox_stat_owner "$INSTALL_PATH" 2>/dev/null || echo $USER)}"
 sudo chown "$SERVICE_USER:staff" "$BRIDGE_DIR" 2>/dev/null || true
 
 if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
@@ -89,9 +90,7 @@ stub_env_set "$BASE_ENV" "WHATSAPP_BRIDGE_DIR" "$BRIDGE_DIR"
 stub_env_set "$BASE_ENV" "RELAY_TYPE" "whatsapp"
 
 if stub_check_conductor "$COMPANY_SLUG"; then
-  sudo launchctl stop "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
-  sleep 1
-  sudo launchctl start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor" 2>/dev/null || true
+  pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
   ok "Conductor restarted; WhatsApp relay starting for $COMPANY_SLUG"
 else
   ok "Config saved. Conductor not yet installed (v0.5.x). Relay goes live when v0.5.x ships."

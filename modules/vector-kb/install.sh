@@ -9,6 +9,7 @@ TOTAL_STEPS=4
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -45,7 +46,7 @@ fi
 
 step 2 "Staging runtime + store + .env"
 sudo mkdir -p "$TARGET_DIR" "$STORE_DIR"
-sudo chown -R "$(stat -f '%Su' "$INSTALL_PATH")" "$TARGET_DIR"
+sudo chown -R "$(pbox_stat_owner "$INSTALL_PATH")" "$TARGET_DIR"
 sudo cp "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" "$TARGET_DIR/"
 sudo chmod 755 "$TARGET_DIR/$RUNTIME_SCRIPT"
 ENV_PATH="$TARGET_DIR/.env"
@@ -65,25 +66,36 @@ ENVEOF
 fi
 
 step 3 "Rendering + loading LaunchDaemon"
-SERVICE_USER="${VECTOR_KB_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/com.pandoras-box.vector-kb.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX:-pandoras-box}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
-plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
-if [[ "$DRY_RUN_ACTIVE" == "1" ]]; then
-  ok "Dry-run: plist valid, not installing"; rm -f "$RENDERED"
+SERVICE_USER="${VECTOR_KB_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/com.pandoras-box.vector-kb.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX:-pandoras-box}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
+  plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
+  if [[ "$DRY_RUN_ACTIVE" == "1" ]]; then
+    ok "Dry-run: plist valid, not installing"; rm -f "$RENDERED"
+  else
+    sudo mkdir -p "$PLIST_DIR"; sudo cp "$RENDERED" "$PLIST_PATH"
+    sudo chown root:wheel "$PLIST_PATH"; sudo chmod 644 "$PLIST_PATH"; rm -f "$RENDERED"
+    launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null && sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+    sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+    ok "LaunchDaemon loaded: $PLIST_LABEL"
+  fi
 else
-  sudo mkdir -p "$PLIST_DIR"; sudo cp "$RENDERED" "$PLIST_PATH"
-  sudo chown root:wheel "$PLIST_PATH"; sudo chmod 644 "$PLIST_PATH"; rm -f "$RENDERED"
-  launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null && sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
-  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-  ok "LaunchDaemon loaded: $PLIST_LABEL"
+  if [[ "$DRY_RUN_ACTIVE" == "1" ]]; then
+    ok "Dry-run: systemd unit not installed"
+  else
+    VK_LOG="/tmp/${LOG_PREFIX:-pandoras-box}-vector-kb.log"
+    pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
+      "$SERVICE_USER" "$VK_LOG" "$TARGET_DIR" "$ENV_PATH" || fail "systemd service install failed"
+    ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
+  fi
 fi
 
 step 4 "Verifying HTTP response"

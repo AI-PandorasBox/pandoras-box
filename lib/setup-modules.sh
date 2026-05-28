@@ -114,7 +114,11 @@ run_module_selection() {
     "~30 minutes (mostly the ZIM download)"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST offline-kb"
     # _A5_INSTALLER_UX_V1 -- soft dep check before running the Offline Knowledge Library install
-    check_module_dep "the Offline Knowledge Library" "docker" "brew install --cask docker"
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      check_module_dep "the Offline Knowledge Library" "docker" "brew install --cask docker"
+    else
+      check_module_dep "the Offline Knowledge Library" "docker" "sudo apt-get install -y docker.io"
+    fi
     if [[ "${MODULE_DEP_OK:-false}" == "true" ]]; then
       run_offline_kb_setup
     else

@@ -192,7 +192,7 @@ pbox_claude_help() {
     info_msg "Claude CLI not on PATH; see ${PBOX_INSTALL_LOG:-/tmp/pbox-install.log} for the log."
     return 0
   fi
-  [[ -t 0 && -t 1 ]] || return 0
+  [[ -t 0 ]] || return 0   # stdout is teed by pbox-setup; stdin tty is what we need
   echo ""
   local ans
   read -rp "  Ask Claude to diagnose this? [Y/n]: " ans

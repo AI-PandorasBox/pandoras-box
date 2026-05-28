@@ -17,26 +17,37 @@ run_offline_kb_setup() {
   prompt_yes_no "Set up the Offline Knowledge Library now?" a_choice "no"
   if [[ "$a_choice" != "yes" ]]; then return 0; fi
 
-  # Disk-space check
+  # Disk-space check (portable: BSD `df -g` differs from GNU; compute from POSIX -P).
   local FREE_GB
-  FREE_GB=$(df -g /opt 2>/dev/null | awk 'NR==2 {print $4}')
+  FREE_GB=$(df -P /opt 2>/dev/null | awk 'NR==2 {print int($4/1024/1024)}')
   if [[ -n "$FREE_GB" && "$FREE_GB" -lt 60 ]]; then
     warn_msg "Only ${FREE_GB} GB free on /opt -- the Offline Knowledge Library needs at least 60 GB. Free up space and re-run."
     return 1
   fi
   check_pass "Disk space: ${FREE_GB:-unknown} GB free"
 
-  # Docker
+  # Docker (OS-aware: brew cask on macOS, apt docker.io on Linux)
   if ! command -v docker &>/dev/null; then
     warn_msg "Docker not installed. the Offline Knowledge Library needs Docker for Kiwix."
-    prompt_yes_no "Install Docker now (via Homebrew Cask)?" d_install "yes"
-    if [[ "$d_install" == "yes" ]]; then
-      brew install --cask docker 2>&1 | tail -3
-      info_msg "Open Docker Desktop manually once before continuing (it needs first-run setup)."
-      press_enter_to_continue
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      prompt_yes_no "Install Docker now (via Homebrew Cask)?" d_install "yes"
+      if [[ "$d_install" == "yes" ]]; then
+        brew install --cask docker 2>&1 | tail -3
+        info_msg "Open Docker Desktop manually once before continuing (it needs first-run setup)."
+        press_enter_to_continue
+      else
+        info_msg "Skipping the Offline Knowledge Library. Re-run after Docker is available."
+        return 0
+      fi
     else
-      info_msg "Skipping the Offline Knowledge Library. Re-run after Docker is available."
-      return 0
+      prompt_yes_no "Install Docker now (via apt: docker.io)?" d_install "yes"
+      if [[ "$d_install" == "yes" ]]; then
+        sudo apt-get install -y docker.io 2>&1 | tail -3
+        sudo systemctl enable --now docker 2>&1 | tail -3 || true
+      else
+        info_msg "Skipping the Offline Knowledge Library. Re-run after Docker is available."
+        return 0
+      fi
     fi
   fi
 

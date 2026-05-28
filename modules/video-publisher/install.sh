@@ -7,6 +7,7 @@ TOTAL_STEPS=5
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -14,7 +15,7 @@ ok()   { echo "[$MODULE_NAME] OK: $1"; }
 step 1 "Checking ffmpeg"
 if ! command -v ffmpeg &>/dev/null; then
   echo "  Installing ffmpeg..."
-  brew install ffmpeg || { echo "FAIL: Could not install ffmpeg."; exit 1; }
+  pbox_install_pkg ffmpeg || { echo "FAIL: Could not install ffmpeg."; exit 1; }
 fi
 ok "ffmpeg: $(ffmpeg -version 2>&1 | head -1 | cut -c1-50)"
 

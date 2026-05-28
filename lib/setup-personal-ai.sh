@@ -82,6 +82,13 @@ run_obsidian_setup() {
   echo "       finished syncing, which can introduce a few seconds of lag)"
   echo ""
 
+  # Dry-run cannot answer free-form path validation; skip cleanly so the preflight
+  # does not loop on /dev/null. Real installs continue to validate.
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+    info_msg "[DRY-RUN] Obsidian vault setup skipped (interactive path validation)"
+    return 0
+  fi
+
   local vault_path=""
   while [[ -z "$vault_path" ]]; do
     read -rp "  Full path to your Obsidian vault root: " vault_path

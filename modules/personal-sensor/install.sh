@@ -10,6 +10,7 @@ TOTAL_STEPS=5
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -48,7 +49,8 @@ if [[ -f "$SENSOR_ENV" ]]; then
   ok ".env already present -- preserving operator overrides"
 else
   # Prompt for geofence opt-in unless dry-run (dry-run must be no-op).
-  if [[ "$DRY_RUN" == "1" ]]; then
+  # Geofencing depends on macOS-only corelocationcli; do not even offer on Linux.
+  if [[ "$DRY_RUN" == "1" || "$PBOX_OS" != Darwin ]]; then
     GEOFENCE_CHOICE="$SENSOR_GEOFENCE"
   else
     read -rp "  Enable geofencing? Requires 'brew install corelocationcli'. [y/N]: " GF_REPLY || GF_REPLY="n"
@@ -74,40 +76,52 @@ done
 
 # ----------------------------------------------------------------------------
 step 4 "Generating + installing LaunchDaemon plist from template"
-SERVICE_USER="${PERSONAL_SENSOR_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
+SERVICE_USER="${PERSONAL_SENSOR_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
 
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
 
-if command -v plutil &>/dev/null; then
-  plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
+  if command -v plutil &>/dev/null; then
+    plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
+  fi
+
+  if [[ "$DRY_RUN" == "1" ]]; then
+    ok "DRY_RUN=1 -- plist rendered + linted at $RENDERED but NOT installed or loaded"
+    echo "[$MODULE_NAME] PASS (dry-run)"
+    exit 0
+  fi
+
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
+  rm -f "$RENDERED"
+  ok "Installed: $PLIST_PATH"
+
+  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  fi
+  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+  ok "LaunchDaemon loaded"
+else
+  if [[ "$DRY_RUN" == "1" ]]; then
+    ok "DRY_RUN=1 -- systemd unit NOT installed or loaded"
+    echo "[$MODULE_NAME] PASS (dry-run)"
+    exit 0
+  fi
+  PS_LOG="/tmp/${LOG_PREFIX}-personal-sensor.log"
+  pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
+    "$SERVICE_USER" "$PS_LOG" "$TARGET_DIR" "$SENSOR_ENV" || fail "systemd service install failed"
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
-
-if [[ "$DRY_RUN" == "1" ]]; then
-  ok "DRY_RUN=1 -- plist rendered + linted at $RENDERED but NOT installed or loaded"
-  echo "[$MODULE_NAME] PASS (dry-run)"
-  exit 0
-fi
-
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-ok "Installed: $PLIST_PATH"
-
-if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-  sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
-fi
-sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-ok "LaunchDaemon loaded"
 
 # ----------------------------------------------------------------------------
 step 5 "Verifying SSE endpoint"
