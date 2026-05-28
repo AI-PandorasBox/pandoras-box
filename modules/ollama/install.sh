@@ -11,6 +11,7 @@ TOTAL_STEPS=4
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -18,21 +19,34 @@ fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
 
 OLLAMA_MODEL="${OLLAMA_MODEL:-gemma3:12b}"
 
-step 1 "Checking Homebrew"
-command -v brew &>/dev/null || fail "Homebrew not found (https://brew.sh)"
-ok "Homebrew $(brew --version | head -1 | awk '{print $2}')"
-
-step 2 "Installing ollama via brew"
-if brew list ollama &>/dev/null; then
-  ok "ollama already installed"
-else
+step 1 "Installing ollama (if needed)"
+if command -v ollama >/dev/null 2>&1; then
+  ok "ollama already installed: $(ollama --version 2>&1 | head -1)"
+elif [[ "$PBOX_OS" == Darwin ]]; then
+  command -v brew &>/dev/null || fail "Homebrew not found (install from https://brew.sh, then re-run)"
   brew install ollama || fail "brew install ollama failed"
-  ok "ollama installed"
+  ok "ollama installed via Homebrew"
+else
+  echo "  Downloading the official ollama installer (https://ollama.com/install.sh)..."
+  curl -fsSL https://ollama.com/install.sh | sh || fail "ollama install script failed (see https://ollama.com/download for manual install)"
+  ok "ollama installed via official Linux installer"
 fi
 
-step 3 "Starting ollama service (brew-managed LaunchAgent)"
-brew services start ollama 2>&1 | head -3 || true
+step 2 "Starting ollama service"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  brew services start ollama 2>&1 | head -3 || true
+else
+  sudo systemctl enable --now ollama 2>&1 | head -3 || true
+fi
 ok "ollama service started"
+
+step 3 "Verifying ollama is reachable"
+sleep 2
+if curl -s -o /dev/null --max-time 6 http://127.0.0.1:11434/ 2>/dev/null; then
+  ok "ollama responding on http://127.0.0.1:11434/"
+else
+  warn_msg "ollama did not respond on :11434 yet (may still be starting; check 'systemctl status ollama' or 'brew services list')"
+fi
 
 step 4 "Pulling default model: $OLLAMA_MODEL"
 echo "  (this takes a few minutes for the first run)"

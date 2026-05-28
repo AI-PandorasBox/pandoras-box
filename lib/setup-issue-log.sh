@@ -177,3 +177,43 @@ pbox_issue_log_finish() {
   echo ""
   return 0
 }
+
+# =============================================================================
+# pbox_claude_help <context> -- offer a Claude-assisted diagnosis after a failure.
+# Prompts the operator, then asks the Claude CLI (`claude -p`) to read the last
+# 80 lines of the install log (sanitised) plus the failure context and return a
+# terse explanation + the exact fix commands. No-op in dry-run, when claude is
+# absent, or in non-interactive contexts.
+# =============================================================================
+pbox_claude_help() {
+  local context="${1:-the installer hit an issue}"
+  [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]] && return 0
+  if ! command -v claude >/dev/null 2>&1; then
+    info_msg "Claude CLI not on PATH; see ${PBOX_INSTALL_LOG:-/tmp/pbox-install.log} for the log."
+    return 0
+  fi
+  [[ -t 0 && -t 1 ]] || return 0
+  echo ""
+  local ans
+  read -rp "  Ask Claude to diagnose this? [Y/n]: " ans
+  ans="${ans:-Y}"
+  [[ ! "$ans" =~ ^[Yy] ]] && return 0
+  echo ""
+  info_msg "Asking Claude (sanitised log + context). This may take ~10s..."
+  local log_tail
+  log_tail=$(tail -n 80 "${PBOX_INSTALL_LOG:-/tmp/pbox-install.log}" 2>/dev/null | { pbox_sanitise 2>/dev/null || cat; } | head -c 12000)
+  local out
+  out=$(claude -p --output-format text 2>&1 <<CLAUDEEOF || true
+The Pandoras Box installer hit an issue: ${context}
+
+Diagnose the failure from the log tail below. Give a 3-5 line explanation in plain English, then the exact command(s) the operator can run to fix it. Be terse.
+
+--- INSTALL LOG (last 80 lines, sanitised) ---
+${log_tail}
+CLAUDEEOF
+)
+  echo "  ── Claude says ──"
+  printf '%s\n' "$out" | sed 's/^/  /' | head -40
+  echo "  ─────────────────"
+  echo ""
+}

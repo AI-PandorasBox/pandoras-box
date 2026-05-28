@@ -24,18 +24,24 @@ _run_module_install() {
     script="$SETUP_DIR/modules/$name/install.sh"
   fi
   if [[ ! -f "$script" ]]; then
-    error_msg "module '$name' install.sh not found at $INSTALL_PATH/modules/$name/ or $SETUP_DIR/modules/$name/"
-    return 1
+    warn_msg "module '$name' install.sh not found (looked in $INSTALL_PATH/modules/$name/ and $SETUP_DIR/modules/$name/)"
+    info_msg "Skipping '$name' -- install continues."
+    return 0
   fi
   echo ""
   info_msg "Running module installer: $name"
   if sudo bash "$script"; then
     check_pass "module '$name' install completed"
     return 0
-  else
-    warn_msg "module '$name' install reported a non-zero exit code (see output above)"
-    return 1
   fi
+  # Module failed. THIS IS NOT FATAL: optional modules are independent and the
+  # rest of the install carries on. Offer a Claude-assisted diagnosis.
+  warn_msg "module '$name' did not complete -- the rest of the install continues."
+  info_msg "You can re-run just this module later: sudo bash $script"
+  if declare -F pbox_claude_help >/dev/null 2>&1; then
+    pbox_claude_help "module '$name' install failed"
+  fi
+  return 0
 }
 
 run_ollama_setup()      { _run_module_install ollama; }
