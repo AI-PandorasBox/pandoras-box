@@ -28,7 +28,7 @@ Independent daemons that monitor or classify across the whole system. Peer to ea
 
 | System | Role | Sub-modules |
 |---|---|---|
-| **Argus** | Approves or blocks every queued job before execution. Cannot be instructed by any agent. | Talos (driver-session screener; runs inside `argus.mjs`, no separate daemon) |
+| **Argus** | Approves or blocks every queued job before execution. Cannot be instructed by any agent. | content-classifier consumer; per-source strike quarantine; weekly dependency scan |
 | **the Content Classifier** | Content classifier sidecar. Screens outbound content across six axes (prompt safety, response safety, response refusal, prompt toxicity, response toxicity, jailbreak detection). | sidecar / panel / calibration |
 
 ### Layer 2 — Shared capabilities
@@ -41,15 +41,15 @@ Agent-agnostic infrastructure consumed by multiple agents. Lives at `/opt/pandor
 | | MS365 MCP server | per-agent invocation |
 | | Module Catalogue | `shared/catalogue/modules/` |
 | | Skill Library | `shared/skills/` |
-| **Scoring** | Kairos (temporal recall) | `shared/kairos-scoring.mjs` + memory schema |
+| **Memory** | vector-kb (semantic recall) + vault-graph (Obsidian) | `modules/vector-kb/`, `modules/vault-graph/` |
 | **Classification** | the Content Classifier tenant-rules library | `shared/content-classifier-tenant-rules.mjs` |
 | **Modules** | mail / calendar / files / voice | `shared/modules/{...}` |
 | | marketing (beta) | `shared/modules/marketing/` |
 | | website-builder, video-publisher, etc. | `shared/modules/{...}` |
 | **Production tools** | the Media Production Pipeline (content production pipeline) | `/opt/pandoras-box/media-production/` |
 | | the Offline Knowledge Library (offline knowledge via Kiwix) | `/opt/pandoras-box/offline-kb/` |
-| | Web Actions (Kourai Khryseai driver queue) | `/opt/pandoras-box/web-actions/` |
-| | Daedalus (reviews and productions surface) | mnemosyne panel routes |
+| | browser-actions (interactive browser surface) | `modules/browser-actions/` |
+| | deck-builder (presentation builder) | `modules/deck-builder/` |
 | **Self-improvement** | the Self-Improvement Pipeline umbrella | `/opt/pandoras-box/self-improvement/` |
 
 the Self-Improvement Pipeline has sub-processes that operate on schedules:
@@ -59,9 +59,8 @@ the Self-Improvement Pipeline has sub-processes that operate on schedules:
 | GEPA cycle | Saturday | Reviews the week's agent traces and proposes targeted improvements |
 | Sunday review | Sunday | Generates the operator-facing digest of proposed changes |
 | Upstream scanner | Friday | Polls Anthropic announcements + npm packages for changes the project should react to |
-| Themis (Phase 2, calibrating) | Saturday | Grades candidate skill versions on a Pareto frontier |
-| Reflexion (Phase 3, calibrating) | Hourly | Detects threshold-breach failure patterns and proposes micro-GEPA fixes |
-| Morpheus (Phase 4, deferred) | Saturday | Memory consolidation via the self-hosted Dreams pattern |
+
+_(Richer scoring/grading and hourly reflexion passes are on the roadmap; the shipped pipeline is the deterministic weekly digest above.)_
 
 ### Layer 3 — Per-tenant conductors
 
@@ -125,8 +124,7 @@ Each shared capability has a `consumed_by` list. Each consumer has a `depends_on
 
 Examples:
 
-- `Kairos.consumed_by` = [Personal AI]
-- `Personal AI.depends_on` = [Bridge, MS365 MCP, Kairos, the Self-Improvement Pipeline, the Media Production Pipeline, the Offline Knowledge Library]
+- `Personal AI.depends_on` = [Bridge, MS365 MCP, the Self-Improvement Pipeline, the Media Production Pipeline, the Offline Knowledge Library]
 - `the Content Classifier tenant-rules.consumed_by` = [conductor email integrations, Personal AI chat + voice integrations]
 
 ## 5. How this document is consumed

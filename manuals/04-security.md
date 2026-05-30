@@ -258,7 +258,7 @@ db.close()
 ### Credential rotation
 
 If any credentials may have been exposed:
-1. Rotate your Anthropic API keys immediately at console.anthropic.com
+1. Refresh your Claude sign-in: run `claude /logout` then `claude /login`
 2. Rotate your Microsoft 365 client secret at portal.azure.com
 3. Rotate your Google OAuth credentials at console.cloud.google.com
 4. Update the `.env` files with the new credentials

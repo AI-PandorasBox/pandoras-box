@@ -5,7 +5,7 @@
 CERT_DIR="$INSTALL_PATH/certs"
 
 run_certificate_setup() {
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi
@@ -19,10 +19,10 @@ run_certificate_setup() {
   echo "  without it."
   echo ""
   echo "  What we are about to do:"
-  echo "  1. Generate a private Certificate Authority (CA) on this Mac"
+  echo "  1. Generate a private Certificate Authority (CA) on this machine"
   echo "     (a CA is like a trusted authority that signs the certificate)"
   echo "  2. Generate a server certificate signed by that CA"
-  echo "  3. Install the CA certificate on this Mac automatically"
+  echo "  3. Install the CA certificate on this machine automatically"
   echo "  4. Copy the CA certificate to your Desktop so you can install it"
   echo "     on your other devices"
   echo ""
@@ -64,26 +64,37 @@ SANEOF
   check_pass "Server certificate generated for: $hostname"
 
   echo ""
-  echo "  Installing the CA certificate on this Mac..."
-  sudo security add-trusted-cert -d -r trustRoot \
-    -k /Library/Keychains/System.keychain "$ca_cert" 2>/dev/null
-  check_pass "CA certificate installed and trusted on this Mac."
+  echo "  Installing the CA certificate on this machine..."
+  pbox_trust_ca "$ca_cert" 2>/dev/null
+  check_pass "CA certificate installed and trusted on this machine."
 
   echo ""
-  echo "  Copying CA certificate to your Desktop..."
-  local desktop_cert="$HOME/Desktop/PandorasBox-CA.crt"
-  cp "$ca_cert" "$desktop_cert"
-  chmod 644 "$desktop_cert"
-  success_msg "CA certificate saved to: $desktop_cert"
+  echo "  Saving the CA certificate where you can grab it..."
+  # CERT_DIR is root-owned 0700, so the source is unreadable to the operator.
+  # Copy via sudo, then hand the copy back to the operator. Prefer the Desktop;
+  # fall back to the home dir on a headless box with no Desktop.
+  local cert_out
+  if [[ -d "$HOME/Desktop" ]]; then cert_out="$HOME/Desktop/PandorasBox-CA.crt"; else cert_out="$HOME/PandorasBox-CA.crt"; fi
+  sudo cp "$ca_cert" "$cert_out"
+  sudo chown "$(id -un):$(id -gn)" "$cert_out" 2>/dev/null || true
+  sudo chmod 644 "$cert_out"
+  success_msg "CA certificate saved to: $cert_out"
   echo ""
   echo "  You need to install this file on every other device that will access"
-  echo "  your system (phone, iPad, other Mac, etc.)."
+  echo "  your system (phone, iPad, other computer, etc.)."
   echo ""
   echo "  Full installation guide for each device type: docs/certificates.md"
   echo ""
 
-  # Write a renewal script
-  sudo bash -c "cat > '$INSTALL_PATH/zeus-renew-cert.sh'" <<RENEWEOF
+  # Write a renewal script. The "restart your services" hint is OS-aware so it
+  # reflects the platform this install is running on (launchctl vs systemctl).
+  local renew_restart_hint
+  if [[ "$PBOX_OS" == Darwin ]]; then
+    renew_restart_hint="  sudo launchctl stop com.pandoras-box.personal-ai && sudo launchctl start com.pandoras-box.personal-ai"
+  else
+    renew_restart_hint="  sudo systemctl restart pbox-personal-ai"
+  fi
+  sudo bash -c "cat > '$INSTALL_PATH/pbox-renew-cert.sh'" <<RENEWEOF
 #!/usr/bin/env bash
 # Renew the Pandoras Box server certificate
 # Run this if you see certificate expiry errors
@@ -95,10 +106,10 @@ openssl x509 -req -days 3650 \
   -out server.crt \
   -extfile san.ext -extensions SAN 2>/dev/null
 echo "Done. Restart your services for the new certificate to take effect."
-echo "  sudo launchctl stop com.pandoras-box.muse && sudo launchctl start com.pandoras-box.muse"
+echo "$renew_restart_hint"
 RENEWEOF
-  sudo chmod 700 "$INSTALL_PATH/zeus-renew-cert.sh"
-  check_pass "Certificate renewal script created: $INSTALL_PATH/zeus-renew-cert.sh"
+  sudo chmod 700 "$INSTALL_PATH/pbox-renew-cert.sh"
+  check_pass "Certificate renewal script created: $INSTALL_PATH/pbox-renew-cert.sh"
 
   press_enter_to_continue
 }

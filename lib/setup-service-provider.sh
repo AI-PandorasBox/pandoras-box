@@ -3,7 +3,7 @@
 # =============================================================================
 
 run_service_provider_setup() {
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi

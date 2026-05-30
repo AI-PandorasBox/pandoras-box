@@ -1,0 +1,12 @@
+{
+  "name": "admin-lite",
+  "version": "1.0.0",
+  "description": "Lightweight localhost admin surface.",
+  "kind": "service",
+  "ports": [8488],
+  "launchdaemon_label": "${PREFIX}.admin-lite",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

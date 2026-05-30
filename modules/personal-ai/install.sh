@@ -10,6 +10,7 @@ TOTAL_STEPS=5
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -91,6 +92,13 @@ if [[ -f "$PA_ENV" ]]; then
 else
   if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
     PASS="dryrun-placeholder"
+  elif [[ "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" || ! -t 0 || ! -t 1 ]]; then
+    # _UNATTENDED_PASSPHRASE_2026-05-30 -- non-interactive install has no TTY to prompt
+    # on. Previously this fell through to `read`, got an empty value, and `fail`ed the
+    # whole Personal Assistant module. Use a known placeholder (override with
+    # PERSONAL_AI_PASSPHRASE) so the module installs headless; user changes it later.
+    PASS="${PERSONAL_AI_PASSPHRASE:-${PBOX_UNATTENDED_PLACEHOLDER:-unattended-placeholder}}"
+    ok "[unattended] Personal Assistant passphrase set to a placeholder -- change it after first login."
   else
     read -srp "  Choose a passphrase for $PA_NAME (won't be shown): " PASS; echo ""
     [[ -z "$PASS" ]] && fail "Empty passphrase"
@@ -117,32 +125,45 @@ fi
 
 # ----------------------------------------------------------------------------
 step 4 "Generating + installing LaunchDaemon plist from template"
-SERVICE_USER="${PERSONAL_AI_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
-plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-ok "Plist installed: $PLIST_PATH"
+SERVICE_USER="${PERSONAL_AI_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
+  plutil -lint "$RENDERED" >/dev/null || fail "rendered plist failed plutil validation"
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
+  rm -f "$RENDERED"
+  ok "Plist installed: $PLIST_PATH"
 
-if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
-  ok "DRY_RUN: skipped launchctl load"
-else
-  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+    ok "DRY_RUN: skipped launchctl load"
+  else
+    if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+      sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+    fi
+    sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+    ok "LaunchDaemon loaded"
   fi
-  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-  ok "LaunchDaemon loaded"
+else
+  # Linux: systemd unit via the portability layer. The runtime reads its config
+  # from .env in its WorkingDirectory; EnvironmentFile is belt-and-braces.
+  PA_LOG="/tmp/${LOG_PREFIX}-personal-ai.log"
+  pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
+    "$SERVICE_USER" "$PA_LOG" "$TARGET_DIR" "$PA_ENV" || fail "systemd service install failed"
+  # CLI bridge: hand the service account the operator's Claude subscription creds
+  # (no-op in API-key mode), then restart so the runtime picks them up.
+  pbox_distribute_claude_creds "pbox-${PLIST_LABEL##*.}" "$TARGET_DIR"
+  sudo systemctl restart "pbox-${PLIST_LABEL##*.}" 2>/dev/null || true
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
 
 # ----------------------------------------------------------------------------

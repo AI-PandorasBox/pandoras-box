@@ -77,7 +77,7 @@ run_module_selection() {
   # ──── Module: admin-shell ────────────────────────────────────────────────
   if offer_module "[OPTIONAL] Admin Shell (Chrome desktop app)" \
     "Standalone Chrome desktop app for the Admin Shell -- opens as its own window (not a browser tab) for focused administration. Same auth surface as admin-lite, different UX." \
-    "Google Chrome installed on this Mac." \
+    "Google Chrome installed on this machine." \
     "Free." \
     "~2 minutes"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST admin-shell"
@@ -114,7 +114,11 @@ run_module_selection() {
     "~30 minutes (mostly the ZIM download)"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST offline-kb"
     # _A5_INSTALLER_UX_V1 -- soft dep check before running the Offline Knowledge Library install
-    check_module_dep "the Offline Knowledge Library" "docker" "brew install --cask docker"
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      check_module_dep "the Offline Knowledge Library" "docker" "brew install --cask docker"
+    else
+      check_module_dep "the Offline Knowledge Library" "docker" "sudo apt-get install -y docker.io"
+    fi
     if [[ "${MODULE_DEP_OK:-false}" == "true" ]]; then
       run_offline_kb_setup
     else
@@ -137,7 +141,7 @@ run_module_selection() {
     echo "    [1] Still go through (fail-open — fewer false stops, less safety)"
     echo "    [2] Be blocked until the Content Classifier recovers (fail-closed — safer)"
     echo ""
-    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
       _cerberus_failmode="2"
     else
       read -rp "  Choose [1/2, default 2]: " _cerberus_failmode
@@ -160,6 +164,17 @@ run_module_selection() {
     "yes"; then
     SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST self-improvement"
     run_self_improvement_setup
+  fi
+
+  # ──── Module: skills library ─────────────────────────────────────────────
+  if offer_module "[OPTIONAL] the Skills Library (reusable skill primitives)" \
+    "Tenant-agnostic skill primitives your agents can invoke. Ships build_board_pack_from_calendar (board-pack PDF from MS365 calendar: per-week pull with resume, xlsx assembly with row-count verify, Chrome-headless PDF). One code path, no per-company logic; add your own skills under the module's skills/ dir." \
+    "The personal-ai module (provides the Node runtime + calendar MCP + exceljs)." \
+    "Free." \
+    "~1 minute" \
+    "no"; then
+    SELECTED_MODULES_LIST="$SELECTED_MODULES_LIST skills-library"
+    run_skills_library_setup
   fi
 
   # ──── Module: discord relay ──────────────────────────────────────────────

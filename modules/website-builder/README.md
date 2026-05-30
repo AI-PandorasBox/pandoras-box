@@ -17,7 +17,7 @@ for a future phase.
 
 To request implementation, create a project:
 ```
-bash ZEUS/scripts/zeus-project-create.sh "Implement website-builder module"
+This module is documented but not yet implemented. Contributions welcome -- see modules/MODULE-SPEC.md and scripts/add-module.sh.
 ```
 
 ## Planned Capabilities

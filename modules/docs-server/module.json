@@ -1,0 +1,12 @@
+{
+  "name": "docs-server",
+  "version": "1.0.0",
+  "description": "Serves the operator documentation site locally.",
+  "kind": "service",
+  "ports": [8485],
+  "launchdaemon_label": "${PREFIX}.docs-server",
+  "requires": [],
+  "cost_estimate": "free (local)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

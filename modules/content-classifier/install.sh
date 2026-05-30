@@ -9,6 +9,7 @@ TOTAL_STEPS=6
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -21,13 +22,41 @@ PLIST_DIR="${PBOX_PLIST_DIR:-/Library/LaunchDaemons}"
 PLIST_PATH="${PLIST_DIR}/${PLIST_LABEL}.plist"
 
 step 1 "Prerequisites (Python 3.11+)"
-command -v python3 &>/dev/null || fail "python3 not found (brew install python@3.11)"
+if ! command -v python3 &>/dev/null; then
+  if [[ "$PBOX_OS" == Linux ]]; then
+    fail "python3 not found (apt install python3 python3-venv python3-pip)"
+  else
+    fail "python3 not found (brew install python@3.11)"
+  fi
+fi
 PYVER=$(python3 --version | awk '{print $2}')
 PY_MAJ=$(echo "$PYVER" | cut -d. -f1); PY_MIN=$(echo "$PYVER" | cut -d. -f2)
 if [[ "$PY_MAJ" -lt 3 || ( "$PY_MAJ" -eq 3 && "$PY_MIN" -lt 11 ) ]]; then
-  fail "Python $PYVER too old; need 3.11+ (brew install python@3.11)"
+  if [[ "$PBOX_OS" == Linux ]]; then
+    fail "Python $PYVER too old; need 3.11+ (apt install python3.11 python3.11-venv)"
+  else
+    fail "Python $PYVER too old; need 3.11+ (brew install python@3.11)"
+  fi
 fi
 ok "Python $PYVER"
+
+# Debian/Ubuntu ship python3 without the venv + ensurepip modules; install the
+# matching python3<MAJ>.<MIN>-venv package up-front so step 3 does not fail.
+if [[ "$PBOX_OS" == Linux ]]; then
+  if ! python3 -c 'import ensurepip' &>/dev/null; then
+    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+      ok "(dry-run) would apt-install python${PY_MAJ}.${PY_MIN}-venv + python3-pip"
+    else
+      echo "  Installing python${PY_MAJ}.${PY_MIN}-venv + python3-pip (needed for venv create)..."
+      if ! sudo apt-get install -y "python${PY_MAJ}.${PY_MIN}-venv" python3-pip 2>&1 | tail -5; then
+        # Fall back to the generic python3-venv meta-package on older Debians.
+        sudo apt-get install -y python3-venv python3-pip 2>&1 | tail -5 \
+          || fail "could not apt-install python3-venv (run: sudo apt install python${PY_MAJ}.${PY_MIN}-venv python3-pip)"
+      fi
+      ok "python3-venv + python3-pip installed"
+    fi
+  fi
+fi
 
 step 2 "Staging runtime"
 sudo mkdir -p "$TARGET_DIR/store" "$TARGET_DIR/model-cache" "$TARGET_DIR/logs"
@@ -72,26 +101,34 @@ ENVEOF
 fi
 
 step 5 "Installing plist"
-SERVICE_USER="${CONTENT_CLASSIFIER_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing"
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
-plutil -lint "$RENDERED" >/dev/null || fail "plist invalid"
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-  sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+SERVICE_USER="${CONTENT_CLASSIFIER_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
+  plutil -lint "$RENDERED" >/dev/null || fail "plist invalid"
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
+  rm -f "$RENDERED"
+  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  fi
+  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+  ok "Plist installed + loaded"
+else
+  # Linux: systemd unit via the portability layer. This module runs a Python
+  # venv interpreter, not Node -- pass the venv python as the "node_bin" arg.
+  pbox_create_service "$PLIST_LABEL" "$TARGET_DIR/venv/bin/python3" "$TARGET_DIR/classifier.py" \
+    "$SERVICE_USER" "/tmp/${LOG_PREFIX}-content-classifier.log" "$TARGET_DIR" "$CC_ENV" || fail "systemd service install failed"
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
-sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-ok "Plist installed + loaded"
 
 step 6 "Verifying /api/health"
 # First request triggers model download; allow generous time on real install.

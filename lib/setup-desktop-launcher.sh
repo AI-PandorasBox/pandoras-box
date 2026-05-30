@@ -18,41 +18,97 @@ run_desktop_launcher_setup() {
     return 0
   fi
 
-  local hostname="${TAILSCALE_HOSTNAME:-pandoras-box.local}"
-  local DASHBOARD_URL="https://${hostname}:8181"
-  local TERMINAL_URL="https://${hostname}:8282"
-  local MUSE_URL="https://${hostname}:${MUSE_PORT:-8800}"
+  # Launchers target loopback by default: services bind 127.0.0.1 and serve
+  # plain HTTP. Remote access via Tailscale is configured separately and uses
+  # different URLs (the Tailscale hostname + cert is for the optional public-
+  # mode setup). Using loopback here means the launchers Just Work on the box.
+  local DASHBOARD_PORT="${DASHBOARD_PORT:-8181}"
+  local TERMINAL_PORT="${TERMINAL_PORT:-8484}"
+  local PA_PORT="${PERSONAL_AI_PORT:-8800}"
+  local DASHBOARD_URL="http://127.0.0.1:${DASHBOARD_PORT}/"
+  local TERMINAL_URL="http://127.0.0.1:${TERMINAL_PORT}/"
+  local PA_URL="http://127.0.0.1:${PA_PORT}/"
 
-  _make_launcher() {
-    local name="$1"
-    local url="$2"
-    local app_path="$HOME/Desktop/${name}.app"
-    if [[ -d "$app_path" ]]; then
-      info_msg "$name.app already exists -- skipping."
-      return 0
+  # pbox_make_launcher builds a .app on macOS and a .desktop entry on Linux.
+  # Name uses single-word separators -- multi-dash forms produced ugly
+  # mangled .desktop filenames on Linux.
+  pbox_make_launcher "Pandoras Box Dashboard" "$DASHBOARD_URL"
+  pbox_make_launcher "Pandoras Box Terminal"  "$TERMINAL_URL"
+  pbox_make_launcher "Pandoras Box Assistant" "$PA_URL"
+
+  # _ENSURE_BROWSER_2026-05-30 -- the launchers open URLs in a web browser. On a
+  # fresh Linux desktop no browser may be installed, so a click yields
+  # "failed to execute child process: No such file or directory". Ensure one
+  # exists. Best-effort + non-interactive; only runs because launchers were created.
+  if [[ "$PBOX_OS" == Linux ]] && command -v apt-get &>/dev/null; then
+    local _have_browser=0 _b
+    for _b in x-www-browser firefox-esr firefox chromium chromium-browser google-chrome; do
+      command -v "$_b" &>/dev/null && { _have_browser=1; break; }
+    done
+    if [[ "$_have_browser" == 0 ]]; then
+      info_msg "No web browser found; installing firefox-esr so the launchers work..."
+      if sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends firefox-esr 2>/dev/null; then
+        check_pass "firefox-esr installed (default browser for the launchers)"
+      else
+        warn_msg "Could not auto-install a browser; install one (e.g. firefox-esr) to use the Desktop launchers."
+      fi
     fi
-    local script
-    script=$(cat <<EOF
-on run
-    tell application "System Events" to open location "${url}"
-end run
-EOF
-)
-    osacompile -o "$app_path" -e "$script" 2>/dev/null || {
-      warn_msg "Could not create $name.app. Skipping."
-      return 1
-    }
-    check_pass "Created Desktop launcher: $app_path"
-  }
+  fi
 
-  _make_launcher "Pandoras Box -- Dashboard" "$DASHBOARD_URL"
-  _make_launcher "Pandoras Box -- Terminal"  "$TERMINAL_URL"
-  _make_launcher "Pandoras Box -- Assistant" "$MUSE_URL"
+  # Linux: GNOME 43+ ships without desktop icons. Try to install + enable the
+  # 'desktop-icons-ng' (Ding) extension so the ~/Desktop copies actually render.
+  # If apt/install/enable fails (package not in repo, headless box, etc), the
+  # ~/.local/share/applications launchers still work via Activities.
+  if [[ "$PBOX_OS" == Linux ]]; then
+    # _DESKTOP_ICONS_NONINTERACTIVE_2026-05-30 -- only attempt the Ding extension
+    # when GNOME Shell is actually installed. Otherwise apt would pull gnome-shell
+    # + gdm3 onto a non-GNOME (e.g. xfce/headless) box, which can HANG the whole
+    # install on an interactive "select default display manager" debconf prompt.
+    # When attempted, force non-interactive + keep existing conf so it can never block.
+    if command -v apt-get &>/dev/null && dpkg -l gnome-shell 2>/dev/null | grep -q '^ii'; then
+      # Debian package: gnome-shell-extension-desktop-icons-ng (when present).
+      # Best-effort: do not fail or block the install if the package is unavailable.
+      sudo DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+        -o Dpkg::Options::=--force-confold gnome-shell-extension-desktop-icons-ng 2>/dev/null \
+        | tail -2 \
+        || info_msg "(desktop-icons-ng package not available; launchers still show in Activities)"
+    fi
+    # Enable for the operator user. gnome-extensions runs as the user, not root.
+    local operator
+    operator=$(pbox_stat_owner "$INSTALL_PATH" 2>/dev/null || echo "$USER")
+    if [[ -n "$operator" && "$operator" != "root" ]]; then
+      sudo -u "$operator" -- gnome-extensions enable ding@rastersoft.com 2>/dev/null || true
+      sudo -u "$operator" -- gsettings set org.gnome.shell.extensions.ding show-home false 2>/dev/null || true
+    fi
+  fi
 
   echo ""
-  info_msg "Note: the first time you click a launcher, macOS may ask if you trust"
-  info_msg "the app. Click Open. The CA certificate must be trusted on this Mac"
-  info_msg "(Step 'Security certificates' in this installer) for the URLs to load."
-  echo ""
+  if [[ "$PBOX_OS" == Linux ]]; then
+    # Prominent post-install block: tell the operator exactly where to find them.
+    echo "  ${C_BOLD}${C_CYAN}Launchers created. Where to find them:${C_RESET}"
+    echo ""
+    echo "    ${C_GREEN}1. Activities menu${C_RESET} (the supported GNOME path)"
+    echo "       Press the Super key, type 'Pandoras', press Enter."
+    echo ""
+    echo "    ${C_GREEN}2. App drawer${C_RESET} -- look for 'Pandoras Box Dashboard',"
+    echo "       'Pandoras Box Terminal', 'Pandoras Box Assistant'."
+    echo ""
+    echo "    ${C_GREEN}3. On the desktop${C_RESET} -- only visible if a desktop-icons"
+    echo "       extension is enabled (we tried to install it; if absent, log out"
+    echo "       and back in once, or use Activities)."
+    echo ""
+    echo "    ${C_GREEN}4. Files on disk:${C_RESET}"
+    echo "       ${C_DIM}~/.local/share/applications/pbox-pandoras-box-*.desktop${C_RESET}"
+    echo "       ${C_DIM}~/Desktop/pbox-pandoras-box-*.desktop${C_RESET}"
+    echo ""
+    echo "    ${C_GREEN}5. Or just browse to the URLs directly:${C_RESET}"
+    echo "       ${C_DIM}${DASHBOARD_URL}${C_RESET}  (dashboard)"
+    echo "       ${C_DIM}${TERMINAL_URL}${C_RESET}  (terminal)"
+    echo "       ${C_DIM}${PA_URL}${C_RESET}  (assistant)"
+    echo ""
+  else
+    info_msg "Note: the first time you click a launcher, the OS may ask if you trust"
+    info_msg "it. Allow it."
+  fi
   success_msg "Desktop launchers created."
 }

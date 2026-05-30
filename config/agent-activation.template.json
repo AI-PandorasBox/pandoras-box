@@ -1,0 +1,43 @@
+{
+  "_comment": "TEMPLATE -- per-agent activation state for Pandora's Box. Copy to your install's shared/agent-activation.json and edit per agent. Captures each agent's modules / subsystem_handles / skills / rules / policies / surfaces / stores activation. Written by your admin deploy flow ONLY -- runtime UI clicks queue requests, they do not write here directly. Atomic write + schema validation enforced by the conductor on read. `requires` maps express dependencies (e.g. a module needing a surface); the dashboard greys out an Activate button when a requirement is unmet. The two agents below are illustrative; replace with your own.",
+  "_schema_version": 1.2,
+  "_updated_at": "2026-05-24T00:00:00.000Z",
+  "_changelog": "Template form. _schema_version 1.1 added `requires` arrays on module/subsystem entries; 1.2 is the current shape.",
+
+  "assistant": {
+    "principal_type": "personal-assistant",
+    "tenant_scope": ["personal", "company-a"],
+    "modules_active": ["chat", "auth", "web-delivery", "mail", "calendar", "files"],
+    "modules_available_inactive": ["visualisations", "voice-agent"],
+    "module_requires": {
+      "voice-agent": ["surface:voice-chat"],
+      "live-stream-vision": ["surface:web-browser"]
+    },
+    "subsystem_handles_exposed": ["self-improvement"],
+    "subsystem_handle_requires": {
+      "self-improvement": []
+    },
+    "stores_active": ["memory", "knowledge-graph", "drops", "audit-log", "ms365-token-cache:company-a"],
+    "skills_active": ["triage-inbox", "morning-prep", "weekly-review"],
+    "rules_active": ["british-english", "voice-and-tone-rules", "email-triage-judgment", "calendar-gap-rules"],
+    "policies_active": ["alerts-policy", "mail-rate-limits", "triage-action-thresholds"],
+    "surfaces_active": ["web-interface", "voice-call", "web-browser"]
+  },
+
+  "company-agent-example": {
+    "principal_type": "company-agent",
+    "tenant_scope": ["company-a"],
+    "modules_active": ["chat", "auth", "telegram-delivery", "mail", "calendar"],
+    "modules_available_inactive": ["files", "voice-agent"],
+    "module_requires": {
+      "voice-agent": ["surface:voice-chat"]
+    },
+    "subsystem_handles_exposed": ["content-classifier"],
+    "subsystem_handle_requires": {},
+    "stores_active": ["drops", "audit-log", "ms365-token-cache:company-a"],
+    "skills_active": ["triage-inbox", "morning-prep"],
+    "rules_active": ["british-english", "voice-and-tone-rules", "email-triage-judgment"],
+    "policies_active": ["alerts-policy", "mail-rate-limits", "triage-action-thresholds", "crm-write-allow-list"],
+    "surfaces_active": ["telegram"]
+  }
+}

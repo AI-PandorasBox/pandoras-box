@@ -9,6 +9,7 @@ TOTAL_STEPS=5
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -122,40 +123,53 @@ WEOF
 fi
 
 step 4 "Rendering + installing LaunchDaemon plist"
-SERVICE_USER="${TRADING_RESEARCH_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/com.pandoras-box.trading-research.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
+SERVICE_USER="${TRADING_RESEARCH_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/com.pandoras-box.trading-research.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing at $PLIST_TMPL"
 
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
 
-plutil -lint "$RENDERED" >/dev/null || { rm -f "$RENDERED"; fail "rendered plist invalid"; }
+  plutil -lint "$RENDERED" >/dev/null || { rm -f "$RENDERED"; fail "rendered plist invalid"; }
 
-if [[ "$DRY_RUN" == "1" ]]; then
+  if [[ "$DRY_RUN" == "1" ]]; then
+    rm -f "$RENDERED"
+    ok "(dry-run) plist validated but not installed; launchctl load skipped"
+    echo ""
+    echo "[$MODULE_NAME] PASS (dry-run; no system changes made)"
+    exit 0
+  fi
+
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
   rm -f "$RENDERED"
-  ok "(dry-run) plist validated but not installed; launchctl load skipped"
-  echo ""
-  echo "[$MODULE_NAME] PASS (dry-run; no system changes made)"
-  exit 0
-fi
+  ok "Installed: $PLIST_PATH"
 
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-ok "Installed: $PLIST_PATH"
-
-if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-  sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  fi
+  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+  ok "LaunchDaemon loaded"
+else
+  if [[ "$DRY_RUN" == "1" ]]; then
+    ok "(dry-run) systemd unit not installed"
+    echo ""
+    echo "[$MODULE_NAME] PASS (dry-run; no system changes made)"
+    exit 0
+  fi
+  TR_LOG="/tmp/${LOG_PREFIX}-trading-research.log"
+  pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
+    "$SERVICE_USER" "$TR_LOG" "$TARGET_DIR" "$TR_ENV" || fail "systemd service install failed"
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
 fi
-sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-ok "LaunchDaemon loaded"
 
 step 5 "Verifying HTTP response"
 sleep 2

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholders: {{LAUNCHDAEMON_PREFIX}} {{INSTALL_PATH}} {{NODE_BIN}} {{LOG_PREFIX}} {{USER_NAME}} -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>{{LAUNCHDAEMON_PREFIX}}.vault-graph</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>{{NODE_BIN}}</string>
+        <string>{{INSTALL_PATH}}/vault-graph/pbox-vault-graph.mjs</string>
+    </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>NODE_ENV</key>
+        <string>production</string>
+        <key>INSTALL_PATH</key>
+        <string>{{INSTALL_PATH}}</string>
+    </dict>
+    <key>WorkingDirectory</key>
+    <string>{{INSTALL_PATH}}/vault-graph</string>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>/tmp/{{LOG_PREFIX}}-vault-graph.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/{{LOG_PREFIX}}-vault-graph.log</string>
+    <key>UserName</key>
+    <string>{{USER_NAME}}</string>
+    <key>ProcessType</key>
+    <string>Background</string>
+</dict>
+</plist>

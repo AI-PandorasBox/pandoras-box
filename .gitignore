@@ -40,3 +40,8 @@ store/
 .sanitize-allowlist
 .sanitize-patterns.*
 .sanitize-allowlist.*
+*.bak
+*.bak.*
+*.un.*
+*.orig
+*~

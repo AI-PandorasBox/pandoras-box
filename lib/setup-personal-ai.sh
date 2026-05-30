@@ -23,10 +23,10 @@ run_personal_ai_setup() {
   echo ""
 
   # Core Personal AI choices first
-  local MUSE_PORT MUSE_DISPLAY_NAME
-  prompt_with_default "Personal Assistant port (default fine)" "8800" MUSE_PORT
-  prompt_with_default "Display name for your assistant" "Assistant" MUSE_DISPLAY_NAME
-  export MUSE_PORT MUSE_DISPLAY_NAME
+  local PERSONAL_AI_PORT PERSONAL_AI_NAME
+  prompt_with_default "Personal Assistant port (default fine)" "8800" PERSONAL_AI_PORT
+  prompt_with_default "Display name for your assistant" "Assistant" PERSONAL_AI_NAME
+  export PERSONAL_AI_PORT PERSONAL_AI_NAME
 
   echo ""
   info_msg "Now offering optional add-ons. Each is independent."
@@ -60,8 +60,8 @@ run_personal_ai_setup() {
 run_obsidian_setup() {
   print_module_info_card \
     "Obsidian vault (notes/journal context)" \
-    "Connects your Personal Assistant to an Obsidian vault on this Mac. The assistant gets four tools: vault_read (open a specific note), vault_write (create or update a note), vault_search (full-text search), vault_list (browse folders). Useful for: daily notes that the morning briefing pulls in, project pages that meeting prep can reference, journal entries the assistant can summarise on request, and idea capture that survives the chat session. Read access is broad; write access is scoped to a 'Pandoras Box' subfolder by default so the assistant cannot edit your existing notes unless you ask explicitly." \
-    "An Obsidian vault on this Mac (any local folder Obsidian recognises). The full path to the vault root. Optional: a subfolder name where the assistant is allowed to write (default: 'Pandoras Box')." \
+    "Connects your Personal Assistant to an Obsidian vault on this machine. The assistant gets four tools: vault_read (open a specific note), vault_write (create or update a note), vault_search (full-text search), vault_list (browse folders). Useful for: daily notes that the morning briefing pulls in, project pages that meeting prep can reference, journal entries the assistant can summarise on request, and idea capture that survives the chat session. Read access is broad; write access is scoped to a 'Pandoras Box' subfolder by default so the assistant cannot edit your existing notes unless you ask explicitly." \
+    "An Obsidian vault on this machine (any local folder Obsidian recognises). The full path to the vault root. Optional: a subfolder name where the assistant is allowed to write (default: 'Pandoras Box')." \
     "Free. Obsidian itself is free for personal use. No third-party API." \
     "~2 minutes"
 
@@ -69,7 +69,7 @@ run_obsidian_setup() {
   if [[ "$o_choice" != "yes" ]]; then
     info_msg "Skipping Obsidian. The Personal Assistant still works -- it just"
     info_msg "won't have access to your notes/journal."
-    export MUSE_OBSIDIAN_VAULT=""
+    export PERSONAL_AI_OBSIDIAN_VAULT=""
     return 0
   fi
 
@@ -82,26 +82,48 @@ run_obsidian_setup() {
   echo "       finished syncing, which can introduce a few seconds of lag)"
   echo ""
 
-  local vault_path=""
-  while [[ -z "$vault_path" ]]; do
-    read -rp "  Full path to your Obsidian vault root: " vault_path
-    # Expand ~ if present
+  # Dry-run cannot answer free-form path validation; skip cleanly so the preflight
+  # does not loop on /dev/null. Real installs continue to validate.
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
+    info_msg "[DRY-RUN] Obsidian vault setup skipped (interactive path validation)"
+    return 0
+  fi
+
+  # Skip cleanly on a blank line, stdin EOF, or after 3 failed attempts.
+  # The earlier loop spun forever on EOF / blank input, filling the install log
+  # with WARNING lines (10+ GB observed on a real install).
+  local vault_path="" attempts=0
+  echo "  (press Enter on a blank line to skip Obsidian)"
+  while [[ -z "$vault_path" && "$attempts" -lt 3 ]]; do
+    if ! read -rp "  Full path to your Obsidian vault root: " vault_path; then
+      info_msg "No input -- skipping Obsidian."
+      export PERSONAL_AI_OBSIDIAN_VAULT=""
+      return 0
+    fi
+    if [[ -z "$vault_path" ]]; then
+      info_msg "Blank -- skipping Obsidian."
+      export PERSONAL_AI_OBSIDIAN_VAULT=""
+      return 0
+    fi
     vault_path="${vault_path/#\~/$HOME}"
     if [[ ! -d "$vault_path" ]]; then
-      warn_msg "Path '$vault_path' does not exist. Try again or press Ctrl+C to skip."
-      vault_path=""
-      continue
+      warn_msg "Path '$vault_path' does not exist. Try again (or blank-Enter to skip)."
+      vault_path=""; attempts=$(( attempts + 1 )); continue
     fi
-    # Sanity: does it look like a vault?
     if [[ ! -d "$vault_path/.obsidian" ]]; then
       warn_msg "No .obsidian folder inside '$vault_path' -- this may not be a vault. Continue anyway? [y/N]"
-      read -r confirm
+      local confirm=""
+      read -r confirm || confirm=""
       if [[ ! "$confirm" =~ ^[Yy] ]]; then
-        vault_path=""
-        continue
+        vault_path=""; attempts=$(( attempts + 1 )); continue
       fi
     fi
   done
+  if [[ -z "$vault_path" ]]; then
+    warn_msg "Could not validate a vault after $attempts attempts -- skipping."
+    export PERSONAL_AI_OBSIDIAN_VAULT=""
+    return 0
+  fi
   check_pass "Vault root: $vault_path"
 
   echo ""
@@ -141,11 +163,11 @@ EOF
   prompt_yes_no "Index the existing vault now (full-text search build)?" idx_now "yes"
   if [[ "$idx_now" == "yes" ]]; then
     info_msg "Vault indexing runs in the background after install completes."
-    info_msg "Track progress: tail -f /tmp/muse-vault-index.log"
+    info_msg "Track progress: tail -f /tmp/personal-ai-vault-index.log"
   fi
 
-  export MUSE_OBSIDIAN_VAULT="$vault_path"
-  export MUSE_OBSIDIAN_WRITABLE="$vault_writable_folder"
+  export PERSONAL_AI_OBSIDIAN_VAULT="$vault_path"
+  export PERSONAL_AI_OBSIDIAN_WRITABLE="$vault_writable_folder"
   echo ""
   success_msg "Obsidian vault connected."
   echo ""

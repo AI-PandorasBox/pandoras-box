@@ -53,7 +53,7 @@ install_tenant_runtimes() {
     sudo chown -R "${user}:staff" "$target_dir" 2>/dev/null || true
     sudo chmod 755 "$target_dir"/*.mjs 2>/dev/null || true
 
-    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+    if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
       echo "  (dry-run) skipping npm install for $role"
     else
       echo "  npm install in $target_dir (pinned per package.json)"
@@ -110,7 +110,7 @@ install_tenant_runtimes() {
     esac
 
     if [[ "$load_it" == "1" ]]; then
-      if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+      if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
         echo "  (dry-run) skipping launchctl load for $plist_label"
       else
         sudo launchctl unload "$plist_dst" 2>/dev/null || true

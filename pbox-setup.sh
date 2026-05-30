@@ -5,7 +5,7 @@
 # Version: 0.2.0
 # Platform: macOS 14+ (Sonoma or later)
 # =============================================================================
-set -euo pipefail
+set -Eeuo pipefail   # -E so the install-issue-log ERR trap fires inside functions
 
 # Survive headless contexts (CI runners, cron, ssh -T). bash auto-sets TERM=dumb
 # when there's no tty, which causes `clear` and `tput` to abort with "TERM
@@ -27,10 +27,18 @@ STEP_TOTAL=11
 # Source libraries (order matters: dry-run first so its shims are in place,
 # core next so the prompt helpers exist, then everything else.)
 source "$LIB_DIR/setup-dry-run.sh"
+source "$LIB_DIR/setup-unattended.sh"
 source "$LIB_DIR/setup-core.sh"
+source "$LIB_DIR/os-compat.sh"   # OS portability layer (macOS/Linux); after core so its helpers exist
+# Install-issue logging: persistent transcript + structured issue/fix records +
+# a sanitised, attachable bug report. _INSTALL_ISSUE_LOG_V1
+source "$LIB_DIR/setup-issue-log.sh"
 # If PBOX_DRY_RUN=1, install prompt overrides on top of setup-core.sh.
 if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
   pbox_install_dryrun_prompt_overrides
+fi
+if [[ "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
+  pbox_install_unattended_prompt_overrides
 fi
 source "$LIB_DIR/setup-disclaimer.sh"
 source "$LIB_DIR/setup-claude.sh"
@@ -39,6 +47,7 @@ source "$LIB_DIR/setup-api-keys.sh"
 source "$LIB_DIR/setup-tailscale.sh"
 source "$LIB_DIR/setup-certificates.sh"
 source "$LIB_DIR/setup-telegram.sh"
+source "$LIB_DIR/setup-herald.sh"
 source "$LIB_DIR/setup-company.sh"
 source "$LIB_DIR/setup-tenant-runtimes.sh"
 source "$LIB_DIR/setup-mail-google.sh"
@@ -65,7 +74,28 @@ source "$LIB_DIR/setup-update-check.sh"
 # Entry point
 # =============================================================================
 main() {
+  # _INSTALL_ISSUE_LOG_V1 -- set up the persistent log + report bundle, then tee
+  # the whole run into it. The ERR trap records each failed step; the EXIT trap
+  # builds the sanitised report and tells the operator where to find it.
+  pbox_issue_log_init
   exec > >(tee -a "$LOG_FILE") 2>&1
+  trap 'pbox_err_trap "$?" "$LINENO" "$BASH_COMMAND"' ERR
+  trap 'pbox_issue_log_finish' EXIT
+
+  # _FRESH_INSTALL_OPT_FIX_2026-05-30 -- ensure INSTALL_PATH exists + is user-owned
+  # BEFORE step 1. run_claude_install (step 1) and later steps write under
+  # $INSTALL_PATH, but the privileged `sudo mkdir` previously lived in
+  # setup-theme.sh (step 2), so a fresh user-install failed immediately with
+  # "mkdir: cannot create directory '/opt/pandoras-box': Permission denied".
+  # Dry-run rebases INSTALL_PATH to a /tmp sandbox (already created) -> the -d
+  # guard skips it there.
+  if [[ ! -d "$INSTALL_PATH" ]]; then
+    if [[ "$INSTALL_PATH" == /opt/* ]]; then
+      sudo mkdir -p "$INSTALL_PATH" && sudo chown "$(id -un)":"$(id -gn)" "$INSTALL_PATH"
+    else
+      mkdir -p "$INSTALL_PATH"
+    fi
+  fi
 
   print_banner
   run_disclaimer_gate
@@ -88,6 +118,13 @@ main() {
   # after theme.conf is written -- INSTALL_PATH is now valid.
   run_staging
 
+  # _CORE_FROM_REGISTRY_2026-05-30 -- install the full registry tier=core set
+  # (security/argus, skills, terminal, admin-lite, offline-kb, dashboard, docs,
+  # classifier, self-improvement) unconditionally, right after staging. The
+  # optional picker below is now genuinely optional add-ons only.
+  advance_step "[REQUIRED] Core modules"
+  run_core_modules
+
   advance_step "[RECOMMENDED] Spend limits and account check"
   run_api_key_collection
   advance_step "[RECOMMENDED] Tailscale private network"
@@ -98,6 +135,11 @@ main() {
   run_company_setup
   advance_step "[REQUIRED] Personal Assistant"
   run_personal_ai_setup
+
+  # _HERALD_2026-05-30 -- optional Telegram bridge so the user can talk to their
+  # assistant from their phone (BotFather walkthrough + Herald relay install).
+  advance_step "[RECOMMENDED] Telegram (Herald)"
+  run_herald_setup
 
   # _A5_INSTALLER_UX_V1 -- show skills the Personal AI ships with
   display_installed_skills
@@ -127,7 +169,7 @@ print_banner() {
   echo "  ╚══════════════════════════════════════════════════════════════╝"
   echo ""
   echo "  Welcome. This installer will walk you through setting up Pandoras"
-  echo "  Box on your Mac, one step at a time."
+  echo "  Box on your machine, one step at a time."
   echo ""
   echo "  ${C_BOLD}You do not need any technical knowledge to complete this setup.${C_RESET}"
   echo "  Every step explains what is happening, what you'll need to provide,"
@@ -149,27 +191,17 @@ print_banner() {
 }
 
 check_requirements() {
-  section_header "Checking your Mac meets the requirements"
+  section_header "Checking your machine meets the requirements"
   echo "  Before we start, we need to check a few things..."
   echo ""
 
   local ok=true
 
-  local macos_version
-  macos_version=$(sw_vers -productVersion)
-  local macos_major
-  macos_major=$(echo "$macos_version" | cut -d. -f1)
-  if [[ "$macos_major" -ge 14 ]]; then
-    check_pass "macOS version: $macos_version"
-  else
-    check_fail "macOS version: $macos_version (requires 14.0 or later)"
-    echo "  Fix: Apple menu -> System Settings -> General -> Software Update."
-    ok=false
-  fi
+  # OS + version gate (macOS 14+ on Darwin, Debian 13+/Ubuntu 24.04+ on Linux)
+  pbox_os_check || ok=false
 
-  # Find Node. Some shells don't have brew's PATH set up; check common install
-  # locations directly. Order: PATH, then /opt/homebrew (Apple Silicon brew),
-  # then /usr/local/bin (Intel brew or manual install), then /usr/bin.
+  # Find Node. Order: PATH, then /opt/homebrew (Apple Silicon brew),
+  # /usr/local/bin (Intel brew / manual), then /usr/bin (Linux apt/NodeSource).
   local node_bin=""
   for candidate in "$(command -v node 2>/dev/null)" /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
     if [[ -n "$candidate" && -x "$candidate" ]]; then
@@ -182,31 +214,45 @@ check_requirements() {
     local node_major=$(echo "$node_version" | tr -d 'v' | cut -d. -f1)
     if [[ "$node_major" -ge 20 ]]; then
       check_pass "Node.js: $node_version  ($node_bin)"
-      # Export so later steps don't need to re-discover.
       export PBOX_NODE_BIN="$node_bin"
     else
       check_fail "Node.js: $node_version (requires v20 or later)"
-      echo "  Fix: brew upgrade node"
+      [[ "$PBOX_OS" == Darwin ]] && echo "  Fix: brew upgrade node" \
+        || echo "  Fix: install Node 20+ via NodeSource (deb.nodesource.com)."
       ok=false
     fi
   else
-    check_fail "Node.js: not found in PATH or at /opt/homebrew/bin/node or /usr/local/bin/node"
-    echo "  Fix: open a terminal, run 'brew install node', then re-run this installer."
+    check_fail "Node.js: not found"
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      echo "  Fix: run 'brew install node', then re-run this installer."
+    else
+      echo "  Fix: curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt install -y nodejs; then re-run."
+    fi
     ok=false
   fi
 
-  if command -v brew &>/dev/null; then
-    check_pass "Homebrew: found"
+  # Package-manager / service-manager presence
+  if [[ "$PBOX_OS" == Darwin ]]; then
+    if command -v brew &>/dev/null; then
+      check_pass "Homebrew: found"
+    else
+      check_fail "Homebrew: not found"
+      echo "  Fix: visit https://brew.sh and follow the on-screen install command."
+      ok=false
+    fi
   else
-    check_fail "Homebrew: not found"
-    echo "  Fix: visit https://brew.sh and follow the on-screen install command."
-    ok=false
+    if command -v systemctl &>/dev/null; then
+      check_pass "systemd: present"
+    else
+      check_fail "systemd: not found (this installer targets systemd-based distributions)"
+      ok=false
+    fi
   fi
 
   if sudo -n true 2>/dev/null; then
     check_pass "Admin access: confirmed"
   else
-    info_msg "Admin access: you'll be asked for your Mac password during setup."
+    info_msg "Admin access: you'll be asked for your password during setup."
     echo "  This is needed to create service accounts and install system services."
     echo "  Your password is never stored anywhere."
   fi
@@ -236,6 +282,9 @@ choose_setup_path() {
   if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
     setup_choice="${PBOX_DRY_RUN_PATH:-1}"
     info_msg "[DRY-RUN] tier choice auto-set to '$setup_choice' (override with PBOX_DRY_RUN_PATH=2)"
+  elif [[ "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
+    setup_choice="${PBOX_UNATTENDED_TIER:-1}"
+    info_msg "[UNATTENDED] tier choice auto-set to '$setup_choice' (override with PBOX_UNATTENDED_TIER=2)"
   else
     read -rp "  Enter 1 or 2 [default: 1]: " setup_choice
     setup_choice="${setup_choice:-1}"
@@ -274,8 +323,8 @@ print_done() {
   echo "       see $INSTALL_PATH/docs/watch-setup.md"
   echo "  4. Send a test message to your assistant via Telegram or the browser UI."
   echo ""
-  if [[ -d "$HOME/Desktop/Pandoras Box -- Assistant.app" ]]; then
-    echo "  Click ${C_BOLD}'Pandoras Box -- Assistant'${C_RESET} on your Desktop to open"
+  if ls "$HOME/Desktop/"*[Aa]ssistant* >/dev/null 2>&1; then
+    echo "  Click the ${C_BOLD}Assistant${C_RESET} shortcut on your Desktop to open"
     echo "  your Personal Assistant."
     echo ""
   fi
@@ -327,8 +376,8 @@ run_system_check() {
     local default_port="$5"
     local optional="${6:-no}"   # "yes" = just warn, don't fail all_pass
 
-    # Is the service registered?
-    if ! launchctl list 2>/dev/null | grep -q "$label"; then
+    # Is the service registered? (launchd on macOS, systemd on Linux)
+    if ! pbox_service_running "$label"; then
       if [[ "$optional" == "yes" ]]; then
         info_msg "$pretty: not installed (skipped)"
       else
@@ -357,7 +406,7 @@ run_system_check() {
         check_pass "$pretty: registered AND responding on :$port (HTTP $code)"
         ;;
       *)
-        warn_msg "$pretty: launchctl-registered but port $port not responding (HTTP $code) -- bind failed?"
+        warn_msg "$pretty: service registered but port $port not responding (HTTP $code) -- bind failed?"
         all_pass=false
         ;;
     esac
@@ -365,8 +414,10 @@ run_system_check() {
 
   # Cron-only services (no HTTP) -- fall back to launchctl-only check.
   _check_cron_service() {
-    local label="$1" pretty="$2" optional="${3:-no}"
-    if launchctl list 2>/dev/null | grep -q "$label"; then
+    local label="$1" pretty="$2" optional="${3:-no}" domain="${4:-user}"
+    local found="no"
+    if pbox_service_running "$label"; then found="yes"; fi
+    if [[ "$found" == "yes" ]]; then
       check_pass "$pretty: registered (cron-driven, no HTTP surface)"
     else
       if [[ "$optional" == "yes" ]]; then
@@ -379,9 +430,9 @@ run_system_check() {
 
   # Personal Assistant -- always installed
   _check_http_service \
-    "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.muse" \
+    "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.personal-ai" \
     "Personal Assistant" \
-    "$INSTALL_PATH/muse/.env" "MUSE_PORT" "8800"
+    "$INSTALL_PATH/personal-ai/.env" "PERSONAL_AI_PORT" "8800"
 
   # Dashboard (if installed)
   _check_http_service \
@@ -416,7 +467,7 @@ run_system_check() {
   # Cron-only services
   _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.argus"  "Security overseer (Argus)"
   _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.self-improvement" "the Self-Improvement Pipeline" "yes"
-  _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.backup" "Encrypted backups"        "yes"
+  _check_cron_service "${LAUNCHDAEMON_PREFIX:-com.pandoras-box}.backup" "Encrypted backups"        "yes" "system"
 
   # --- environment checks -------------------------------------------------
   if command -v claude &>/dev/null && claude --print --max-output-tokens 5 "ok" >/dev/null 2>&1; then
@@ -437,7 +488,7 @@ run_system_check() {
     warn_msg "Certificates: not found -- HTTPS connections may not work"
   fi
 
-  if [[ -f "$INSTALL_PATH/secrets/age-backup-pubkey.txt" ]]; then
+  if [[ -f "/usr/local/etc/pandoras-box-backup-pubkey.txt" ]]; then
     check_pass "Backups: encryption key configured"
   else
     info_msg "Backups: not configured (optional)"
@@ -449,7 +500,11 @@ run_system_check() {
   else
     warn_msg "Some checks did not pass. See above for details."
     echo "  This may be normal if some services need a moment to start."
-    echo "  Wait 30 seconds and run: launchctl list | grep pandoras-box"
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      echo "  Wait 30 seconds and run: launchctl list | grep pandoras-box"
+    else
+      echo "  Wait 30 seconds and run: systemctl list-units 'pbox-*'"
+    fi
   fi
   echo ""
   press_enter_to_continue

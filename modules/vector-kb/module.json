@@ -1,0 +1,12 @@
+{
+  "name": "vector-kb",
+  "version": "0.1.0",
+  "description": "Local semantic memory: embeds text via Ollama, stores vectors in SQLite, nearest-neighbour search.",
+  "kind": "service",
+  "ports": [8486],
+  "launchdaemon_label": "${PREFIX}.vector-kb",
+  "requires": ["module:ollama"],
+  "cost_estimate": "free (local embeddings via Ollama)",
+  "uninstall": "uninstall.sh",
+  "author": "AI-PandorasBox"
+}

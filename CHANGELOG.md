@@ -9,6 +9,111 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed -- macOS-portability bugs found by a clean-room VM install
+
+A clean-room install in a fresh macOS VM (no Homebrew, no prior state) surfaced
+two bugs that never showed on the development machine:
+
+- **BSD `sed` in-place edit.** `stub-helpers.sh` used `sed -i''` (glued empty
+  suffix), which on macOS/BSD `sed` consumes the next argument as the backup
+  suffix and mis-parses the filename as the script. This aborted the `.env`
+  credential write for every relay + mail module (`mail-google`, `mail-ms365`,
+  `relay-discord`, `relay-slack`, `relay-telegram`, `relay-whatsapp`). Fixed to
+  the macOS-correct `sed -i '' ...` form.
+- **Hardcoded `/usr/local/bin/node`.** `admin-lite` and `terminal` hardcoded the
+  Intel-Homebrew node path when hashing the PIN/passphrase, breaking on Apple
+  Silicon (`/opt/homebrew/bin/node`) and any custom Node location; both now use
+  the already-discovered `$NODE_BIN`. The bootstrap + backup LaunchDaemon plists,
+  the Tailscale hostname probe, and the backup runtime script likewise no longer
+  assume `/usr/local/bin/node` (they use `$PBOX_NODE_BIN` / a resolver).
+
+### Added -- Skills Library module
+
+A new optional module (`modules/skills-library`) ships reusable, tenant-agnostic
+skill primitives any agent can invoke. First skill: `build_board_pack_from_calendar`
+(board-pack PDF from MS365 calendar -- per-week pull with resume, exceljs xlsx
+assembly with row-count verification, Chrome-headless PDF render). The installer
+copies skills to `shared/skills/library/` and preserves operator-specific branding
+presets. Add your own skills under the module's `skills/` dir.
+
+### Added -- Release + commit signing
+
+Commits and tags are SSH-signed and show GitHub's "Verified" badge. Release
+artifacts ship a `SHA256SUMS` manifest + detached `SHA256SUMS.sig`; verify a
+download with `scripts/verify-release.sh` against `scripts/allowed_signers`
+(see `RELEASE-SIGNING.md`).
+
+### Added -- Activation matrix template
+
+`config/agent-activation.template.json` documents the per-agent activation schema
+(modules / subsystem_handles / skills / rules / policies / surfaces / stores, plus
+`requires` dependency maps) with two illustrative agents.
+
+### Changed -- backups module rebuilt (TCC-hardened LaunchDaemon flavour)
+
+The encrypted backups module has been re-architected. The previous user
+LaunchAgent flavour silently failed under macOS Tahoe TCC when reading
+`~/Desktop` and `~/Documents`; backups produced 0-byte tarballs and the
+`latest` symlink was happily updated each night. This release fixes the silent
+failure and adds three operator-visibility features.
+
+**Breaking changes:**
+
+- Daily backup now runs as a root LaunchDaemon (`com.pandoras-box.backup` in
+  `/Library/LaunchDaemons/`). The previous user LaunchAgent
+  (`~/Library/LaunchAgents/com.pandoras-box.backup.plist`) is no longer used.
+- Scripts moved from `$INSTALL_PATH/scripts/` to
+  `/Users/Shared/pandoras-box-backup-scripts/` (root:wheel 755).
+- Env file moved from `$INSTALL_PATH/backups/.env` to
+  `/usr/local/etc/pandoras-box-backup.env` (root:wheel 600).
+- Age public key moved from `$INSTALL_PATH/secrets/age-backup-pubkey.txt` to
+  `/usr/local/etc/pandoras-box-backup-pubkey.txt` (root:wheel 644). Private
+  key in macOS Keychain is unchanged.
+- The installer now requires **sudo** for the backups module. The rest of the
+  installer is unchanged (user-context).
+- The previous Sunday freshness probe (`com.pandoras-box.backup-freshness`)
+  is replaced by a per-component size assertion baked into every nightly run.
+
+**Added:**
+
+- Per-component size assertion. If any component comes back empty, the
+  `latest` symlink is NOT updated. No more silent zero-byte success.
+- Optional daily `[OK]/[FAIL]` email via a user LaunchAgent at 07:00.
+  Configurable during install; SMTP creds in the env file.
+- Optional Backblaze B2 weekly mirror. Configurable during install; 14-day
+  remote retention by default.
+- TCC pre-flight: the installer prompts to grant Full Disk Access to
+  `/bin/bash` (opens the System Settings pane) before the first scheduled
+  run.
+
+**Migration from previous backups install:**
+
+If you ran the previous installer and want to switch:
+
+```bash
+# Unload old user LaunchAgents (if present)
+launchctl unload ~/Library/LaunchAgents/com.pandoras-box.backup.plist 2>/dev/null
+launchctl unload ~/Library/LaunchAgents/com.pandoras-box.backup-freshness.plist 2>/dev/null
+rm -f ~/Library/LaunchAgents/com.pandoras-box.backup*.plist
+
+# Re-run the backups setup with the new flavour
+sudo bash <PBOX_INSTALL_PATH>/lib/setup-backups.sh
+```
+
+Your existing encrypted blobs at `/Users/Shared/pandoras-box-backups/` are NOT
+touched -- the migration only swaps the daemon, scripts, env file, and pubkey
+location. Your Keychain age private key is unchanged.
+
+**Reason for the change:**
+
+Discovered during an internal incident on 2026-05-20 -- a Pandora's Box
+install had been silently producing 0-byte backups since 2026-05-03 because
+TCC was blocking the user LaunchAgent from reading `~/Desktop`. The root
+LaunchDaemon + per-component assertion + daily email together prevent the
+failure mode entirely. The size-assertion catches it on the first run; the
+email surfaces it the next morning.
+
+
 ### Runtime code rollout (v0.4.0-rc1 -- six new module daemons)
 
 Resolves Gap #5 from the v0.3 installer audit. Six modules now ship full runtime code following the canonical 5-step `install.sh` + `runtime/<bin>.mjs` + `runtime/com.pandoras-box.<name>.plist.template` pattern.
@@ -164,7 +269,7 @@ Initial public release.
 - macOS 14 (Sonoma) or later
 - Node.js 20 or later
 - Homebrew
-- Anthropic API key (claude-sonnet-4-x or claude-haiku-4-x recommended)
+- Claude Pro or Max subscription (signed in via `claude /login`)
 - 8 GB RAM minimum (16 GB recommended for Ollama module)
 - 20 GB free disk space minimum
 

@@ -14,6 +14,11 @@
 
 set -euo pipefail
 
+# Portability layer: sets PBOX_OS (Darwin|Linux) + pbox_* helpers. install.sh
+# runs STANDALONE (it is not sourced by pbox-setup.sh), so it must source this
+# itself.
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/os-compat.sh"
+
 REPO="AI-PandorasBox/pandoras-box"
 TARBALL_NAME="pandoras-box-installer"
 MIN_MACOS="14"
@@ -34,18 +39,20 @@ info() { echo -e "       $*"; }
 # Prerequisites check
 # ---------------------------------------------------------------------------
 check_prereqs() {
+  # _BACKUPS_SUDO_NOTICE_V1
+  echo "  Note: the Encrypted Backups module will request sudo. The rest of the installer is user-only."
+
   local fail=0
 
-  # macOS version
-  local os_ver
-  os_ver=$(sw_vers -productVersion 2>/dev/null || echo "0")
-  local major
-  major=$(echo "$os_ver" | cut -d. -f1)
-  if [[ "$major" -lt "$MIN_MACOS" ]]; then
-    err "macOS $MIN_MACOS or later required (found $os_ver)"
-    fail=1
+  # OS / version gate (macOS 14+ on Darwin, Debian 13+/Ubuntu 24.04+ on Linux).
+  pbox_os_check || fail=1
+
+  # Node.js install hint differs per OS.
+  local node_hint
+  if [[ "$PBOX_OS" == Darwin ]]; then
+    node_hint="  Install: brew install node"
   else
-    ok "macOS $os_ver"
+    node_hint="  Install: curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs"
   fi
 
   # Node.js
@@ -54,24 +61,34 @@ check_prereqs() {
     node_ver=$(node --version | sed 's/v//' | cut -d. -f1)
     if [[ "$node_ver" -lt "$MIN_NODE" ]]; then
       err "Node.js $MIN_NODE or later required (found $(node --version))"
-      err "  Install: brew install node"
+      err "$node_hint"
       fail=1
     else
       ok "Node.js $(node --version)"
     fi
   else
     err "Node.js not found"
-    err "  Install: brew install node"
+    err "$node_hint"
     fail=1
   fi
 
-  # Homebrew
-  if command -v brew &>/dev/null; then
-    ok "Homebrew $(brew --version | head -1 | awk '{print $2}')"
+  if [[ "$PBOX_OS" == Darwin ]]; then
+    # Homebrew (macOS package manager)
+    if command -v brew &>/dev/null; then
+      ok "Homebrew $(brew --version | head -1 | awk '{print $2}')"
+    else
+      err "Homebrew not found"
+      err '  Install: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
+      fail=1
+    fi
   else
-    err "Homebrew not found"
-    err '  Install: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"'
-    fail=1
+    # Linux: services are managed via systemd.
+    if command -v systemctl &>/dev/null; then
+      ok "systemd present ($(systemctl --version 2>/dev/null | head -1))"
+    else
+      err "systemctl not found -- Pandoras Box on Linux requires systemd"
+      fail=1
+    fi
   fi
 
   if [[ "$fail" -ne 0 ]]; then
@@ -121,7 +138,7 @@ download_installer() {
     local expected
     expected=$(grep "$tarball" "$tmpdir/SHA256SUMS" | awk '{print $1}')
     local actual
-    actual=$(shasum -a 256 "$tmpdir/$tarball" | awk '{print $1}')
+    actual=$(pbox_checksum_sha256 "$tmpdir/$tarball")
     if [[ "$expected" != "$actual" ]]; then
       err "Checksum mismatch for $tarball"
       err "  Expected: $expected"

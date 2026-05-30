@@ -2,65 +2,126 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>{{PERSONAL_AI_NAME}}</title>
 <link rel="stylesheet" href="/public/style.css">
 <style>
-  :root {
-    --accent: {{COLOR_ACCENT}};
-    --bg: {{COLOR_BACKGROUND}};
-    --fg: {{COLOR_TEXT}};
-  }
+  :root { --accent: {{COLOR_ACCENT}}; }
+  /* _COCKPIT_2026-05-30 panel styling */
+  #panel{flex:1;overflow:auto;background:#0e0b1e}
+  #panel:not([hidden]){display:flex;flex-direction:column}
+  .panel-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+  .panel-head h1{font-size:1.1rem;margin:0}
+  .panel-head .back{background:rgba(255,255,255,.06);color:#cbd5e1;border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:6px 12px;cursor:pointer}
+  .panel-body{padding:16px 18px;overflow:auto}
+  .panel-body form{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  .panel-body input,.panel-body textarea,.panel-body select{flex:1;min-width:120px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);color:#e5e7eb;border-radius:6px;padding:8px;font:inherit}
+  .panel-body .card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:14px;line-height:1.55;margin-bottom:8px}
+  .panel-body ul{list-style:none;padding:0;margin:0}
+  .panel-body li{padding:8px 4px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;justify-content:space-between}
+  .panel-body li.done label{opacity:.5;text-decoration:line-through}
+  .panel-body .muted{color:#94a3b8}
+  .panel-body .err{color:#f87171}
+  .panel-body .dl{color:var(--accent);text-decoration:none;font-size:.85rem}
+  .panel-body h3{margin:14px 0 6px;font-size:.95rem}
+  .panel-body .on{color:#34d399;font-size:.7rem;text-transform:uppercase;font-weight:700}
+  .panel-body .off{color:#94a3b8;font-size:.7rem;text-transform:uppercase}
+  #tool-nav{display:flex;flex-direction:column;gap:2px;margin-bottom:8px}
+  #tool-nav button{text-align:left;background:none;border:none;color:#cbd5e1;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:.9rem}
+  #tool-nav button:hover{background:rgba(255,255,255,.06)}
+  #tool-nav button.active{background:var(--accent);color:#08111e;font-weight:600}
 </style>
 <meta name="pbox-voice" content="{{VOICE_ENABLED}}">
 <meta name="pbox-tts" content="{{TTS_ENABLED}}">
 </head>
 <body>
-<aside id="side">
-  <header>
-    <img src="/avatar.gif" alt="" id="side-avatar">
-    <div>
-      <div class="title">{{PERSONAL_AI_NAME}}</div>
-      <div class="sub">{{SYSTEM_NAME}}</div>
-    </div>
-  </header>
-  <div class="actions">
-    <button id="new-conv" class="primary">New chat</button>
-    <button id="show-facts">Facts</button>
-    <button id="show-drops">Drops</button>
-  </div>
-  <nav id="conv-list" aria-label="Conversations"></nav>
-  <footer>
-    <button id="logout">Sign out</button>
-  </footer>
-</aside>
+<!-- chest logo gradients -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="bodyL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f6b"/><stop offset="1" stop-color="#1a1338"/></linearGradient>
+  <linearGradient id="bodyR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2356"/><stop offset="1" stop-color="#140f2c"/></linearGradient>
+  <linearGradient id="lidG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c77dff"/><stop offset="55%" stop-color="#7B68EE"/><stop offset="100%" stop-color="#4b3fa0"/></linearGradient>
+  <linearGradient id="seamG" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7B68EE"/><stop offset="50%" stop-color="#fff"/><stop offset="100%" stop-color="#c77dff"/></linearGradient>
+  <radialGradient id="lightG" cx="50%" cy="60%" r="60%"><stop offset="0" stop-color="#fff"/><stop offset="40%" stop-color="#9d4edd"/><stop offset="100%" stop-color="transparent"/></radialGradient>
+  <symbol id="i-menu" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M9 4h6l-1 7 4 3v2H6v-2l4-3z"/><line x1="12" y1="16" x2="12" y2="21"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></symbol>
+</defs></svg>
 
-<main id="chat">
-  <header id="chat-header">
-    <h1 id="conv-title">New chat</h1>
-    <div id="status" class="muted"></div>
-  </header>
-  <section id="messages" aria-live="polite"></section>
-  <form id="composer">
-    <textarea id="input" placeholder="Message {{PERSONAL_AI_NAME}}..." rows="2" autofocus></textarea>
-    <div class="composer-actions">
-      <button type="button" id="mic" hidden>Mic</button>
-      <button type="submit" id="send" class="primary">Send</button>
+<div class="app">
+
+  <div class="mtop">
+    <button class="iconbtn" id="m-menu" aria-label="Menu"><svg class="ic"><use href="#i-menu"/></svg></button>
+    <div class="mtop-title"><span class="orb sm"><span class="core"></span></span> {{PERSONAL_AI_NAME}}</div>
+    <span style="width:38px"></span>
+  </div>
+
+  <aside id="side">
+    <div class="sbrand">
+      <svg class="logo" viewBox="0 0 64 64" fill="none"><ellipse cx="32" cy="26" rx="13" ry="9" fill="url(#lightG)" opacity=".7"/><path d="M14 30 L32 39 L32 52 L14 44 Z" fill="url(#bodyL)"/><path d="M50 30 L32 39 L32 52 L50 44 Z" fill="url(#bodyR)"/><path d="M14 30 L32 23 L50 30" fill="none" stroke="url(#seamG)" stroke-width="2.6"/><circle cx="32" cy="27" r="2.6" fill="#FFD700"/><path d="M16 19 L32 12 L48 19 L32 26 Z" fill="url(#lidG)"/></svg>
+      <span class="wm">{{SYSTEM_NAME}}</span>
     </div>
-  </form>
-</main>
+    <div class="ident">
+      <span class="orb"><span class="ring"></span><span class="core"></span></span>
+      <div><div class="nm">{{PERSONAL_AI_NAME}}</div><div class="sb">Personal Assistant</div></div>
+    </div>
+    <button id="new-conv" class="primary"><svg class="ic"><use href="#i-plus"/></svg> New chat</button>
+    <div class="quick">
+      <button id="show-facts"><svg class="ic"><use href="#i-pin"/></svg> Facts</button>
+      <button id="show-drops"><svg class="ic"><use href="#i-drop"/></svg> Drops</button>
+    </div>
+    <div class="convlabel">Tools</div>
+    <nav id="tool-nav" aria-label="Tools">
+      <button data-panel="summary">Summary</button>
+      <button data-panel="tasks">Tasks</button>
+      <button data-panel="create">Create</button>
+      <button data-panel="research">Research</button>
+      <button data-panel="files">Files</button>
+      <button data-panel="knowledge">Knowledge</button>
+      <button data-panel="contacts">Contacts</button>
+      <button data-panel="calendar">Calendar</button>
+      <button data-panel="email">Email</button>
+      <button data-panel="call">Call</button>
+      <button data-panel="camera">Camera</button>
+      <button data-panel="modules">Modules</button>
+    </nav>
+    <div class="convlabel">Recent chats</div>
+    <nav id="conv-list" aria-label="Conversations"></nav>
+    <footer><button id="logout">Sign out</button></footer>
+  </aside>
+  <div class="scrim" id="scrim"></div>
+
+  <main id="chat">
+    <header id="chat-header">
+      <h1 id="conv-title">New chat</h1>
+      <div id="status" class="muted"></div>
+    </header>
+    <section id="messages" aria-live="polite"></section>
+    <form id="composer">
+      <div class="cbox">
+        <textarea id="input" placeholder="Message {{PERSONAL_AI_NAME}}..." rows="1" autofocus></textarea>
+        <button type="button" id="mic" hidden aria-label="Voice"><svg class="ic"><use href="#i-mic"/></svg></button>
+        <button type="submit" id="send" class="primary" aria-label="Send"><svg class="ic"><use href="#i-send"/></svg></button>
+      </div>
+      <div class="hint">{{PERSONAL_AI_NAME}} runs on your machine and asks before sending anything external.</div>
+    </form>
+  </main>
+  <section id="panel" hidden aria-live="polite"></section>
+</div>
 
 <dialog id="facts-dialog">
-  <header><h2>Important facts</h2><button class="close" data-close>X</button></header>
+  <header><h2>Important facts</h2><button class="close" data-close>&times;</button></header>
   <form id="add-fact-form">
-    <textarea id="new-fact" placeholder="Pin a fact the AI should always remember..." rows="2" required></textarea>
+    <textarea id="new-fact" placeholder="Pin a fact the assistant should always remember..." rows="2" required></textarea>
     <button type="submit" class="primary">Add</button>
   </form>
   <ul id="facts-list"></ul>
 </dialog>
 
 <dialog id="drops-dialog">
-  <header><h2>Drops</h2><button class="close" data-close>X</button></header>
+  <header><h2>Drops</h2><button class="close" data-close>&times;</button></header>
   <form id="add-drop-form">
     <select id="drop-kind">
       <option value="note">Note</option>
@@ -75,6 +136,87 @@
   <ul id="drops-list"></ul>
 </dialog>
 
+<script>
+// drawer (mobile) — does not touch app.js logic
+(function(){
+  var side=document.getElementById('side'), scrim=document.getElementById('scrim'), menu=document.getElementById('m-menu');
+  function open(){side.classList.add('open');scrim.classList.add('show');}
+  function close(){side.classList.remove('open');scrim.classList.remove('show');}
+  menu&&menu.addEventListener('click',open);
+  scrim&&scrim.addEventListener('click',close);
+  // close after picking a chat or starting a new one
+  document.getElementById('conv-list').addEventListener('click',close);
+  document.getElementById('new-conv').addEventListener('click',close);
+})();
+</script>
+<script>
+// _COCKPIT_2026-05-30 -- panel system (independent of app.js chat logic)
+(function(){
+  var panel=document.getElementById('panel'), chat=document.getElementById('chat');
+  function csrf(){ var m=document.cookie.match(/pai_csrf=([a-f0-9]+)/); return m?m[1]:''; }
+  function gj(u){ return fetch(u,{credentials:'same-origin'}).then(function(r){return r.json();}); }
+  function pj(u,b,method){ return fetch(u,{method:method||'POST',credentials:'same-origin',headers:{'content-type':'application/json','x-csrf-token':csrf()},body:b?JSON.stringify(b):undefined}).then(function(r){return r.json();}); }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+  function nl(s){ return esc(s).replace(/\n/g,'<br>'); }
+  function show(){ chat.style.display='none'; panel.hidden=false; panel.style.display='flex'; }
+  function backToChat(){ panel.style.display='none'; panel.hidden=true; chat.style.display=''; document.querySelectorAll('#tool-nav button').forEach(function(b){b.classList.remove('active');}); }
+  function head(t){ return '<header class="panel-head"><h1>'+esc(t)+'</h1><button class="back" id="panel-back">← Chat</button></header>'; }
+  function wireBack(){ var b=document.getElementById('panel-back'); if(b) b.onclick=backToChat; }
+  function scaffold(t,m){ panel.innerHTML=head(t)+'<div class="panel-body"><div class="card muted">'+esc(m)+'</div></div>'; wireBack(); }
+  // _CAP_PANEL_2026-05-30 -- state-aware capability panel: shows connected guidance
+  // if any backing module is activated, else how to add it.
+  function capPanel(title, modules, installModule, connectedHint){
+    panel.innerHTML=head(title)+'<div class="panel-body"><div class="card muted">Checking...</div></div>'; wireBack();
+    gj('/api/modules').then(function(d){
+      var on=(d.activated||[]).some(function(m){return modules.indexOf(m.name)>=0;});
+      panel.querySelector('.panel-body').innerHTML = on
+        ? '<div class="card">'+esc(connectedHint)+'</div>'
+        : '<div class="card muted">'+esc(title)+' isn\x27t connected yet. To enable it, add a provider module and sign in to your account. In Terminal run:<br><br><code>sudo bash /opt/pandoras-box/modules/'+esc(installModule)+'/install.sh</code></div>';
+    });
+  }
+
+  var R={
+    summary:function(){ panel.innerHTML=head('Summary')+'<div class="panel-body"><p class="muted">Generating your briefing...</p></div>'; wireBack(); gj('/api/summary').then(function(d){ panel.querySelector('.panel-body').innerHTML='<div class="card">'+nl(d.text||d.error||'')+'</div>'; }); },
+    tasks:function(){ panel.innerHTML=head('Tasks')+'<div class="panel-body"><form id="t-add"><input id="t-in" placeholder="Add a task..." required><button class="primary">Add</button></form><ul id="t-list"></ul></div>'; wireBack();
+      function load(){ gj('/api/tasks').then(function(d){ panel.querySelector('#t-list').innerHTML=(d.tasks||[]).map(function(t){return '<li class="'+(t.done?'done':'')+'"><label><input type="checkbox" data-id="'+t.id+'" '+(t.done?'checked':'')+'> '+esc(t.title)+'</label><button data-del="'+t.id+'">×</button></li>';}).join('')||'<li class="muted">No tasks yet.</li>'; }); }
+      panel.querySelector('#t-add').onsubmit=function(e){e.preventDefault();var v=panel.querySelector('#t-in').value.trim();if(!v)return;pj('/api/tasks',{title:v}).then(function(){panel.querySelector('#t-in').value='';load();});};
+      panel.onclick=function(e){var d=e.target.getAttribute&&e.target.getAttribute('data-del');if(d){pj('/api/tasks/'+d,null,'DELETE').then(load);return;}var id=e.target.getAttribute&&e.target.getAttribute('data-id');if(id&&e.target.type==='checkbox'){pj('/api/tasks/'+id,null,'POST').then(load);}}; load(); },
+    create:function(){ panel.innerHTML=head('Create')+'<div class="panel-body"><form id="c-form"><select id="c-kind"><option>poem</option><option>short story</option><option>email draft</option><option>note</option><option>song lyrics</option><option>blog post</option></select><textarea id="c-prompt" placeholder="What should I create? e.g. a poem about the sea" rows="2" required></textarea><button class="primary">Generate</button></form><div id="c-out"></div></div>'; wireBack();
+      panel.querySelector('#c-form').onsubmit=function(e){e.preventDefault();var k=panel.querySelector('#c-kind').value,p=panel.querySelector('#c-prompt').value.trim();if(!p)return;panel.querySelector('#c-out').innerHTML='<p class="muted">Generating...</p>';pj('/api/create',{kind:k,prompt:p}).then(function(d){panel.querySelector('#c-out').innerHTML=d.error?'<p class="err">'+esc(d.detail||d.error)+'</p>':'<div class="card">'+nl(d.text)+'</div><a class="dl" href="/api/files/download?id='+d.id+'">↓ Download</a>';});}; },
+    research:function(){ panel.innerHTML=head('Research')+'<div class="panel-body"><form id="r-form"><input id="r-q" placeholder="Research a topic..." required><button class="primary">Go</button></form><div id="r-out"></div></div>'; wireBack();
+      panel.querySelector('#r-form').onsubmit=function(e){e.preventDefault();var q=panel.querySelector('#r-q').value.trim();if(!q)return;panel.querySelector('#r-out').innerHTML='<p class="muted">Researching...</p>';pj('/api/research',{query:q}).then(function(d){panel.querySelector('#r-out').innerHTML=d.error?'<p class="err">'+esc(d.detail||d.error)+'</p>':'<div class="card">'+nl(d.text)+'</div>';});}; },
+    files:function(){ panel.innerHTML=head('Files')+'<div class="panel-body"><p class="muted">Files your assistant has generated.</p><ul id="f-list"></ul></div>'; wireBack(); gj('/api/files').then(function(d){ panel.querySelector('#f-list').innerHTML=(d.files||[]).map(function(f){return '<li>'+esc(f.title)+'<a class="dl" href="/api/files/download?id='+f.id+'">↓ Download</a></li>';}).join('')||'<li class="muted">No files yet. Use Create to generate something.</li>'; }); },
+    knowledge:function(){ panel.innerHTML=head('Knowledge')+'<div class="panel-body"><form id="k-form"><input id="k-q" placeholder="Search your knowledge..." required><button class="primary">Search</button></form><ul id="k-out"></ul></div>'; wireBack();
+      panel.querySelector('#k-form').onsubmit=function(e){e.preventDefault();var q=panel.querySelector('#k-q').value.trim();if(!q)return;gj('/api/knowledge?q='+encodeURIComponent(q)).then(function(d){panel.querySelector('#k-out').innerHTML=d.note?'<li class="muted">'+esc(d.note)+'</li>':((d.hits||[]).map(function(h){return '<li>'+esc(h)+'</li>';}).join('')||'<li class="muted">No matches.</li>');});}; },
+    contacts:function(){ panel.innerHTML=head('Contacts')+'<div class="panel-body"><form id="ct-add"><input id="ct-n" placeholder="Name" required><input id="ct-d" placeholder="Phone, email, note"><button class="primary">Add</button></form><ul id="ct-list"></ul></div>'; wireBack();
+      function load(){ gj('/api/contacts').then(function(d){panel.querySelector('#ct-list').innerHTML=(d.contacts||[]).map(function(c){return '<li><span><b>'+esc(c.name)+'</b> <span class="muted">'+esc(c.detail||'')+'</span></span><button data-del="'+c.id+'">×</button></li>';}).join('')||'<li class="muted">No contacts yet.</li>';}); }
+      panel.querySelector('#ct-add').onsubmit=function(e){e.preventDefault();var n=panel.querySelector('#ct-n').value.trim();if(!n)return;pj('/api/contacts',{name:n,detail:panel.querySelector('#ct-d').value.trim()}).then(function(){panel.querySelector('#ct-n').value='';panel.querySelector('#ct-d').value='';load();});};
+      panel.onclick=function(e){var d=e.target.getAttribute&&e.target.getAttribute('data-del');if(d){pj('/api/contacts/'+d,null,'DELETE').then(load);}}; load(); },
+    modules:function(){ panel.innerHTML=head('Modules')+'<div class="panel-body"><p class="muted">Capabilities you can add. Activate one by running its installer.</p><div id="m-out">Loading...</div></div>'; wireBack();
+      gj('/api/modules').then(function(d){ var on=(d.activated||[]).map(function(m){return '<li><span><span class="on">on</span> <b>'+esc(m.name)+'</b></span><span class="muted">'+esc(m.purpose)+'</span></li>';}).join(''); var off=(d.available||[]).map(function(m){return '<li><span><span class="off">off</span> <b>'+esc(m.name)+'</b></span><span class="muted">'+esc(m.purpose)+'</span></li>';}).join('');
+        panel.querySelector('#m-out').innerHTML='<h3>Activated ('+(d.activated||[]).length+')</h3><ul>'+(on||'<li class="muted">none</li>')+'</ul><h3>Not activated ('+(d.available||[]).length+')</h3><ul>'+(off||'<li class="muted">All available modules are activated.</li>')+'</ul>'; }); },
+    calendar:function(){ capPanel('Calendar',['calendar','mail-google','mail-ms365'],'calendar','Your calendar is connected. Ask in Chat, e.g. "what\x27s on my calendar today?" and your assistant will check it.'); },
+    email:function(){ capPanel('Email',['mail-google','mail-ms365'],'mail-google','Your mail is connected. Ask in Chat, e.g. "any important email today?" and your assistant will read it.'); },
+    call:function(){
+      panel.innerHTML=head('Call')+'<div class="panel-body"><div class="card muted">Checking voice...</div></div>'; wireBack();
+      gj('/api/modules').then(function(d){ var on=(d.activated||[]).some(function(m){return m.name==='voice-call';});
+        panel.querySelector('.panel-body').innerHTML = on
+          ? '<div class="card">Voice call is ready. Open the call surface to start a spoken conversation with your assistant.</div><a class="dl" id="call-open">↗ Open voice call</a>'
+          : '<div class="card muted">Click-to-call (spoken conversation) needs the <b>voice-call</b> module. To add it, in Terminal run:<br><br><code>sudo bash /opt/pandoras-box/modules/voice-call/install.sh</code></div>';
+        var o=panel.querySelector('#call-open'); if(o){ o.onclick=function(){ window.open(location.protocol+'//'+location.hostname+':8810/','_blank'); }; o.style.cursor='pointer'; }
+      });
+    },
+    camera:function(){ panel.innerHTML=head('Camera')+'<div class="panel-body"><video id="cam" autoplay playsinline style="max-width:100%;border-radius:8px;background:#000"></video><div style="margin:10px 0;display:flex;gap:8px"><button class="primary" id="cam-start">Start camera</button><button id="cam-snap">Snapshot</button></div><canvas id="cam-canvas" hidden></canvas><div id="cam-out" class="muted">Camera runs in your browser. Snapshots can be sent to your assistant once vision is enabled.</div></div>'; wireBack();
+      panel.querySelector('#cam-start').onclick=function(){ navigator.mediaDevices.getUserMedia({video:true}).then(function(s){panel.querySelector('#cam').srcObject=s;}).catch(function(e){panel.querySelector('#cam-out').textContent='Camera unavailable: '+e.message;}); };
+      panel.querySelector('#cam-snap').onclick=function(){ var v=panel.querySelector('#cam'),c=panel.querySelector('#cam-canvas'); if(!v.videoWidth){panel.querySelector('#cam-out').textContent='Start the camera first.';return;} c.width=v.videoWidth;c.height=v.videoHeight;c.getContext('2d').drawImage(v,0,0);panel.querySelector('#cam-out').textContent='Snapshot captured ('+c.width+'×'+c.height+').'; }; }
+  };
+  document.getElementById('tool-nav').addEventListener('click',function(e){ var b=e.target.closest('button[data-panel]'); if(!b)return;
+    document.querySelectorAll('#tool-nav button').forEach(function(x){x.classList.remove('active');}); b.classList.add('active'); show(); (R[b.getAttribute('data-panel')]||function(){})();
+    var side=document.getElementById('side'),scrim=document.getElementById('scrim'); if(side)side.classList.remove('open'); if(scrim)scrim.classList.remove('show'); });
+  document.getElementById('new-conv').addEventListener('click',backToChat);
+  document.getElementById('conv-list').addEventListener('click',backToChat);
+})();
+</script>
 <script src="/public/app.js"></script>
 </body>
 </html>

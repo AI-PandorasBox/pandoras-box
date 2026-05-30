@@ -132,17 +132,17 @@ human operator.
 - Accessible via browser UI (admin-lite module)
 - Holds read tokens for all companies (by design -- serves the operator only)
 
-**Path pattern:** `/opt/pandoras-box/muse/`
+**Path pattern:** `/opt/pandoras-box/personal-ai/`
 
-**LaunchDaemon label:** `com.pandoras-box.muse`
+**LaunchDaemon label:** `com.pandoras-box.personal-ai`
 
-**Log:** `/tmp/pandoras-box-muse.log`
+**Log:** `/tmp/pandoras-box-personal-ai.log`
 
 **Supplementary services:**
 
 | Service | Label | Description |
 |---------|-------|-------------|
-| Voice call server | `com.pandoras-box.muse-call` | WebSocket bridge (port 8890, Tailscale-only). Routes voice calls from the watch companion through speech-to-text, the personal AI conductor, and text-to-speech. No LLM cost. |
+| Voice call server | `com.pandoras-box.voice-call` | WebSocket bridge (port 8890, Tailscale-only). Routes voice calls from the watch companion through speech-to-text, the personal AI conductor, and text-to-speech. No LLM cost. |
 | Health intelligence | `com.pandoras-box.personal-sensor-signals` | Rules-based ambient signal evaluation. Runs every 60 minutes. Writes structured state for the personal AI to read. No LLM cost. |
 
 ---
@@ -162,7 +162,7 @@ human operator.
 conductor decides whether to act (alert, action, or ignore). LLM cost is incurred only when
 the conductor processes a signal.
 
-**Path pattern:** `/opt/pandoras-box/muse/`
+**Path pattern:** `/opt/pandoras-box/personal-ai/`
 
 **LaunchDaemon label:** `com.pandoras-box.personal-sensor-signals`
 
@@ -241,7 +241,7 @@ A two-company installation with mail and calendar modules looks like this:
 ```
 /opt/pandoras-box/
   argus/                         # Oversight daemon
-  muse/                          # Owner personal AI
+  personal-ai/                          # Owner personal AI
   company-a/                     # Base dir: shared node_modules + credentials
   company-a-conductor/           # Conductor for Company A
   company-a-mail/                # Mail agent for Company A
@@ -267,6 +267,6 @@ A two-company installation with mail and calendar modules looks like this:
   com.pandoras-box.company-a-voice.plist
   com.pandoras-box.company-b-conductor.plist
   ... (and so on for Company B)
-  com.pandoras-box.muse-call.plist
+  com.pandoras-box.voice-call.plist
   com.pandoras-box.personal-sensor-signals.plist
 ```

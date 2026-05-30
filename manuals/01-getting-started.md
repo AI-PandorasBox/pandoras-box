@@ -80,48 +80,34 @@ Your AI system has two types of cost: a one-time hardware cost and ongoing runni
 
 ### Monthly running costs
 
-Running costs come from the AI APIs your system calls. These are pay-per-use -- you pay for
-what your agents actually process, not a flat subscription.
+The Claude reasoning that drives every agent runs on a flat **Claude Pro or Max
+subscription** -- a fixed monthly fee, not pay-per-use. Optional add-on services bill
+separately for what you actually use.
 
 | Service | What it is used for | Typical monthly cost |
 |---------|--------------------|--------------------|
-| Anthropic (Claude) | All AI reasoning and generation | £10-50 |
+| Claude (Pro or Max subscription) | All AI reasoning and generation | Flat plan fee |
 | Microsoft 365 / Google | Email, calendar, documents | Your existing subscription |
 | ElevenLabs (optional) | Voice synthesis for briefings | £0-10 |
 | Tailscale | Private network for mobile access | Free (personal plan) |
 
-**Total typical monthly running cost: £10-60 depending on usage volume.**
+**Your Claude cost is fixed by your Pro or Max plan, regardless of usage volume.**
 
-### Three scenarios
-
-**Scenario A: Single company, light use**  
-One company, checking email twice a day, morning briefing, occasional requests.  
-Estimated monthly API cost: £10-20.
-
-**Scenario B: Two to three companies, active use**  
-Two or three companies, email monitoring, calendar management, daily briefings, frequent
-requests throughout the day.  
-Estimated monthly API cost: £25-60.
-
-**Scenario C: Heavy use with multiple companies and content generation**  
-Three or more companies, active use, trading signals module, content publishing module,
-voice briefings.  
-Estimated monthly API cost: £60-150.
+API-key (pay-per-token) billing is not supported in this release. API support is planned
+for a future version.
 
 ---
 
-## 4. The Two Thousand Pound Lesson
+## 4. Predictable Costs
 
-When AI APIs first became available, it was easy to accidentally run up large bills.
-A misconfigured pipeline, a loop, an unintended high-volume operation -- and suddenly
+When pay-per-token AI APIs first became available, it was easy to accidentally run up large
+bills. A misconfigured pipeline, a loop, an unintended high-volume operation -- and suddenly
 you are looking at a four-figure invoice.
 
-This system has been designed with that lesson built in. Before your agents start running,
-the installer walks you through setting spending limits on your Anthropic account. A hard
-spending limit means Anthropic stops all API calls once the cap is reached. No surprises.
-
-**You start optimised.** The cost protections are not an afterthought -- they are part of
-the installation process. You cannot accidentally skip them.
+This release sidesteps that entirely. Claude reasoning runs on a flat **Pro or Max
+subscription**, so your Claude cost is a fixed monthly fee no matter how hard your agents
+work. There is no per-token meter to run away from you. (Optional add-on services like
+ElevenLabs still bill for usage, but at much smaller scale.)
 
 See the Installation Guide (Manual 2) for the exact steps.
 
@@ -149,9 +135,7 @@ Before you begin, make sure you have:
 
 - [ ] A Mac meeting the hardware requirements above
 - [ ] macOS 14 (Sonoma) or later installed
-- [ ] An Anthropic account at console.anthropic.com
-- [ ] An Anthropic API key ready to paste
-- [ ] Spending limits set (or ready to set during installation)
+- [ ] A Claude Pro or Max subscription (claude.ai)
 - [ ] Your Microsoft 365 or Google Workspace login details
 - [ ] Azure app registration credentials (for Microsoft 365) or Google Cloud credentials
 - [ ] Tailscale account created at tailscale.com (free)

@@ -57,7 +57,7 @@ stub_validate_slug() {
   for d in "$INSTALL_PATH"/*/; do
     local name=$(basename "$d")
     case "$name" in
-      argus|muse|scripts|certs|secrets|assets|store|logs|*-conductor|*-mail|*-calendar|*-files|*-voice) continue ;;
+      argus|personal-ai|scripts|certs|secrets|assets|store|logs|*-conductor|*-mail|*-calendar|*-files|*-voice) continue ;;
     esac
     if [[ -f "$d/.env" ]]; then
       echo "    - $name"
@@ -76,7 +76,7 @@ stub_env_set() {
   local env_file="$1"
   local key="$2"
   local val="$3"
-  sudo sed -i'' "/^${key}=/d" "$env_file"
+  sudo sed -i.bak "/^${key}=/d" "$env_file" && sudo rm -f "${env_file}.bak"   # -i.bak works on both BSD and GNU sed
   sudo bash -c "echo '${key}=${val}' >> '$env_file'"
   sudo chmod 600 "$env_file"
 }

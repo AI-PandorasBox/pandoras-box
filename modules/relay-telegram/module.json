@@ -1,0 +1,10 @@
+{
+  "name": "relay-telegram",
+  "version": "1.0.0",
+  "description": "Telegram bot relay: talk to your assistant from Telegram (long-poll, optional single-chat allowlist).",
+  "kind": "config",
+  "requires": [],
+  "cost_estimate": "free",
+  "uninstall": "uninstall.sh",
+  "author": "AI-PandorasBox"
+}

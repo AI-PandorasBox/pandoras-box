@@ -225,20 +225,24 @@ curl "${CURL_ARGS[@]}" -L -o "$TARBALL" "$TARBALL_URL" || { echo "tarball downlo
 ACTUAL_SHA256="$(shasum -a 256 "$TARBALL" | awk '{print $1}')"
 echo "  SHA256: $ACTUAL_SHA256"
 
-# Best-effort SHA256 verification: look for a SHA256SUMS asset on the release.
-# If absent (no published manifest), log the hash + warn but don't abort.
+# Mandatory SHA256 verification. The release MUST publish a SHA256SUMS asset and
+# the downloaded tarball MUST match it. Fail closed -- never install an
+# unverified tarball. (release.yml publishes SHA256SUMS for every release.)
 SUMS_URL="$(printf '%s\n' "$RESPONSE" | grep -E '"browser_download_url"[^"]*"[^"]*SHA256SUMS' | head -1 | sed -E 's/.*"browser_download_url"[[:space:]]*:[[:space:]]*"([^"]+)".*/\1/')"
-if [[ -n "$SUMS_URL" ]]; then
-  EXPECTED="$(curl "${CURL_ARGS[@]}" "$SUMS_URL" 2>/dev/null | grep -m1 -E '\.tar\.gz' | awk '{print $1}')"
-  if [[ -n "$EXPECTED" && "$EXPECTED" != "$ACTUAL_SHA256" ]]; then
-    echo "  SHA256 MISMATCH: expected $EXPECTED, got $ACTUAL_SHA256" >&2
-    rm -rf "$TMPDIR"
-    exit 1
-  fi
-  echo "  SHA256 verified against published manifest."
-else
-  echo "  (No published SHA256SUMS for this release; hash logged only.)" >&2
+if [[ -z "$SUMS_URL" ]]; then
+  echo "  ABORT: this release publishes no SHA256SUMS; refusing to install an unverified tarball." >&2
+  rm -rf "$TMPDIR"; exit 1
 fi
+EXPECTED="$(curl "${CURL_ARGS[@]}" "$SUMS_URL" 2>/dev/null | grep -m1 -E '\.tar\.gz' | awk '{print $1}')"
+if [[ -z "$EXPECTED" ]]; then
+  echo "  ABORT: could not read the expected hash from the published SHA256SUMS." >&2
+  rm -rf "$TMPDIR"; exit 1
+fi
+if [[ "$EXPECTED" != "$ACTUAL_SHA256" ]]; then
+  echo "  SHA256 MISMATCH: expected $EXPECTED, got $ACTUAL_SHA256" >&2
+  rm -rf "$TMPDIR"; exit 1
+fi
+echo "  SHA256 verified against published manifest."
 
 # ── Backup current install ───────────────────────────────────────────────────
 TS="$(date -u +%Y%m%dT%H%M%SZ)"

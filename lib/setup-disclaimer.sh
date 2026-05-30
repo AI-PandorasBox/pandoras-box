@@ -9,8 +9,8 @@ DISCLAIMER_ACK_FILE="${INSTALL_PATH:-/opt/pandoras-box}/.disclaimer-acknowledged
 run_disclaimer_gate() {
   # In dry-run mode, auto-acknowledge so the installer can run end-to-end
   # in CI / sandbox without blocking on the read prompt.
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
-    info_msg "Disclaimer auto-acknowledged (PBOX_DRY_RUN=1)."
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
+    info_msg "Disclaimer auto-acknowledged (non-interactive install)."
     mkdir -p "$(dirname "$DISCLAIMER_ACK_FILE")"
     echo "acknowledged_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)"  > "$DISCLAIMER_ACK_FILE"
     echo "by_user=$(whoami) (dry-run)"                    >> "$DISCLAIMER_ACK_FILE"
@@ -67,7 +67,7 @@ run_disclaimer_gate() {
   echo "     Use professional judgement on anything that matters."
   echo ""
   echo "  ${C_BOLD}6. Data on your machine, your responsibility.${C_RESET}"
-  echo "     Pandoras Box runs locally and stores data on this Mac. Backup,"
+  echo "     Pandoras Box runs locally and stores data on this machine. Backup,"
   echo "     encryption, physical security, and OS account hygiene are your"
   echo "     responsibility. The optional backups module helps with the first."
   echo ""

@@ -50,13 +50,13 @@ The substrate every agent runs on. These six components are what differentiates 
 
 ### Bridge — Claude CLI wrapper
 
-Every Claude API call routes through a per-session subprocess that wraps the Anthropic SDK and uses your Claude Pro or Max subscription's session cookie. No API key required for the default path; no per-call billing. The bridge maintains a stable session per conversation so context-window use is efficient and prompt-cache hits are amortised across the agents that share a tenant.
+Every Claude API call routes through a per-session subprocess that wraps the Anthropic SDK and uses your Claude Pro or Max subscription's session cookie. No API key required; no per-call billing. (API-key, pay-per-token billing is not supported in this release; API support is planned for a future version.) The bridge maintains a stable session per conversation so context-window use is efficient and prompt-cache hits are amortised across the agents that share a tenant.
 
 Anthropic has announced billing-model changes taking effect approximately 15 June 2026 that are expected to extend subscription-eligible functionality further. The bridge will publish a migration script under `scripts/migrate-anthropic-2026-06.sh` when those changes ship. See `docs/setup/anthropic.md` for details.
 
 ### Memory — temporal recall
 
-Agents do not forget. Every memory write goes through a three-tier recall system: full-text search (BM25) for keyword matches, a vector index for semantic similarity, and a LIKE fallback for partial matches. A temporal scoring layer called Kairos composes recency, frequency, importance, and validity into a single composite score — answering "what is the right memory for this moment", not just "what is most similar".
+Agents do not forget. Every memory write goes through a three-tier recall system: full-text search (BM25) for keyword matches, a vector index for semantic similarity, and a LIKE fallback for partial matches. A temporal scoring layer composes recency, frequency, importance, and validity into a single composite score — answering "what is the right memory for this moment", not just "what is most similar".
 
 Memories carry validity windows (`valid_at` / `invalid_at`). When an agent learns that a fact has changed, the old row is marked invalid rather than deleted, preserving audit history while keeping the live view clean. Conflict resolution defers to explicit operator-marked supersessions — agents don't silently overwrite history.
 
@@ -76,8 +76,9 @@ the Self-Improvement Pipeline is a self-improvement umbrella that runs four sub-
 
 - **GEPA cycle** — every Saturday, the Self-Improvement Pipeline reviews the week's agent traces and proposes targeted improvements (prompt refinements, new heuristics, skill candidates).
 - **Sunday review** — every Sunday, the operator receives a digest of proposed changes for approval. Nothing lands without operator sign-off.
-- **Themis grader** — replays historical traces against candidate skill versions and grades them on a Pareto frontier (speed / accuracy / cost / hallucination). Shadow mode by default until the grader passes a four-week calibration window against operator decisions.
-- **Reflexion daemon** — hourly scan of agent logs and Argus audit trail. Detects threshold-breach patterns (e.g. three occurrences of an error class in seven days) and triggers a micro-GEPA proposal without waiting for the weekly cycle. Advisory-only until Themis calibration completes.
+- **Upstream scanner** — a weekly poll of Anthropic announcements + npm packages for changes the project should react to.
+
+_(A grading layer that scores candidate skill versions on a Pareto frontier, and an hourly reflexion pass that reacts to failure patterns, are on the roadmap. The shipped pipeline is the deterministic, operator-gated weekly digest.)_
 
 ### Modular system — module catalogue and skill library
 
@@ -87,7 +88,7 @@ The skill library at `shared/skills/library/` is a versioned canonical store of 
 
 ### Driver queue — browser automation
 
-A shared file-based queue at `web-actions/` plus a browser driver family called Kourai Khryseai (Chrome, Windows, Linux, macOS). Agents queue browser actions; drivers pick them up and execute. Talos (a sub-module of Argus) screens every queued action against the per-tenant allowlist before driver pickup. No agent can drive a browser unilaterally.
+The browser-actions module gives agents an interactive browser surface (navigate / read / click / type / screenshot) via a local headless Chromium. Every action is token-gated, navigation is screened against a domain allowlist, and everything is audited. No agent can drive a browser unilaterally.
 
 ## Functional capabilities
 
@@ -139,12 +140,12 @@ The marketing module is beta because it's only been tested against one tenant's 
 
 ### Automation
 
-- **Web actions** — browser automation via Kourai Khryseai drivers. Screened pre-execution by Talos.
+- **Browser actions** — interactive browser automation via a local headless Chromium, token + domain-allowlist gated and audited.
 - **Cross-tenant orchestration** — the personal AI can read across all tenants for the operator while keeping the tenants isolated from each other.
 
 ## Naming themes
 
-The installer offers seven themed name packs at setup time, plus a plain default. Each pack names four user-facing roles (admin agent, personal AI, security overseer, alert relay). Internal modules (Argus, the Content Classifier, Kairos, Themis, etc.) keep their canonical names regardless of theme — they are technical components, not personas.
+The installer offers seven themed name packs at setup time, plus a plain default. Each pack names four user-facing roles (admin agent, personal AI, security overseer, alert relay). Internal modules (Argus, the Content Classifier, etc.) keep their canonical names regardless of theme — they are technical components, not personas.
 
 | Pack | Admin | Personal AI | Security overseer | Alert relay |
 |---|---|---|---|---|

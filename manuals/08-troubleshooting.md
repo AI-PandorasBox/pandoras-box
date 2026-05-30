@@ -142,7 +142,7 @@ refresh job may not be running.
 
 **Re-run the token refresh manually:**
 ```
-node /Users/[admin-user]/Desktop/ZEUS/scripts/ms365-reauth-[company].mjs
+bash modules/mail-ms365/install.sh   # re-run to re-authenticate
 ```
 
 Replace `[company]` with the relevant company slug (e.g. `company-a`).
@@ -229,7 +229,7 @@ Full instructions for all devices: `docs/certificates.md`
 **If the certificate has expired:**
 Run the renewal script on the server:
 ```
-sudo bash /opt/pandoras-box/zeus-renew-cert.sh
+sudo bash /opt/pandoras-box/pbox-renew-cert.sh
 ```
 Then reinstall the certificate on your devices.
 
@@ -383,11 +383,11 @@ Then restart your terminal and run the installer again.
 sudo bash pbox-setup.sh
 ```
 
-### "Anthropic API key: rejected (invalid key)"
+### "Claude sign-in: not authenticated"
 
-**Cause:** The key was not copied correctly, or it has been revoked.  
-**Fix:** Go to console.anthropic.com, generate a new key, and paste it carefully.
-Make sure you copy the entire key including the `sk-ant-` prefix.
+**Cause:** The Claude CLI is not signed in, or the session has expired.  
+**Fix:** Run `claude /login` and complete the browser sign-in with your Claude Pro or Max
+account. Verify with `claude --print --max-output-tokens 5 "ok"`.
 
 ### "Azure app registration not found" or "401 from Microsoft Graph"
 

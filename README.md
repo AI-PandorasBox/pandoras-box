@@ -4,13 +4,14 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://apple.com/macos)
+[![Linux](https://img.shields.io/badge/Linux-Debian%2013%20%2F%20Ubuntu%2024.04%2B-orange.svg)](https://www.debian.org)
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-brightgreen.svg)](https://nodejs.org)
 [![Latest Release](https://img.shields.io/github/v/release/AI-PandorasBox/pandoras-box.svg)](https://github.com/AI-PandorasBox/pandoras-box/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/AI-PandorasBox/pandoras-box.svg?style=social)](https://github.com/AI-PandorasBox/pandoras-box/stargazers)
 
 **Run your own AI ops team. On hardware you own.**
 
-Pandoras Box turns a Mac mini into a self-hosted multi-agent AI platform. One installer, one machine, multiple AI assistants -- each scoped to a company or context, each isolated at the operating-system level. Every action is approved by an independent oversight daemon before it runs. You own the keys, you own the data, you own the audit trail.
+Pandoras Box turns a Mac mini or a Linux mini-PC into a self-hosted multi-agent AI platform. One installer, one machine, multiple AI assistants -- each scoped to a company or context, each isolated at the operating-system level. Every action is approved by an independent oversight daemon before it runs. You own the keys, you own the data, you own the audit trail.
 
 Built for people who want production-grade AI assistants on hardware they control rather than cloud services they depend on. Today it handles email, calendar, documents, voice synthesis, and real-time voice calls for multiple separate companies from one box -- with zero cross-company data path.
 
@@ -19,26 +20,25 @@ Built for people who want production-grade AI assistants on hardware they contro
 ### Who is this for?
 
 - **Operators running multiple businesses or contexts.** Get one AI assistant per company, not one shared assistant that mixes their data.
-- **People who want to OWN their AI stack.** No SaaS subscription, no third-party data custody, no terms-of-service changes you didn't agree to. You bring your own API keys (Anthropic, Google, ElevenLabs, etc.) and pay them directly.
+- **People who want to OWN their AI stack.** No third-party data custody, no terms-of-service changes you didn't agree to. You sign in with your own Claude Pro or Max subscription, and bring your own keys for optional add-on services (Google, ElevenLabs, etc.), paying each provider directly.
 - **Engineers who want a sandbox for agentic workflows.** Full source, Apache 2.0, modular install, hook-driven extensibility.
 
 ### How is this different?
 
 - **vs. Claude.ai / ChatGPT:** Those are conversational. This is operational -- agents actually send mail, edit calendars, generate audio, on your behalf, under approval gates.
 - **vs. Cursor / IDE assistants:** Those help you write code. This handles your inbox, your scheduling, your files, your voice work.
-- **vs. cloud agent platforms (Lindy, Relevance, etc.):** Those host your agents on someone else's machine. Here, your agents live on your Mac. The only cloud calls are the LLM/voice APIs you authorise.
+- **vs. cloud agent platforms (Lindy, Relevance, etc.):** Those host your agents on someone else's machine. Here, your agents live on your own box. The only cloud calls are the LLM/voice APIs you authorise.
 
-> **Note:** Pandoras Box is a macOS-native system (14+ on Apple Silicon). Linux support is planned for a future release.
+> **Platforms:** Pandoras Box runs on **macOS** (14+, Apple Silicon) and **Linux** (Debian 13 / Ubuntu 24.04+, systemd). One installer detects your OS and runs the right setup path. See the [Linux install guide](manuals/02b-installation-linux.md).
 
 ### Realistic costs
 
-You bring your own API keys. Pandoras Box doesn't bill you anything -- it's the LLMs/voices you call that cost money. Typical operator monthly spend depends on usage:
+Claude reasoning runs on your **Claude Pro or Max subscription** -- a flat monthly fee, not pay-per-token. Pandoras Box doesn't bill you anything itself. Optional add-on services bill separately for what you use:
 
-- **Light personal use** (~50 conversational queries/day): $5-15/month on Anthropic.
-- **Multi-company business operation** (real mail + calendar + research, 2-3 companies): $50-150/month combined Anthropic + Google + ElevenLabs.
-- **Heavy voice/video pipeline operator:** can hit $200+/month on ElevenLabs alone if doing daily narration.
+- **Claude (Pro or Max subscription):** flat monthly plan fee, regardless of how hard your agents work.
+- **Optional add-ons** (Google AI, ElevenLabs, etc.): pay the provider directly for usage. A heavy daily-narration operator can hit $200+/month on ElevenLabs alone.
 
-A built-in cost gate (`MAX_BUDGET_USD` per job, configurable) prevents runaway loops. The dashboard module shows day-by-day spend.
+API-key (pay-per-token) Anthropic billing is not supported in this release; API support is planned for a future version. A built-in cost gate (`MAX_BUDGET_USD` per job, configurable) bounds add-on service spend, and the dashboard module shows day-by-day usage.
 
 ---
 
@@ -87,8 +87,8 @@ bash install.sh
 The installer is a guided shell script -- nothing happens silently. Expect roughly the following 10 steps over 15-30 minutes:
 
 1. **Disclaimer + theme selection.** Branding, paths, log location.
-2. **Prerequisites check.** macOS version, Apple Silicon, Homebrew, Node 22+, available disk.
-3. **Claude credentials.** API key OR subscription auth via `claude /login` (your choice). Stored in macOS Keychain.
+2. **Prerequisites check.** macOS + Apple Silicon (or Debian 13+/Ubuntu 24.04+ with systemd on Linux), package manager, Node 22+, available disk.
+3. **Claude credentials.** Subscription auth via `claude /login` (browser sign-in with your Claude Pro or Max account). Stored in the macOS Keychain (on Linux, an encrypted file under `/opt/pandoras-box/.secrets`). API-key billing is not supported in this release.
 4. **Tailscale (optional).** Joins your private mesh so you can reach the Personal AI from your phone.
 5. **Certificates.** Self-signed TLS for the loopback HTTPS surfaces.
 6. **Company agents.** For each company you add: collects MS365 or Google OAuth creds, creates a service account, generates per-tenant plists, npm-installs the conductor + 4 task agents.
@@ -99,13 +99,17 @@ The installer is a guided shell script -- nothing happens silently. Expect rough
 
 Reversible: every module has its own `uninstall.sh`. Per-tenant data lives under `/opt/pandoras-box/<slug>/`; removing a company is a single `rm -rf` of that dir + a `launchctl unload` of its plists.
 
-**Prerequisites:** macOS 14 or later, Node.js 20+, Homebrew, an Anthropic account (Claude Pro or Pro Max recommended).
+**Prerequisites (macOS):** macOS 14 or later, Node.js 20+, Homebrew, a Claude Pro or Max subscription.
+
+**Prerequisites (Linux):** Debian 13 (Trixie) or Ubuntu 24.04 LTS or later with systemd, Node.js 20+, a `sudo` user, a Claude Pro or Max subscription. No Homebrew (the installer uses `apt`). Full-disk encryption (LUKS) is recommended and set at OS-install time. Full walkthrough: [manuals/02b-installation-linux.md](manuals/02b-installation-linux.md).
+
+> **macOS pre-flight (do this first, not optional):** Before you run the installer, turn off iCloud Drive's **"Desktop & Documents Folders"** sync and **"Optimize Mac Storage"**. macOS can otherwise evict installed files to iCloud and replace them with placeholders, silently breaking every service that imports them and corrupting backups. See [docs/setup/icloud.md](docs/setup/icloud.md) for the full explanation and the verify command. This applies to Dropbox, OneDrive, Google Drive too — do not install Pandora's Box into any cloud-synced directory.
 
 **You do not need to be technical.** Step 1 of the installer is to install Claude itself and brief it about your install. From that point on, if anything goes wrong on any later step, you press Return at the prompt and Claude reads the install log and tells you what to do next. No prior knowledge of macOS, Node, or shell scripting required.
 
 **An API key is no longer needed up front.** The installer signs you into Claude in the browser the same way the Claude desktop app does. You only need to provide API keys later for *optional* paid services (Google AI for image/video, ElevenLabs for voice, Brave Search for web context, Suno for music) and the installer will tell you which.
 
-**You will be asked to accept a no-liability disclaimer** before any install action. The installer requires you to type `yes` to acknowledge that AI agents take real-world actions on your behalf and you are responsible for them. Any other input exits cleanly without changing your Mac.
+**You will be asked to accept a no-liability disclaimer** before any install action. The installer requires you to type `yes` to acknowledge that AI agents take real-world actions on your behalf and you are responsible for them. Any other input exits cleanly without changing your machine.
 
 See [docs/installation.md](docs/installation.md) for the full step-by-step guide and the [Installation Manual PDF](https://github.com/AI-PandorasBox/pandoras-box/releases/latest) for a printed reference.
 
@@ -130,7 +134,7 @@ A fifth component -- **the Personal AI** -- is the owner's personal AI interface
 
 ## Technical features in depth
 
-**Tenant isolation.** Each company's agents run as a dedicated macOS service account with no shared credentials, no shared database, and no shared memory. OS-level `750` permissions enforce the boundary.
+**Tenant isolation.** Each company's agents run as a dedicated service account (macOS or Linux) with no shared credentials, no shared database, and no shared memory. OS-level `750` permissions enforce the boundary.
 
 **Argus oversight.** Every job created by every agent passes through Argus before execution. Argus is a standalone daemon that no agent can instruct or reach. It blocks anomalous jobs, quarantines failing agents, and sends alerts.
 

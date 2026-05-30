@@ -23,7 +23,7 @@ All other modules depend on `core`.
 - macOS 14 (Sonoma) or later
 - Node.js 20 or later (`brew install node`)
 - Homebrew
-- Anthropic API key
+- Claude Pro or Max subscription (signed in via `claude /login`)
 
 ## Installation
 

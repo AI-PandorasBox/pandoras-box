@@ -8,7 +8,7 @@
 
 ## What is covered
 
-"Pandora's Box" (word mark) and any Pandora's Box logo or wordmark imagery published on `ai-pandorasbox.co.uk` or in this repository are trademarks of the project's intended IP-holding entity (Pandora's Box Holdings Ltd, pending formation).
+"Pandora's Box" (word mark) and any Pandora's Box logo or wordmark imagery published on `ai-pandorasbox.co.uk` or in this repository are trademarks of the project's IP-holding entity, Hope Inside Limited (UK company number 17228483).
 
 These trademarks are NOT covered by the Apache 2.0 licence that governs the source code. Apache 2.0 explicitly excludes trademark rights from the licence grant (see Section 6 of `LICENSE`).
 

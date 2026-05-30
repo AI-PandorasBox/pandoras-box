@@ -53,7 +53,7 @@ Read this section fully before running the installer.
 - Mac with macOS 14 (Sonoma) or later
 - Node.js 20 or later (`brew install node`)
 - Homebrew (see brew.sh)
-- An Anthropic API key (from console.anthropic.com)
+- A Claude Pro or Max subscription (claude.ai), signed in via `claude /login`
 - Microsoft 365 or Google Workspace credentials for each company you are connecting
 - A free Tailscale account (tailscale.com)
 - Approximately 2-3 hours for a full installation with one company
@@ -192,50 +192,39 @@ Your theme can be changed later by editing `/opt/pandoras-box/theme.conf`.
 
 ---
 
-## Step 6: Anthropic API Key
+## Step 6: Claude sign-in
 
-The installer asks for your Anthropic API key. This is the key that lets your agents use
-the Claude AI.
+The installer signs you in to Claude. This is what lets your agents use the Claude AI.
 
-### Getting your key
+Authentication is via your **Claude Pro or Max subscription** -- the same browser sign-in
+the Claude desktop app uses. No API key to create or paste.
 
-1. Go to console.anthropic.com
-2. Sign in or create a free account
-3. Click "API Keys" in the left sidebar
-4. Click "Create Key" -> give it a name (e.g. "My AI System") -> create
-5. Copy the key (it starts with `sk-ant-`)
+### Signing in
 
-Paste the key into the installer when prompted. The installer tests the key before continuing.
+1. The installer runs `claude /login` for you.
+2. A browser tab opens. Sign in to your Claude.ai account (Pro or Max plan).
+3. Approve the sign-in. The CLI captures the session and the tab can be closed.
 
-### What if the test fails?
+The installer then verifies the session and reports `Claude CLI: signed in` on success.
 
-- "Key rejected": check you copied the full key, including the `sk-ant-` prefix
-- "Cannot reach server": check your internet connection
-- "Unexpected response": try again. If it persists, check console.anthropic.com for outages.
+API-key (pay-per-token) billing is not supported in this release. API support is planned
+for a future version.
+
+### What if sign-in fails?
+
+- "Not signed in": re-run `claude /login` and complete the browser step.
+- "Cannot reach server": check your internet connection.
+- Session expired later on: run `claude /login` again to refresh.
 
 ---
 
-## Step 7: Set Spending Limits (MANDATORY)
+## Step 7: Subscription billing
 
-**This step must be completed before your agents start running.**
+Pandora's Box runs on a flat **Claude Pro or Max subscription** -- a fixed monthly fee
+billed by Claude.ai, with no per-call charges. There is no pay-per-token meter to cap.
 
-A spending limit is a cap on how much the Anthropic API will charge you in a month.
-Without a spending limit, a misconfigured agent could run up an unexpected bill.
-
-The installer cannot proceed past this point without your confirmation that limits are set.
-
-### How to set limits
-
-1. Open console.anthropic.com/settings/limits in your browser
-2. Set a **soft limit** (email warning) -- recommended starting value: $20-30
-3. Set a **hard limit** (API stops) -- recommended starting value: $50-100
-4. Click Save
-5. Return to the installer and confirm
-
-You can adjust these limits at any time as you learn your actual usage.
-
-**Why this matters:** The installer was designed this way deliberately. Every user must
-explicitly acknowledge and set cost limits before any agent becomes active.
+Make sure your Pro or Max plan is active before your agents start running. You can review
+or change your plan at any time at claude.ai.
 
 ---
 

@@ -6,7 +6,7 @@
 # =============================================================================
 
 run_gemini_setup() {
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi
@@ -58,7 +58,7 @@ run_gemini_setup() {
   echo ""
   info_msg "Step 3 of 3: Install the OAuth vault + daily refresh..."
 
-  local VAULT_DIR="$INSTALL_PATH/muse/store/gemini-vault"
+  local VAULT_DIR="$INSTALL_PATH/personal-ai/store/gemini-vault"
   sudo mkdir -p "$VAULT_DIR"
 
   # Move (not symlink) gemini CLI tokens into the vault. Mode 660 is critical:

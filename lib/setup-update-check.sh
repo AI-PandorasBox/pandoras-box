@@ -17,7 +17,7 @@
 # =============================================================================
 
 run_update_check_setup() {
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] $FUNCNAME skipped (LaunchAgent load)"
     return 0
   fi
@@ -25,6 +25,25 @@ run_update_check_setup() {
 
   local update_script="$INSTALL_PATH/scripts/pbox-update.sh"
   [[ -x "$update_script" ]] || { warn_msg "pbox-update.sh missing or non-executable; skipping Layer 3."; return 0; }
+
+  # Put pbox-update on the operator's PATH so `pbox-update --check-only|--apply`
+  # works from any terminal, not just the full $INSTALL_PATH/scripts path.
+  if sudo ln -sf "$update_script" /usr/local/bin/pbox-update 2>/dev/null; then
+    check_pass "pbox-update is on your PATH (try: pbox-update --check-only)"
+  else
+    info_msg "pbox-update lives at $update_script (could not symlink to /usr/local/bin)"
+  fi
+
+  # The weekly poll is a launchd LaunchAgent below. On Linux this needs a
+  # systemd --user timer (not yet in os-compat). Defer it, consistent with the
+  # backups + self-improvement schedule deferrals; the pbox-update command above
+  # still works for manual checks.
+  if [[ "${PBOX_OS:-$(uname -s)}" != Darwin ]]; then
+    info_msg "Update-check schedule: Linux support pending (systemd timer); weekly poll not scheduled."
+    info_msg "  Run 'pbox-update --check-only' manually, or add your own cron/systemd timer."
+    echo ""
+    return 0
+  fi
 
   local plist_dir="$HOME/Library/LaunchAgents"
   local plist="$plist_dir/com.pandoras-box.update-check.plist"
@@ -37,7 +56,7 @@ run_update_check_setup() {
   # the operator population. host id seeds the hash; falls back to 9 if
   # md5 is missing for any reason.
   local hour
-  hour="$( (hostname; whoami) | md5 2>/dev/null | head -c 2 | xargs -I{} printf '%d\n' "0x{}" 2>/dev/null )"
+  hour="$( (hostname; whoami) | (md5sum 2>/dev/null || md5 2>/dev/null) | head -c 2 | xargs -I{} printf '%d\n' "0x{}" 2>/dev/null )"
   if [[ -z "$hour" || ! "$hour" =~ ^[0-9]+$ ]]; then hour=9; fi
   hour=$(( hour % 24 ))
 

@@ -4,8 +4,12 @@
 # =============================================================================
 
 run_personal_sensor_setup() {
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
+    return 0
+  fi
+  if [[ "${PBOX_OS:-$(uname -s)}" != Darwin ]]; then
+    info_msg "Personal Sensor Layer: Linux support pending (geofencing uses macOS corelocationcli); skipped."
     return 0
   fi
   print_module_info_card \
@@ -29,7 +33,7 @@ run_personal_sensor_setup() {
   echo "  in 20 min based on traffic'). Skip the prompt by pressing Return."
   echo ""
 
-  declare -a PERSONAL_SENSOR_PLACES
+  declare -a PERSONAL_SENSOR_PLACES=()
   while true; do
     local p_label=""
     read -rp "  Place name (e.g. Home, Office) -- blank to finish: " p_label

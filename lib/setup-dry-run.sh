@@ -134,6 +134,9 @@ echo "" >&2
 pbox_install_dryrun_prompt_overrides() {
   prompt_yes_no() {
     local question="$1" var_name="$2" default="${3:-no}"
+    # Preflight: PBOX_FORCE_ALL_MODULES=1 flips every yes/no to "yes" so the
+    # dry-run exercises every optional module's install.sh path.
+    [[ "${PBOX_FORCE_ALL_MODULES:-0}" == "1" ]] && default="yes"
     _pbox_log_shim "[prompt_yes_no auto-answered '$default'] $question"
     eval "$var_name=\"$default\""
   }

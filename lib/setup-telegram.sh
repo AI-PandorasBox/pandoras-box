@@ -10,7 +10,7 @@
 #   On user-skip, exports them as empty strings (the company is then text-only
 #   via the browser admin panel, not Telegram).
 run_telegram_setup_for_company() {
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
     return 0
   fi

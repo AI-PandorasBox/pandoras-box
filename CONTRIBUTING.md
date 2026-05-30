@@ -180,6 +180,14 @@ There is no `commitlint` hook today (planned). For now, eyeball your commit agai
 
 ## Contributing a New Module
 
+The full contract is in **[`modules/MODULE-SPEC.md`](modules/MODULE-SPEC.md)**. In short:
+scaffold with `bash scripts/add-module.sh <name> --kind service|config|skill-pack [--port N]`,
+fill in a `module.json` (validated against [`modules/module.schema.json`](modules/module.schema.json)),
+then run `node scripts/validate-modules.mjs` before opening a PR. CI runs the same check
+(`.github/workflows/module-validate.yml`), CODEOWNERS routes review, and on merge a maintainer
+lists your module in [`modules/registry.json`](modules/registry.json) with a tier
+(`core` / `official` / `community-vetted` / `experimental`).
+
 New modules go in `modules/new-module-name/` and follow this layout:
 
 ```

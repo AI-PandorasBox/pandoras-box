@@ -1,0 +1,47 @@
+# Pandora's Box public-repo leak gate (2026-05-30)
+# Extends gitleaks defaults (all standard cred detectors) and adds PBox-specific
+# DATA-leak rules (internal identifiers that must never reach the public repo),
+# plus an allowlist for known-safe docs placeholders / dry-run values.
+title = "Pandora's Box public-repo leak gate"
+
+[extend]
+useDefault = true
+
+# ── PBox internal-DATA rules (beyond credentials) ───────────────────────────
+[[rules]]
+id = "pbox-internal-email-domain"
+description = "Internal Levels/Whitehaven email or domain"
+regex = '''(?i)(ian@REDACTED|REDACTED\.co\.uk)'''
+tags = ["pbox-data"]
+
+[[rules]]
+id = "pbox-telegram-chatid"
+description = "Hardcoded allowed Telegram chat ID (operator-only)"
+regex = '''\bREDACTED\b'''
+tags = ["pbox-data"]
+
+[[rules]]
+id = "pbox-tailnet"
+description = "Tailnet 100.x address or private ts.net host"
+regex = '''(100\.(9[0-9]|1[0-1][0-9]|12[0-7])\.\d{1,3}\.\d{1,3}|[a-z0-9-]+\.REDACTED\.ts\.net)'''
+tags = ["pbox-data"]
+
+[[rules]]
+id = "pbox-operator-path"
+description = "Admin-only operator paths (must not appear in public source)"
+regex = '''(/Users/qwerty|/opt/zeus/|/Users/[^/]+/Desktop/ZEUS)'''
+tags = ["pbox-data"]
+
+# ── Allowlist: known-safe placeholders and documentation examples ───────────
+[allowlist]
+description = "Docs placeholders, dry-run sample values, example GUIDs"
+regexes = [
+  '''[0-9]{8}-aaaa-bbbb-cccc-ddddeeeeffff''',   # example tenant/client GUIDs in setup docs
+  '''123456789012345678''',                      # dry-run placeholder Discord IDs
+  '''dryrun-placeholder''',
+  '''\*{4,}''',                                  # masked secrets shown as ****
+]
+paths = [
+  '''docs/setup/ms365\.md''',                    # documented example credential block
+  '''\.gitleaks\.toml''',                         # this file (contains the patterns it scans for)
+]

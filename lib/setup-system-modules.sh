@@ -24,18 +24,24 @@ _run_module_install() {
     script="$SETUP_DIR/modules/$name/install.sh"
   fi
   if [[ ! -f "$script" ]]; then
-    error_msg "module '$name' install.sh not found at $INSTALL_PATH/modules/$name/ or $SETUP_DIR/modules/$name/"
-    return 1
+    warn_msg "module '$name' install.sh not found (looked in $INSTALL_PATH/modules/$name/ and $SETUP_DIR/modules/$name/)"
+    info_msg "Skipping '$name' -- install continues."
+    return 0
   fi
   echo ""
   info_msg "Running module installer: $name"
   if sudo bash "$script"; then
     check_pass "module '$name' install completed"
     return 0
-  else
-    warn_msg "module '$name' install reported a non-zero exit code (see output above)"
-    return 1
   fi
+  # Module failed. THIS IS NOT FATAL: optional modules are independent and the
+  # rest of the install carries on. Offer a Claude-assisted diagnosis.
+  warn_msg "module '$name' did not complete -- the rest of the install continues."
+  info_msg "You can re-run just this module later: sudo bash $script"
+  if declare -F pbox_claude_help >/dev/null 2>&1; then
+    pbox_claude_help "module '$name' install failed"
+  fi
+  return 0
 }
 
 run_ollama_setup()      { _run_module_install ollama; }
@@ -46,3 +52,31 @@ run_admin_shell_setup() { _run_module_install admin-shell; }
 run_self_improvement_setup()      { _run_module_install self-improvement; }
 run_content_classifier_setup()    { _run_module_install content-classifier; }
 run_docs_server_setup() { _run_module_install docs-server; }
+run_skills_library_setup() { _run_module_install skills-library; }
+
+# _CORE_FROM_REGISTRY_2026-05-30 -- install EVERY module tagged tier=core in
+# modules/registry.json, unconditionally. Previously the core set was scattered
+# through the optional picker: dashboard/docs/classifier/self-improvement were
+# [RECOMMENDED] (installed) but terminal/admin-lite/offline-kb/skills-library were
+# [OPTIONAL] (skipped in unattended) and argus had no entry at all -> a default
+# install came up hollow. This makes the registry the single source of truth.
+# personal-ai is skipped here -- it has its own dedicated step (passphrase).
+run_core_modules() {
+  section_header "Core modules"
+  local reg="$INSTALL_PATH/modules/registry.json"
+  [[ -f "$reg" ]] || reg="${SETUP_DIR:-.}/modules/registry.json"
+  local node_bin; node_bin=$(command -v node || echo node)
+  local core_list=""
+  [[ -f "$reg" ]] && core_list=$("$node_bin" -e "try{const r=require('$reg');process.stdout.write(r.modules.filter(m=>m.tier==='core'&&m.name!=='personal-ai').map(m=>m.name).join(' '))}catch(e){}" 2>/dev/null)
+  [[ -z "$core_list" ]] && core_list="dashboard docs-server content-classifier self-improvement skills-library argus admin-lite terminal offline-kb"
+  info_msg "Core modules (from registry): $core_list"
+  for m in $core_list; do
+    # idempotent: skip if the service unit is already installed (the optional
+    # picker may also reference some of these).
+    if command -v systemctl &>/dev/null && systemctl list-unit-files "pbox-${m}.service" 2>/dev/null | grep -q "pbox-${m}.service"; then
+      check_pass "core module '$m' already installed"
+      continue
+    fi
+    _run_module_install "$m"
+  done
+}

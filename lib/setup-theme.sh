@@ -33,7 +33,7 @@ run_theme_selection() {
   echo "                     e.g. \"Assistant is monitoring 2 inboxes.\""
   echo "  9) Custom       -- you choose every name"
   echo ""
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     theme_choice="${PBOX_DRY_RUN_THEME:-8}"   # Plain default in dry-run
     info_msg "[DRY-RUN] theme auto-picked: $theme_choice (override with PBOX_DRY_RUN_THEME=<1-9>)"
   else

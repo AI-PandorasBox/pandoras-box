@@ -10,7 +10,7 @@ run_claude_install() {
 
   # In dry-run, skip the install + auth dance entirely -- it depends on
   # interactive browser sign-in or a live API key that doesn't belong in CI.
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
     info_msg "[DRY-RUN] Claude install + auth skipped."
     export PBOX_CLAUDE_AUTH_MODE="dry-run-skipped"
     return 0
@@ -18,18 +18,16 @@ run_claude_install() {
 
   echo "  Pandoras Box uses Anthropic's Claude as the reasoning model for every"
   echo "  agent on the system. This step installs the Claude CLI (if not present)"
-  echo "  and configures authentication."
+  echo "  and signs you in with your Claude subscription."
   echo ""
-  echo "  Two authentication paths -- choose one:"
-  echo ""
-  echo "  ${C_BOLD}A) Subscription (Claude Pro or Claude Pro Max)${C_RESET}  [recommended]"
+  echo "  ${C_BOLD}Authentication: Claude subscription (Pro or Pro Max)${C_RESET}"
   echo "     Browser sign-in once via the Claude CLI. Usage is covered by the"
   echo "     monthly subscription -- no per-token billing, no surprise bill."
   echo "     Pro: ~ £18/month   Pro Max: ~ £40/month."
   echo ""
-  echo "  ${C_BOLD}B) API key${C_RESET}  [pay-per-use]"
-  echo "     Paste an Anthropic API key. Charged per token used."
-  echo "     Sensible for very low usage or for keys you already have."
+  echo "  Note: Pandoras Box runs on a Claude subscription only. Pay-per-use"
+  echo "  Anthropic API billing is not supported in this release -- API support"
+  echo "  is planned for a future version."
   echo ""
 
   # ---- Step 1: detect or install the Claude CLI -----------------------------
@@ -40,12 +38,23 @@ run_claude_install() {
   else
     info_msg "Claude CLI not detected. Installing via npm..."
     if ! command -v npm &>/dev/null; then
-      error_msg "npm not found. Install Node.js (and npm) first: brew install node"
+      error_msg "npm not found. Install Node.js (and npm) first."
+      [[ "$PBOX_OS" == Darwin ]] && info_msg "  macOS: brew install node" \
+        || info_msg "  Linux: curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs"
       return 1
     fi
-    if ! npm install -g @anthropic-ai/claude-code; then
+    # macOS Homebrew node has a user-writable global prefix; Linux (apt/NodeSource)
+    # uses a root-owned prefix (/usr) so the global install needs sudo. -H keeps
+    # root's HOME so the npm cache does not land root-owned in the operator's home.
+    local -a NPM_GI
+    if [[ "$PBOX_OS" == Darwin ]]; then
+      NPM_GI=(npm install -g @anthropic-ai/claude-code)
+    else
+      NPM_GI=(sudo -H npm install -g @anthropic-ai/claude-code)
+    fi
+    if ! "${NPM_GI[@]}"; then
       error_msg "npm install of @anthropic-ai/claude-code failed."
-      info_msg  "Try manually: npm install -g @anthropic-ai/claude-code"
+      info_msg  "Try manually: ${NPM_GI[*]}"
       info_msg  "Or see https://docs.claude.com/en/docs/claude-code/installation"
       return 1
     fi
@@ -63,28 +72,12 @@ run_claude_install() {
     fi
   fi
 
-  # ---- Step 3: pick auth mode -----------------------------------------------
-  local mode=""
-  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
-    # Default to subscription path in dry-run -- it doesn't need an API call.
-    mode="${PBOX_DRY_RUN_CLAUDE_MODE:-subscription}"
-    info_msg "[DRY-RUN] Claude auth mode auto-set to '$mode' (override with PBOX_DRY_RUN_CLAUDE_MODE=api-key)"
-  else
-    while [[ -z "$mode" ]]; do
-      read -rp "  Choose authentication path  [A=Subscription, B=API key]: " mode
-      case "$mode" in
-        [Aa]*) mode="subscription" ;;
-        [Bb]*) mode="api-key" ;;
-        *)     warn_msg "Pick A or B."; mode="" ;;
-      esac
-    done
-  fi
-
-  if [[ "$mode" == "subscription" ]]; then
-    run_claude_subscription_auth
-  else
-    run_claude_api_key_auth
-  fi
+  # ---- Step 3: authenticate -------------------------------------------------
+  # _SUBSCRIPTION_ONLY_2026-05-30 (Ian decision) -- this release authenticates
+  # via the Claude subscription only. The API-key path (run_claude_api_key_auth,
+  # retained below) is intentionally NOT offered; it is dormant code kept for a
+  # future release that re-introduces API billing as an explicit choice.
+  run_claude_subscription_auth
 }
 
 # -----------------------------------------------------------------------------
@@ -172,11 +165,13 @@ run_claude_api_key_auth() {
   rm -f /tmp/pbox-claude-validate.json
   check_pass "Anthropic API key validated."
 
-  # Store in macOS Keychain + write to $INSTALL_PATH/.env-claude (referenced by agents).
-  if security add-generic-password -a "$USER" -s "pbox-anthropic-api-key" -w "$key" -U 2>/dev/null; then
-    check_pass "Key stored in macOS Keychain (service: pbox-anthropic-api-key)."
+  # Store the key via the portability layer (macOS Keychain on Darwin, a 600
+  # file under $INSTALL_PATH/.secrets on Linux) + write to $INSTALL_PATH/.env-claude
+  # (referenced by agents).
+  if pbox_store_secret "pbox-anthropic-api-key" "$key"; then
+    check_pass "Key stored in OS secret store (service: pbox-anthropic-api-key)."
   else
-    warn_msg "Could not write to Keychain -- key will only live in the .env file."
+    warn_msg "Could not write to OS secret store -- key will only live in the .env file."
   fi
 
   sudo mkdir -p "$INSTALL_PATH"

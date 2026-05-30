@@ -10,6 +10,7 @@ Pandora's Box internal architecture, written for operators who want to understan
 | [Layer model](layers.md) | When you want the canonical "which layer does this belong to" reference |
 | [Key concepts](concepts.md) | Visual explainers — automation→agency, LLM+RAG, defense in depth, model routing |
 | [Service dependencies + blast radius](dependencies.md) | Before you change anything — understand what depends on what |
+| [Governance + integrity](governance-and-integrity.md) | How capabilities are gated per agent (activation matrix), how changes are gated (Definition of Done), and how to verify signed releases |
 | [Recovery runbook](recovery.md) | When something is broken |
 
 Adjacent documentation outside this folder:

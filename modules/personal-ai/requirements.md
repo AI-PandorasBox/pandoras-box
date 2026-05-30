@@ -24,7 +24,7 @@
 
 | Credential | Required | Source priority |
 |-----------|----------|------------------|
-| Anthropic API key | Yes | (1) macOS Keychain `pbox-anthropic-key`, (2) env `ANTHROPIC_API_KEY`, (3) `~/.config/claude/credentials.json` |
+| Claude Pro or Max subscription | Yes | Signed in via `claude /login` (browser). API-key billing is not supported in this release. |
 | ElevenLabs API key | No | env `ELEVENLABS_API_KEY` (enables `/api/tts`) |
 
 ## Network

@@ -29,11 +29,11 @@ If this fails, the Claude CLI is not signed in. Run `claude /login` and complete
 **If the CLI works but Pandora's Box agents still fail:**
 
 ```
-sudo launchctl stop com.pandoras-box.mnemosyne
-sudo launchctl start com.pandoras-box.mnemosyne
+sudo launchctl stop com.pandoras-box.personal-ai
+sudo launchctl start com.pandoras-box.personal-ai
 ```
 
-The bridge subprocess is owned by mnemosyne; restarting mnemosyne respawns it.
+The bridge subprocess is owned by personal-ai; restarting personal-ai respawns it.
 
 **Pending change watchpoint:** Anthropic's billing-model change (~15 June 2026) may require running `scripts/migrate-anthropic-2026-06.sh` once. The CHANGELOG entry tagged `_ANTHROPIC_2026_06_MIGRATION_V1` will surface this in your installation's announce file when the change ships. See [setup/anthropic.md](../setup/anthropic.md).
 
@@ -90,14 +90,14 @@ If the Azure AD app registration itself has been deleted, you'll need to recreat
 **First — verify the daemon is running:**
 
 ```
-launchctl list | grep com.pandoras-box.mnemosyne
+launchctl list | grep com.pandoras-box.personal-ai
 ```
 
 If absent, restart:
 
 ```
-sudo launchctl stop com.pandoras-box.mnemosyne
-sudo launchctl start com.pandoras-box.mnemosyne
+sudo launchctl stop com.pandoras-box.personal-ai
+sudo launchctl start com.pandoras-box.personal-ai
 ```
 
 **Then — verify Tailscale is up (if you're connecting from outside the LAN):**

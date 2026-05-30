@@ -5,6 +5,7 @@ TOTAL_STEPS=5
 
 [[ -f ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf ]] || { echo "ERROR: Run pbox-setup.sh first."; exit 1; }
 source ${INSTALL_PATH:-/opt/pandoras-box}/theme.conf
+source ${INSTALL_PATH:-/opt/pandoras-box}/lib/os-compat.sh   # PBOX_OS + pbox_* portability helpers
 
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
@@ -27,7 +28,30 @@ step 2 "Staging runtime"
 sudo mkdir -p "$TARGET_DIR"
 sudo cp "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" "$TARGET_DIR/"
 sudo chmod 755 "$TARGET_DIR/$RUNTIME_SCRIPT"
+# _CLAUDE_CLI_2026-05-30 -- stage bundled xterm.js assets for the browser terminal
+if [[ -d "$MODULE_SRC_DIR/vendor" ]]; then
+  sudo mkdir -p "$TARGET_DIR/vendor"
+  sudo cp "$MODULE_SRC_DIR/vendor/"* "$TARGET_DIR/vendor/" 2>/dev/null || true
+  ok "xterm assets staged"
+fi
 ok "Runtime staged"
+
+# _CLAUDE_CLI_2026-05-30 -- the Shell tab is a live Claude Code session via a PTY.
+# Needs node-pty (native) + ws. If install fails (no build tools), the Shell tab
+# degrades to a notice and the rest of the terminal still works.
+if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" != "1" ]] && command -v npm &>/dev/null; then
+  # node-pty is a native module -- ensure build tools on Linux (best-effort) so it compiles.
+  if [[ "${PBOX_OS:-}" == Linux ]] && command -v apt-get &>/dev/null; then
+    dpkg -s build-essential &>/dev/null || sudo DEBIAN_FRONTEND=noninteractive apt-get install -y build-essential python3 >/dev/null 2>&1 || true
+  fi
+  ok "Installing Claude-CLI deps (node-pty + ws)..."
+  if ( cd "$TARGET_DIR" && sudo npm install --no-audit --no-fund node-pty ws ) >/dev/null 2>&1; then
+    ok "node-pty + ws installed -- Shell tab is a live Claude CLI"
+  else
+    echo "[$MODULE_NAME] WARN: node-pty/ws install failed. Shell tab will show a notice."
+    echo "  Install build tools then re-run: Debian: sudo apt install -y build-essential python3; macOS: xcode-select --install"
+  fi
+fi
 
 step 3 "Generating passphrase + .env"
 TERM_PORT="${TERMINAL_PORT:-8484}"
@@ -39,12 +63,17 @@ else
   # Prompt for passphrase (skipped in dry-run by parent setup function)
   if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
     PASS="dryrun-placeholder"
+  elif [[ "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" || ! -t 0 || ! -t 1 ]]; then
+    # _UNATTENDED_PASSPHRASE_2026-05-30 -- no TTY; use a placeholder (override with
+    # TERMINAL_PASSPHRASE). Previously fell through to `read`, got empty, and failed.
+    PASS="${TERMINAL_PASSPHRASE:-${PBOX_UNATTENDED_PLACEHOLDER:-unattended-placeholder}}"
+    ok "[unattended] Terminal passphrase set to a placeholder -- change it after first login."
   else
     read -srp "  Choose a terminal passphrase (won't be shown): " PASS; echo ""
     [[ -z "$PASS" ]] && fail "Empty passphrase"
   fi
   SALT=$(openssl rand -hex 16)
-  HASH=$(/usr/local/bin/node -e "const c=require('crypto'); process.stdout.write(c.pbkdf2Sync('$PASS','$SALT',200000,32,'sha256').toString('hex'))")
+  HASH=$("$NODE_BIN" -e "const c=require('crypto'); process.stdout.write(c.pbkdf2Sync('$PASS','$SALT',200000,32,'sha256').toString('hex'))")
   sudo bash -c "cat > '$TERM_ENV'" <<ENVEOF
 TERMINAL_PORT=$TERM_PORT
 TERMINAL_BIND=$TERM_BIND
@@ -57,29 +86,55 @@ ENVEOF
 fi
 
 step 4 "Generating + installing LaunchDaemon plist"
-SERVICE_USER="${TERMINAL_USER:-$(stat -f '%Su' "$INSTALL_PATH")}"
-PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
-[[ -f "$PLIST_TMPL" ]] || fail "plist template missing"
-RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
-sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
-    -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
-    -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
-    -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
-    -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
-    "$PLIST_TMPL" > "$RENDERED"
-plutil -lint "$RENDERED" >/dev/null || fail "rendered plist invalid"
-sudo mkdir -p "$PLIST_DIR"
-sudo cp "$RENDERED" "$PLIST_PATH"
-sudo chown root:wheel "$PLIST_PATH"
-sudo chmod 644 "$PLIST_PATH"
-rm -f "$RENDERED"
-ok "Plist installed: $PLIST_PATH"
+SERVICE_USER="${TERMINAL_USER:-$(pbox_stat_owner "$INSTALL_PATH")}"
+if [[ "$PBOX_OS" == Darwin ]]; then
+  PLIST_TMPL="$MODULE_SRC_DIR/${PLIST_LABEL}.plist.template"
+  [[ -f "$PLIST_TMPL" ]] || fail "plist template missing"
+  RENDERED="/tmp/pbox-${MODULE_NAME}-plist-$$.plist"
+  sed -e "s|{{LAUNCHDAEMON_PREFIX}}|${LAUNCHDAEMON_PREFIX}|g" \
+      -e "s|{{INSTALL_PATH}}|${INSTALL_PATH}|g" \
+      -e "s|{{NODE_BIN}}|${NODE_BIN}|g" \
+      -e "s|{{LOG_PREFIX}}|${LOG_PREFIX}|g" \
+      -e "s|{{USER_NAME}}|${SERVICE_USER}|g" \
+      "$PLIST_TMPL" > "$RENDERED"
+  plutil -lint "$RENDERED" >/dev/null || fail "rendered plist invalid"
+  sudo mkdir -p "$PLIST_DIR"
+  sudo cp "$RENDERED" "$PLIST_PATH"
+  sudo chown root:wheel "$PLIST_PATH"
+  sudo chmod 644 "$PLIST_PATH"
+  rm -f "$RENDERED"
+  ok "Plist installed: $PLIST_PATH"
 
-if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
-  sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  if launchctl list | grep -q "$PLIST_LABEL" 2>/dev/null; then
+    sudo launchctl unload "$PLIST_PATH" 2>/dev/null || true
+  fi
+  sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
+  ok "LaunchDaemon loaded"
+else
+  TERM_LOG="/tmp/${LOG_PREFIX}-terminal.log"
+  pbox_create_service "$PLIST_LABEL" "$NODE_BIN" "$TARGET_DIR/$RUNTIME_SCRIPT" \
+    "$SERVICE_USER" "$TERM_LOG" "$TARGET_DIR" "$TERM_ENV" || fail "systemd service install failed"
+  ok "systemd service installed: pbox-${PLIST_LABEL##*.}"
+
+  # Sudoers drop-in: allow the pbox-terminal service user to restart any
+  # pbox-* unit without a password. Scoped to systemctl restart pbox-*; no
+  # other commands granted. Validates with visudo -c before installation.
+  SUDOERS_FILE=/etc/sudoers.d/pbox-terminal
+  TMP_SUDO=$(mktemp)
+  cat > "$TMP_SUDO" <<SUDOEOF
+# Pandoras Box terminal -- per-service restart capability.
+pbox-terminal ALL=(root) NOPASSWD: /bin/systemctl restart pbox-*, /usr/bin/systemctl restart pbox-*
+SUDOEOF
+  if sudo visudo -cf "$TMP_SUDO" >/dev/null 2>&1; then
+    sudo cp "$TMP_SUDO" "$SUDOERS_FILE"
+    sudo chmod 440 "$SUDOERS_FILE"
+    sudo chown root:root "$SUDOERS_FILE"
+    ok "sudoers drop-in installed: $SUDOERS_FILE"
+  else
+    echo "[$MODULE_NAME] WARN: visudo rejected the sudoers fragment; restart button disabled"
+  fi
+  rm -f "$TMP_SUDO"
 fi
-sudo launchctl load "$PLIST_PATH" 2>/dev/null || fail "launchctl load failed"
-ok "LaunchDaemon loaded"
 
 step 5 "Verifying HTTP response"
 sleep 2

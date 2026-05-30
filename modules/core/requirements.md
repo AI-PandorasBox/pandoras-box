@@ -20,7 +20,7 @@ brew install node
 
 | Credential | Where to get it | Notes |
 |-----------|----------------|-------|
-| Anthropic API key | console.anthropic.com | Starts with `sk-ant-` |
+| Claude Pro or Max subscription | claude.ai | Signed in via `claude /login` (browser). API-key billing is not supported in this release. |
 
 ## Permissions
 
@@ -29,6 +29,6 @@ brew install node
 - `/opt/pandoras-box/` created as root, subdirectories owned by service accounts
 - `/var/ai-jobs/` created with appropriate permissions for shared job queue access
 
-## API Permissions
+## Claude access
 
-- Anthropic: standard API access (no special scopes required)
+- Authenticated via your Claude Pro or Max subscription (`claude /login`). No API key required.

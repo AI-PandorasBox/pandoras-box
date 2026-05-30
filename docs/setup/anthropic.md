@@ -2,12 +2,13 @@
 
 <!-- _A2_INSTALLER_AND_GUIDES_V1 -->
 
-Pandora's Box routes every Claude API call through a per-session bridge subprocess (`shared/anthropic-claude-adapter.mjs`). The bridge supports two auth paths:
+Pandora's Box routes every Claude API call through a per-session bridge subprocess (`shared/anthropic-claude-adapter.mjs`). Authentication is via your Claude Pro or Max subscription:
 
 | Path | What you need | Cost model |
 |---|---|---|
-| **Claude Pro / Max subscription** (recommended) | A Claude.ai account on the Pro or Max plan, signed in via `claude /login` | Flat monthly subscription. No per-call charge. Bridge uses your session cookie. |
-| **API key** (alternative) | An API key from console.anthropic.com | Pay-per-token. Pricing varies by model — see Anthropic's billing page. |
+| **Claude Pro / Max subscription** | A Claude.ai account on the Pro or Max plan, signed in via `claude /login` | Flat monthly subscription. No per-call charge. Bridge uses your session cookie. |
+
+API-key (pay-per-token) billing is not supported in this release. API support is planned for a future version.
 
 ## Recommended setup — Claude Pro / Max
 
@@ -31,25 +32,15 @@ Pandora's Box routes every Claude API call through a per-session bridge subproce
 
 The bridge is now ready. Every agent in your install uses this single sign-in.
 
-## Alternative — API key
+## API-key billing
 
-If you prefer pay-per-token billing:
-
-1. Create an API key at https://console.anthropic.com/settings/keys.
-2. Add it to macOS Keychain:
-   ```
-   security add-generic-password -s ANTHROPIC_API_KEY -a default -w
-   ```
-   Paste the key when prompted (it isn't visible on screen).
-3. In your tenant's `.env`, set `BRIDGE_AUTH=api_key`.
-
-Caveat: API key mode bypasses the bridge's session-stability optimisations. Prompt caching across agents in the same tenant is less effective. Cost is meaningfully higher for typical workloads — most operators are better off on Pro / Max.
+API-key (pay-per-token) billing is not supported in this release. API support is planned for a future version. For now, all installs run on a Claude Pro or Max subscription via `claude /login`.
 
 ## Pending billing changes (~15 June 2026)
 
 Anthropic has announced billing-model changes taking effect approximately 15 June 2026. The known consequences for Pandora's Box operators:
 
-- **More functionality unlocked via subscription** — features that previously required an API key (e.g. extended SDK surface, longer context, batch processing) are expected to become accessible to Pro / Max subscribers.
+- **More functionality unlocked via subscription** — extended capabilities (e.g. longer context, batch processing) are expected to become accessible to Pro / Max subscribers.
 - **A one-time migration step on the operator side** — when the change ships, the bridge will need a refresh. We'll publish a migration script under `scripts/migrate-anthropic-2026-06.sh` with a `--dry-run` mode.
 - **No code changes required to run Pandora's Box at v1.0** — the v1.0 release works against today's Anthropic billing model. The migration ships as a follow-on patch when Anthropic publishes the change.
 
@@ -71,9 +62,4 @@ To sign out:
 claude /logout
 ```
 
-To revoke a stored API key:
-```
-security delete-generic-password -s ANTHROPIC_API_KEY
-```
-
-Followed by deleting the API key in the Anthropic console at https://console.anthropic.com/settings/keys. Then restart any running Pandora's Box agents — they will fail with auth errors as expected until you reinstate auth.
+Then restart any running Pandora's Box agents — they will fail with auth errors as expected until you sign in again with `claude /login`.

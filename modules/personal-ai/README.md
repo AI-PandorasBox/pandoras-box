@@ -27,10 +27,9 @@ Functional surface:
 
 - `core` module installed (provides `theme.conf` and the `pandoras-box` user)
 - Node.js 22 or later (`node:sqlite` and built-in `fetch`)
-- Anthropic API key, supplied via one of:
-  1. macOS Keychain: `security add-generic-password -a $USER -s pbox-anthropic-key -w <key>`
-  2. Env var `ANTHROPIC_API_KEY` in the module `.env`
-  3. `~/.config/claude/credentials.json` (Claude CLI auth)
+- A Claude Pro or Max subscription, signed in via `claude /login` (browser). The bridge uses
+  the Claude CLI session at `~/.config/claude/credentials.json`. API-key (pay-per-token)
+  billing is not supported in this release; API support is planned for a future version.
 
 Optional:
 

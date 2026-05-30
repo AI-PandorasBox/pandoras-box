@@ -7,7 +7,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, execFile } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 
@@ -90,7 +90,29 @@ db.exec(`
     content_path TEXT NOT NULL,
     created_at INTEGER NOT NULL
   );
+  -- _COCKPIT_2026-05-30 -- panel data layer
+  CREATE TABLE IF NOT EXISTS tasks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    title TEXT NOT NULL,
+    done INTEGER DEFAULT 0,
+    created_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS contacts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    detail TEXT,
+    created_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS generated_files (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    kind TEXT NOT NULL,
+    title TEXT NOT NULL,
+    filename TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+  );
 `)
+const FILES_DIR = path.join(STORE_DIR, 'files')
+fs.mkdirSync(FILES_DIR, { recursive: true })
 
 const sessions = new Map()
 
@@ -216,6 +238,20 @@ function loadImportantFacts() {
   return rows.map(r => r.fact)
 }
 
+// Semantic recall from the vector-kb module (localhost, best-effort). If the
+// module is not installed/reachable, recall is simply empty. _VECTOR_RECALL_V1
+const VECTOR_KB_URL = (process.env.VECTOR_KB_URL || 'http://127.0.0.1:8486').replace(/\/$/, '')
+async function recallMemories(query) {
+  if (!query) return []
+  try {
+    const r = await fetch(`${VECTOR_KB_URL}/search?q=${encodeURIComponent(String(query).slice(0, 500))}&k=5`,
+      { signal: AbortSignal.timeout(2500) })
+    if (!r.ok) return []
+    const j = await r.json()
+    return (j.results || []).filter(x => x.score > 0.3).map(x => x.text)
+  } catch { return [] }
+}
+
 let AnthropicCtor = null
 async function getAnthropic() {
   if (AnthropicCtor) return AnthropicCtor
@@ -224,19 +260,69 @@ async function getAnthropic() {
   return AnthropicCtor
 }
 
-function buildSystemPrompt() {
+function buildSystemPrompt(recalled = []) {
   const facts = loadImportantFacts()
   const factsBlock = facts.length
     ? '\n\nUser facts pinned as important:\n' + facts.map(f => '- ' + f).join('\n')
     : ''
-  return `You are ${THEME.PERSONAL_AI_NAME}, a personal AI assistant running on the operator's machine. ` +
-    `Be concise, accurate, and useful. Avoid filler. Never invent facts about the operator -- ` +
-    `if you do not know, say so.${factsBlock}`
+  const recallBlock = recalled.length
+    ? '\n\nRelevant memories (semantic recall):\n' + recalled.map(f => '- ' + f).join('\n')
+    : ''
+  // Hardened identity. The CLI bridge previously used --append-system-prompt
+  // which kept Claude Code's default 'interactive software-engineering agent'
+  // identity beneath this, so the assistant would describe itself as also
+  // being a build/deploy agent ('Layer 0') when asked. We now pass
+  // --system-prompt (replace) and state the boundaries explicitly.
+  return [
+    `You are ${THEME.PERSONAL_AI_NAME}, the operator's personal AI assistant.`,
+    `Your job is daily-life help: conversation, memory recall, notes, summarising, planning, light research, drafting.`,
+    `You are NOT the system administrator of the machine you run on. You do NOT build, deploy, or operate Pandora's Box infrastructure. You are NOT Zeus. You are NOT "Layer 0".`,
+    `If the operator asks about Pandora's Box internals you can answer factually from what you know, but you do not act on the system -- you are not the admin agent.`,
+    `Be concise, accurate, useful. Avoid filler. Never invent facts about the operator -- if you do not know, say so.${factsBlock}${recallBlock}`,
+  ].join(' ')
+}
+
+// CLI bridge: with no API key, reason through the `claude` CLI using the operator's
+// subscription auth (the CLI reads $HOME/.claude). No per-token billing, no key on
+// disk. This path is plain chat (no tool-use), so the conversation is rendered into a
+// single prompt. _CLI_BRIDGE_V1
+const CLAUDE_BIN = process.env.PBOX_CLAUDE_BIN || 'claude'
+async function callClaudeViaCLI({ history, userContent }) {
+  let recalled = []
+  try { recalled = await recallMemories(userContent) } catch {}
+  const system = buildSystemPrompt(recalled)
+  const lines = []
+  for (const m of history) {
+    if (m.role === 'user') lines.push(`User: ${m.content}`)
+    else if (m.role === 'assistant') lines.push(`Assistant: ${m.content}`)
+  }
+  lines.push(`User: ${userContent}`)
+  const prompt = lines.join('\n\n')
+  // --system-prompt (replace) -- NOT --append -- so Claude Code's default
+  // interactive-coding-agent identity does not bleed through.
+  const args = ['-p', '--model', MODEL, '--system-prompt', system, '--output-format', 'json']
+  return await new Promise((resolve, reject) => {
+    const child = execFile(CLAUDE_BIN, args, { timeout: 120000, maxBuffer: 16 * 1024 * 1024 }, (err, stdout, stderr) => {
+      if (err) return reject(new Error(`claude CLI bridge failed: ${String(stderr || err.message).slice(0, 300)}`))
+      let text = ''
+      try {
+        const j = JSON.parse(stdout)
+        if (j && j.is_error) return reject(new Error(`claude CLI error: ${String(j.result || j.subtype || 'unknown').slice(0, 300)}`))
+        text = (j && (j.result || j.text)) || ''
+      } catch { text = String(stdout).trim() }
+      if (!text) return reject(new Error('claude CLI bridge returned empty output'))
+      resolve(text)
+    })
+    try { child.stdin.write(prompt); child.stdin.end() } catch (e) { reject(e) }
+  })
 }
 
 async function callClaude({ history, userContent, stream = false }) {
   const apiKey = getApiKey()
-  if (!apiKey) throw new Error('No Anthropic API key found. Set ANTHROPIC_API_KEY or add to macOS Keychain (service=pbox-anthropic-key).')
+  if (!apiKey) {
+    // Subscription / CLI bridge path (returns full text; no token stream).
+    return await callClaudeViaCLI({ history, userContent })
+  }
   const Ctor = await getAnthropic()
   const client = new Ctor({ apiKey })
   const messages = []
@@ -244,10 +330,11 @@ async function callClaude({ history, userContent, stream = false }) {
     if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content })
   }
   messages.push({ role: 'user', content: userContent })
+  const recalled = await recallMemories(userContent)
   const opts = {
     model: MODEL,
     max_tokens: 2048,
-    system: buildSystemPrompt(),
+    system: buildSystemPrompt(recalled),
     messages,
   }
   if (stream) return client.messages.stream(opts)
@@ -438,6 +525,21 @@ async function handleChatStream(req, res, url) {
     'x-accel-buffering': 'no',
   })
   res.write(`event: start\ndata: ${JSON.stringify({ conversation_id: cid })}\n\n`)
+
+  // Bridge mode (no API key): the CLI path returns the full reply, not a token
+  // stream. Emit it as a single SSE token, then end. _CLI_BRIDGE_V1
+  if (!getApiKey()) {
+    try {
+      const text = await callClaude({ history, userContent: content, stream: false })
+      res.write(`event: token\ndata: ${JSON.stringify({ text })}\n\n`)
+      const mid = recordMessage(cid, 'assistant', text)
+      res.write(`event: end\ndata: ${JSON.stringify({ message_id: mid })}\n\n`)
+    } catch (e) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: String(e.message || e) })}\n\n`)
+    }
+    return res.end()
+  }
+
   let acc = ''
   try {
     const stream = await callClaude({ history, userContent: content, stream: true })
@@ -573,6 +675,132 @@ async function handleRateMessage(req, res, idStr) {
   send(res, 200, { ok: true })
 }
 
+// ── _COCKPIT_2026-05-30 -- panel handlers (Modules/Create/Research/Summary/Files/Knowledge/Tasks/Contacts) ──
+function handleModules (req, res) {
+  let modules = []
+  try {
+    const reg = JSON.parse(fs.readFileSync(path.join(INSTALL_PATH, 'modules', 'registry.json'), 'utf8'))
+    modules = (reg.modules || []).map(m => {
+      let activated = false
+      try {
+        activated = fs.existsSync(path.join(INSTALL_PATH, m.name)) ||
+          (m.name === 'skills-library' && fs.existsSync(path.join(INSTALL_PATH, 'shared', 'skills', 'library')))
+      } catch {}
+      return { name: m.name, tier: m.tier || 'official', purpose: m.purpose || '', activated }
+    })
+  } catch { return send(res, 200, { activated: [], available: [], error: 'registry unavailable' }) }
+  send(res, 200, { activated: modules.filter(m => m.activated), available: modules.filter(m => !m.activated) })
+}
+
+async function handleCreate (req, res) {
+  const body = await readJson(req)
+  const kind = (typeof body.kind === 'string' && body.kind.trim()) || 'piece'
+  const prompt = typeof body.prompt === 'string' ? body.prompt.trim() : ''
+  if (!prompt) return send(res, 400, { error: 'prompt required' })
+  const userContent = `Create a ${kind}. Brief: ${prompt}\nReturn only the finished ${kind}, nothing else.`
+  let text
+  try { text = await callClaude({ history: [], userContent, stream: false }) }
+  catch (e) { return send(res, 502, { error: 'generation_failed', detail: String(e.message || e) }) }
+  const safeKind = (kind.replace(/[^a-z0-9]+/gi, '-').toLowerCase().slice(0, 24)) || 'piece'
+  const r = db.prepare('INSERT INTO generated_files (kind, title, filename, created_at) VALUES (?,?,?,?)')
+    .run('create', `${kind}: ${prompt.slice(0, 60)}`, '', Date.now())
+  const id = Number(r.lastInsertRowid)
+  const filename = `${id}-${safeKind}.txt`
+  try { fs.writeFileSync(path.join(FILES_DIR, filename), String(text)) } catch {}
+  db.prepare('UPDATE generated_files SET filename = ? WHERE id = ?').run(filename, id)
+  send(res, 200, { id, text, filename })
+}
+
+async function handleResearch (req, res) {
+  const body = await readJson(req)
+  const query = typeof body.query === 'string' ? body.query.trim() : ''
+  if (!query) return send(res, 400, { error: 'query required' })
+  let kb = []
+  try { kb = await recallMemories(query) } catch {}
+  const kbText = (kb && kb.length) ? `\nRelevant knowledge:\n${kb.map(k => '- ' + k).join('\n')}` : ''
+  const userContent = `Research the following and give a concise, structured briefing with key points and any caveats.\nTopic: ${query}${kbText}`
+  let text
+  try { text = await callClaude({ history: [], userContent, stream: false }) }
+  catch (e) { return send(res, 502, { error: 'research_failed', detail: String(e.message || e) }) }
+  send(res, 200, { text, sources: kb || [] })
+}
+
+async function handleSummary (req, res) {
+  const facts = db.prepare('SELECT fact FROM important_facts ORDER BY id DESC LIMIT 20').all().map(r => r.fact)
+  const recent = db.prepare('SELECT content FROM messages WHERE role = ? ORDER BY id DESC LIMIT 20').all('user').map(r => r.content)
+  if (!facts.length && !recent.length) return send(res, 200, { text: 'Nothing to summarise yet. Chat with me or pin some facts first.' })
+  const userContent = `Give me a short daily-style briefing based on what you know about me.\nPinned facts:\n${facts.map(f => '- ' + f).join('\n') || '(none)'}\nRecent things I asked about:\n${recent.slice(0, 10).map(c => '- ' + String(c).slice(0, 120)).join('\n') || '(none)'}`
+  let text
+  try { text = await callClaude({ history: [], userContent, stream: false }) }
+  catch (e) { return send(res, 502, { error: 'summary_failed', detail: String(e.message || e) }) }
+  send(res, 200, { text })
+}
+
+function handleFilesList (req, res) {
+  send(res, 200, { files: db.prepare('SELECT id, kind, title, filename, created_at FROM generated_files ORDER BY id DESC LIMIT 200').all() })
+}
+function handleFileDownload (req, res, url) {
+  const id = parseInt(url.searchParams.get('id'), 10)
+  const row = Number.isInteger(id) ? db.prepare('SELECT * FROM generated_files WHERE id = ?').get(id) : null
+  if (!row || !row.filename) return send(res, 404, { error: 'not found' })
+  const fp = path.join(FILES_DIR, row.filename)
+  if (!fs.existsSync(fp)) return send(res, 404, { error: 'file missing' })
+  res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8', 'Content-Disposition': `attachment; filename="${row.filename}"` })
+  res.end(fs.readFileSync(fp))
+}
+
+async function handleKnowledge (req, res, url) {
+  const q = (url.searchParams.get('q') || '').trim()
+  if (!q) return send(res, 400, { error: 'q required' })
+  let hits = []
+  try { hits = await recallMemories(q) } catch { return send(res, 200, { hits: [], note: 'knowledge base not available (vector-kb module not activated)' }) }
+  send(res, 200, { hits: hits || [] })
+}
+
+function handleTasksList (req, res) { send(res, 200, { tasks: db.prepare('SELECT id, title, done, created_at FROM tasks ORDER BY done, id DESC').all() }) }
+async function handleTasksAdd (req, res) {
+  const body = await readJson(req); const title = typeof body.title === 'string' ? body.title.trim() : ''
+  if (!title) return send(res, 400, { error: 'title required' })
+  const r = db.prepare('INSERT INTO tasks (title, done, created_at) VALUES (?,0,?)').run(title.slice(0, 300), Date.now())
+  send(res, 200, { id: Number(r.lastInsertRowid) })
+}
+function handleTasksToggle (req, res, id) {
+  const row = db.prepare('SELECT done FROM tasks WHERE id = ?').get(id)
+  if (!row) return send(res, 404, { error: 'not found' })
+  db.prepare('UPDATE tasks SET done = ? WHERE id = ?').run(row.done ? 0 : 1, id); send(res, 200, { ok: true })
+}
+function handleTasksDelete (req, res, id) { db.prepare('DELETE FROM tasks WHERE id = ?').run(id); send(res, 200, { ok: true }) }
+
+function handleContactsList (req, res) { send(res, 200, { contacts: db.prepare('SELECT id, name, detail, created_at FROM contacts ORDER BY name').all() }) }
+async function handleContactsAdd (req, res) {
+  const body = await readJson(req); const name = typeof body.name === 'string' ? body.name.trim() : ''
+  if (!name) return send(res, 400, { error: 'name required' })
+  const detail = typeof body.detail === 'string' ? body.detail.trim().slice(0, 500) : ''
+  const r = db.prepare('INSERT INTO contacts (name, detail, created_at) VALUES (?,?,?)').run(name.slice(0, 200), detail, Date.now())
+  send(res, 200, { id: Number(r.lastInsertRowid) })
+}
+function handleContactsDelete (req, res, id) { db.prepare('DELETE FROM contacts WHERE id = ?').run(id); send(res, 200, { ok: true }) }
+
+// _HERALD_2026-05-30 -- Telegram relay bridge. The Herald daemon long-polls Telegram
+// and forwards messages here with a shared secret (no browser session). Replies go
+// into a dedicated "Telegram" conversation so the assistant keeps context.
+const HERALD_SECRET = process.env.HERALD_SECRET || ''
+let _heraldCid = null
+async function handleRelayChat (req, res) {
+  if (!HERALD_SECRET || req.headers['x-herald-secret'] !== HERALD_SECRET) return send(res, 403, { error: 'forbidden' })
+  const body = await readJson(req)
+  const content = typeof body.text === 'string' ? body.text.trim() : ''
+  if (!content) return send(res, 400, { error: 'text required' })
+  _heraldCid = ensureConversation(_heraldCid, content)
+  recordMessage(_heraldCid, 'user', content)
+  const history = loadHistory(_heraldCid).slice(0, -1)
+  try {
+    const text = await callClaude({ history, userContent: content, stream: false })
+    recordMessage(_heraldCid, 'assistant', text)
+    send(res, 200, { reply: text })
+  } catch (e) { send(res, 502, { error: 'llm_error', detail: String(e.message || e) }) }
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     if (!ipAllowed(req)) return send(res, 403, { error: 'forbidden' })
@@ -596,6 +824,8 @@ const server = http.createServer(async (req, res) => {
 
     if (p === '/api/login' && req.method === 'POST') return handleLogin(req, res)
     if (p === '/api/health' && req.method === 'GET') return handleHealth(req, res)
+    // _HERALD_2026-05-30 -- secret-authed Telegram relay endpoint (no browser session)
+    if (p === '/api/relay-chat' && req.method === 'POST') return handleRelayChat(req, res)
 
     const sess = getSession(req)
     if (!sess) return send(res, 401, { error: 'unauthorized' })
@@ -614,6 +844,24 @@ const server = http.createServer(async (req, res) => {
     if (p === '/api/tts' && req.method === 'POST') return handleTts(req, res)
     const mRate = p.match(/^\/api\/messages\/(\d+)\/rate$/)
     if (mRate && req.method === 'POST') return handleRateMessage(req, res, mRate[1])
+
+    // _COCKPIT_2026-05-30 -- panel routes (behind session + csrf above)
+    if (p === '/api/modules' && req.method === 'GET') return handleModules(req, res)
+    if (p === '/api/create' && req.method === 'POST') return handleCreate(req, res)
+    if (p === '/api/research' && req.method === 'POST') return handleResearch(req, res)
+    if (p === '/api/summary' && req.method === 'GET') return handleSummary(req, res)
+    if (p === '/api/files' && req.method === 'GET') return handleFilesList(req, res)
+    if (p === '/api/files/download' && req.method === 'GET') return handleFileDownload(req, res, url)
+    if (p === '/api/knowledge' && req.method === 'GET') return handleKnowledge(req, res, url)
+    if (p === '/api/tasks' && req.method === 'GET') return handleTasksList(req, res)
+    if (p === '/api/tasks' && req.method === 'POST') return handleTasksAdd(req, res)
+    const mTask = p.match(/^\/api\/tasks\/(\d+)$/)
+    if (mTask && req.method === 'POST') return handleTasksToggle(req, res, parseInt(mTask[1], 10))
+    if (mTask && req.method === 'DELETE') return handleTasksDelete(req, res, parseInt(mTask[1], 10))
+    if (p === '/api/contacts' && req.method === 'GET') return handleContactsList(req, res)
+    if (p === '/api/contacts' && req.method === 'POST') return handleContactsAdd(req, res)
+    const mCont = p.match(/^\/api\/contacts\/(\d+)$/)
+    if (mCont && req.method === 'DELETE') return handleContactsDelete(req, res, parseInt(mCont[1], 10))
 
     send(res, 404, { error: 'not found' })
   } catch (e) {

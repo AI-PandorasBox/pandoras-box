@@ -1,0 +1,19 @@
+# Review routing for Pandora's Box.
+# Security-sensitive areas require maintainer review before merge.
+# (Enable "Require review from Code Owners" in branch protection for this to gate.)
+
+# Default owner
+*                       @AI-PandorasBox
+
+# Contributed capabilities — review for ports, service user, sudo, blast radius
+/modules/                @AI-PandorasBox
+
+# Installer + privileged surfaces
+/install.sh              @AI-PandorasBox
+/pbox-setup.sh           @AI-PandorasBox
+/lib/                    @AI-PandorasBox
+/scripts/                @AI-PandorasBox
+
+# CI, release + supply chain
+/.github/                @AI-PandorasBox
+/hooks/                  @AI-PandorasBox

@@ -1,0 +1,22 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/AI-PandorasBox/pandoras-box/modules/module.schema.json",
+  "title": "Pandora's Box module manifest",
+  "description": "Manifest for a modules/<name>/module.json. See modules/MODULE-SPEC.md.",
+  "type": "object",
+  "required": ["name", "version", "description", "kind"],
+  "additionalProperties": true,
+  "properties": {
+    "name": { "type": "string", "pattern": "^[a-z][a-z0-9-]*$", "description": "lower-kebab-case, matches the directory name" },
+    "version": { "type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+" },
+    "description": { "type": "string", "minLength": 3, "maxLength": 160 },
+    "kind": { "type": "string", "enum": ["service", "config", "skill-pack"] },
+    "ports": { "type": "array", "items": { "type": "integer", "minimum": 1, "maximum": 65535 }, "description": "ports the module binds; must be unique across all modules" },
+    "service_user": { "type": "string" },
+    "launchdaemon_label": { "type": "string" },
+    "requires": { "type": "array", "items": { "type": "string", "pattern": "^(module|surface|principal_type):[a-z0-9-]+$" } },
+    "cost_estimate": { "type": "string" },
+    "uninstall": { "type": "string" },
+    "author": { "type": "string" }
+  }
+}

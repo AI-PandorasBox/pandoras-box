@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Pandora's Box">
+  <defs>
+    <linearGradient id="pbBodyL" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a2f6b"/><stop offset="1" stop-color="#1a1338"/></linearGradient>
+    <linearGradient id="pbBodyR" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2c2356"/><stop offset="1" stop-color="#140f2c"/></linearGradient>
+    <linearGradient id="pbLid" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#c77dff"/><stop offset="0.55" stop-color="#7B68EE"/><stop offset="1" stop-color="#4b3fa0"/></linearGradient>
+    <linearGradient id="pbSeam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7B68EE"/><stop offset="0.5" stop-color="#ffffff"/><stop offset="1" stop-color="#c77dff"/></linearGradient>
+    <radialGradient id="pbLight" cx="50%" cy="60%" r="60%"><stop offset="0" stop-color="#ffffff"/><stop offset="0.28" stop-color="#e9d8ff"/><stop offset="0.62" stop-color="#9d4edd"/><stop offset="1" stop-color="#9d4edd" stop-opacity="0"/></radialGradient>
+  </defs>
+  <ellipse cx="32" cy="26" rx="20" ry="15" fill="url(#pbLight)" opacity="0.9"/>
+  <path d="M12 30 L32 40 L32 54 L12 44 Z" fill="url(#pbBodyL)" stroke="#6a5acd" stroke-width="1.1"/>
+  <path d="M52 30 L32 40 L32 54 L52 44 Z" fill="url(#pbBodyR)" stroke="#6a5acd" stroke-width="1.1"/>
+  <path d="M12 30 L32 22 L52 30" fill="none" stroke="url(#pbSeam)" stroke-width="2.4" stroke-linejoin="round"/>
+  <circle cx="32" cy="27" r="3" fill="#FFD700"/>
+  <circle cx="32" cy="27" r="6.5" fill="none" stroke="#FFD700" stroke-width="0.7" opacity="0.45"/>
+  <path d="M14 16 L32 8 L50 16 L32 24 Z" fill="url(#pbLid)" stroke="#c77dff" stroke-width="1.1"/>
+  <path d="M14 16 L32 24 L32 27 L14 19 Z" fill="#2a1a5e" opacity="0.7"/>
+  <path d="M50 16 L32 24 L32 27 L50 19 Z" fill="#1f1542" opacity="0.7"/>
+</svg>

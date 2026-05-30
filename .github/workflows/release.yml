@@ -35,10 +35,11 @@ jobs:
 
           # Copy installer and supporting files
           cp install.sh pbox-setup.sh "$STAGING/"
-          cp -r lib config hooks "$STAGING/"
+          cp -r lib scripts config hooks "$STAGING/"
           [[ -d modules ]] && cp -r modules "$STAGING/"
           [[ -d manuals ]] && cp -r manuals "$STAGING/"
           [[ -d docs ]] && cp -r docs "$STAGING/"
+          [[ -d assets ]] && cp -r assets "$STAGING/"
           cp README.md CHANGELOG.md DISCLAIMER.md LICENSE CODE_OF_CONDUCT.md \
              CONTRIBUTING.md SECURITY.md .sanitize-patterns .gitignore "$STAGING/" 2>/dev/null || true
 

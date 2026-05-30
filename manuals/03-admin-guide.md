@@ -100,7 +100,7 @@ Each service writes to a log file in `/tmp/`. The naming pattern is:
 /tmp/pandoras-box-[company]-mail.log         -- mail agent
 /tmp/pandoras-box-[company]-calendar.log     -- calendar agent
 /tmp/pandoras-box-[company]-files.log        -- files agent
-/tmp/pandoras-box-muse.log                   -- personal assistant
+/tmp/pandoras-box-personal-ai.log                   -- personal assistant
 /tmp/pandoras-box-argus.log                  -- security overseer
 ```
 
@@ -247,15 +247,23 @@ any data (email, calendar events, documents) -- only the agent process and its c
 
 ## 8. Updating Credentials
 
-### Rotating an Anthropic API key
+### Refreshing Claude sign-in
 
-1. Go to console.anthropic.com -> API Keys -> create a new key
-2. Update the `.env` file for each company:
+Pandora's Box authenticates to Claude with your Claude Pro or Max subscription, not an API
+key. If agents start returning auth errors, the CLI session has expired.
+
+1. Re-run the browser sign-in:
    ```
-   sudo nano /opt/pandoras-box/[company-slug]/.env
+   claude /login
    ```
-3. Change the `ANTHROPIC_API_KEY=` line to your new key
-4. Restart the conductor for that company
+2. Verify the session:
+   ```
+   claude --print --max-output-tokens 5 "ok"
+   ```
+3. Restart the conductor for each affected company.
+
+API-key (pay-per-token) billing is not supported in this release. API support is planned
+for a future version.
 
 ### Rotating a Microsoft 365 client secret
 
@@ -290,9 +298,9 @@ Administrator builds it for you.
 
 ### How it works
 
-1. Create a project with a plain description of what you want:
+1. Ask your admin agent to start a project, in plain language:
    ```
-   bash /Users/[admin-user]/Desktop/ZEUS/scripts/zeus-project-create.sh "Description of what you want"
+   Create a project: <describe what you want, e.g. a weekly sales summary emailed every Friday at 17:00>.
    ```
    For example: "Add a weekly sales summary that emails me every Friday at 17:00"
 
@@ -316,7 +324,7 @@ At each stage you may be asked to confirm or provide input.
 ### Checking project status
 
 Open the Admin Shell, navigate to the Projects tab. Or view the project files directly
-in `ZEUS/store/projects/`.
+in the Projects tab.
 
 ---
 

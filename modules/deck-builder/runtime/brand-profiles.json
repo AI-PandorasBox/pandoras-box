@@ -1,0 +1,6 @@
+{
+  "_comment": "Brand profiles for pbox-deck. accent_rgb tints slide titles. Add your own.",
+  "default": { "accent_rgb": [123, 104, 238] },
+  "pandoras-box": { "accent_rgb": [123, 104, 238] },
+  "slate": { "accent_rgb": [71, 85, 105] }
+}

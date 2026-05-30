@@ -5,13 +5,13 @@
 # =============================================================================
 
 # Colour codes
-C_RESET="\033[0m"
-C_GREEN="\033[0;32m"
-C_RED="\033[0;31m"
-C_YELLOW="\033[1;33m"
-C_CYAN="\033[0;36m"
-C_BOLD="\033[1m"
-C_DIM="\033[2m"
+C_RESET=$'\033[0m'
+C_GREEN=$'\033[0;32m'
+C_RED=$'\033[0;31m'
+C_YELLOW=$'\033[1;33m'
+C_CYAN=$'\033[0;36m'
+C_BOLD=$'\033[1m'
+C_DIM=$'\033[2m'
 
 check_pass()   { echo -e "  ${C_GREEN}[PASS]${C_RESET} $*"; }
 check_fail()   { echo -e "  ${C_RED}[FAIL]${C_RESET} $*"; }
@@ -24,10 +24,15 @@ section_header() { echo -e "\n  ${C_BOLD}${C_CYAN}=== $* ===${C_RESET}\n"; }
 error_exit() {
   echo ""
   error_msg "$*"
+  # Record this failure so it lands in the install report. _INSTALL_ISSUE_LOG_V1
+  if command -v pbox_record_issue >/dev/null 2>&1; then
+    pbox_record_issue "1" "${BASH_LINENO[0]:-?}" "error_exit: $*"
+  fi
   echo ""
   echo "  If you are not sure how to fix this:"
   echo "    -  Press the Claude prompt above to ask the install assistant"
   echo "    -  Or open an issue at https://github.com/AI-PandorasBox/pandoras-box/issues"
+  echo "       (attach the sanitised report: ${PBOX_REPORT:-~/Library/Logs/PandorasBox/install-latest.report})"
   echo ""
   exit 1
 }
@@ -135,23 +140,8 @@ offer_module() {
 }
 
 create_service_account() {
-  local username="$1"
-  local uid="$2"
-  local display_name="$3"
-
-  if id "$username" &>/dev/null; then
-    info_msg "Service account '$username' already exists -- skipping creation."
-    return 0
-  fi
-
-  echo "  Creating service account: $username (UID $uid)"
-  sudo dscl . -create "/Users/$username"
-  sudo dscl . -create "/Users/$username" UserShell /usr/bin/false
-  sudo dscl . -create "/Users/$username" RealName "$display_name"
-  sudo dscl . -create "/Users/$username" UniqueID "$uid"
-  sudo dscl . -create "/Users/$username" PrimaryGroupID 20
-  sudo dscl . -create "/Users/$username" NFSHomeDirectory "/opt/pandoras-box/$username"
-  check_pass "Service account '$username' created."
+  # OS-aware: delegates to the portability layer (dscl on macOS, useradd on Linux).
+  pbox_create_service_account "$@"
 }
 
 write_plist() {
@@ -173,7 +163,7 @@ write_plist() {
   <string>$label</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/usr/local/bin/node</string>
+    <string>${PBOX_NODE_BIN:-/usr/local/bin/node}</string>
     <string>$program</string>
   </array>
   <key>UserName</key>
@@ -344,7 +334,7 @@ check_module_dep() {
     return 0
   fi
   echo ""
-  warn_msg "$mod requires '$dep' but it's not installed on this Mac."
+  warn_msg "$mod requires '$dep' but it's not installed on this machine."
   echo "  Install hint: $hint"
   echo ""
   echo "  [1] Pause installer; install '$dep' in another terminal, then continue"

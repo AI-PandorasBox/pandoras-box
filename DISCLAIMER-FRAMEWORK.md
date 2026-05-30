@@ -87,8 +87,8 @@ THIRD-PARTY API COSTS
 Pandoras Box connects to third-party services that charge based on usage. These include
 but are not limited to:
 
-  - Anthropic API (Claude AI): charged per token (input and output). Costs vary by model
-    and usage volume. Monitor your usage at console.anthropic.com.
+  - Claude (Anthropic): billed as a flat Claude Pro or Max subscription. Manage your plan
+    at claude.ai. API-key (pay-per-token) billing is not supported in this release.
   - ElevenLabs API: charged per character of text converted to speech. Monitor at
     elevenlabs.io.
   - Microsoft 365: subject to your existing Microsoft licence. Graph API usage is included
