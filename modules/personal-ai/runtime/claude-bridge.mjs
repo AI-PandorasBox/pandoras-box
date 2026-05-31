@@ -150,6 +150,11 @@ function runClaude (systemPrompt, message, mcpConfigPath, claudeSessionId, allow
     const env = {
       ...process.env,
       ANTHROPIC_API_KEY: '',
+      // Give the MCP tool server generous time to initialise. On a slow/loaded box
+      // (notably the first chat right after install) the default startup window can
+      // be exceeded, leaving the model with no tools for that call. _BRIDGE_MCP_TIMEOUT_V1
+      MCP_TIMEOUT: process.env.MCP_TIMEOUT || '60000',
+      MCP_TOOL_TIMEOUT: process.env.MCP_TOOL_TIMEOUT || '120000',
     }
 
     const child  = spawn(CLAUDE, args, { env, cwd: '/tmp' })
