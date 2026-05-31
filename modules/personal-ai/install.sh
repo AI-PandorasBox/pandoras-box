@@ -19,6 +19,9 @@ fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
 MODULE_SRC_DIR="$INSTALL_PATH/modules/$MODULE_NAME/runtime"
 TARGET_DIR="$INSTALL_PATH/$MODULE_NAME"
 RUNTIME_SCRIPT="pbox-personal-ai.mjs"
+# Subscription tool bridge (no-API-key path): claude-login + MCP host tools.
+# personal-ai spawns claude-bridge.mjs on demand; the adapter + proxy support it.
+BRIDGE_FILES=("claude-bridge.mjs" "anthropic-claude-adapter.mjs" "mcp-tool-proxy.mjs")
 PLIST_LABEL="${LAUNCHDAEMON_PREFIX}.personal-ai"
 PLIST_DIR="${PBOX_PLIST_DIR:-/Library/LaunchDaemons}"
 PLIST_PATH="${PLIST_DIR}/${PLIST_LABEL}.plist"
@@ -31,6 +34,7 @@ NODE_MAJOR=$(node -e "console.log(process.versions.node.split('.')[0])")
 [[ "$NODE_MAJOR" -ge 22 ]] || fail "Node.js >= 22 required (got $NODE_MAJOR) for node:sqlite + fetch"
 [[ -d "$MODULE_SRC_DIR" ]] || fail "Runtime dir missing at $MODULE_SRC_DIR"
 [[ -f "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" ]] || fail "Runtime script missing"
+for _bf in "${BRIDGE_FILES[@]}"; do [[ -f "$MODULE_SRC_DIR/$_bf" ]] || fail "bridge file missing: $_bf"; done
 [[ -d "$MODULE_SRC_DIR/public" ]] || fail "public/ assets missing"
 ok "Node.js $NODE_BIN (v$NODE_MAJOR)"
 
@@ -38,10 +42,12 @@ ok "Node.js $NODE_BIN (v$NODE_MAJOR)"
 step 2 "Staging runtime into $TARGET_DIR"
 sudo mkdir -p "$TARGET_DIR" "$TARGET_DIR/store" "$TARGET_DIR/store/sessions" "$TARGET_DIR/public"
 sudo cp "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" "$TARGET_DIR/"
+for _bf in "${BRIDGE_FILES[@]}"; do sudo cp "$MODULE_SRC_DIR/$_bf" "$TARGET_DIR/"; done
 sudo cp "$MODULE_SRC_DIR/public/index.html" "$TARGET_DIR/public/"
 sudo cp "$MODULE_SRC_DIR/public/app.js"    "$TARGET_DIR/public/"
 sudo cp "$MODULE_SRC_DIR/public/style.css" "$TARGET_DIR/public/"
 sudo chmod 755 "$TARGET_DIR/$RUNTIME_SCRIPT"
+for _bf in "${BRIDGE_FILES[@]}"; do sudo chmod 755 "$TARGET_DIR/$_bf"; done
 sudo chmod 644 "$TARGET_DIR/public/index.html" "$TARGET_DIR/public/app.js" "$TARGET_DIR/public/style.css"
 
 # npm install the only allowed runtime dep (Anthropic SDK)

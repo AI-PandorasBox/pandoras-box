@@ -7,7 +7,7 @@ import http from 'node:http'
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
-import { execFileSync, execFile } from 'node:child_process'
+import { execFileSync, execFile, spawn } from 'node:child_process'
 import { DatabaseSync } from 'node:sqlite'
 import { fileURLToPath } from 'node:url'
 
@@ -569,10 +569,10 @@ async function executeTool (name, input) {
   try { return await t.run(input || {}) } catch (e) { return { error: String(e && e.message || e) } }
 }
 function toolSchemas () { return Object.values(TOOLS).map(t => t.schema) }
-async function runAgentTurn ({ history, userContent, onToolEvent }) {
+async function runAgentTurn ({ history, userContent, onToolEvent, chatSessionId }) {
   const apiKey = getApiKey()
   if (apiKey) return await runAgentTurnSDK({ apiKey, history, userContent, onToolEvent })
-  return await runAgentTurnCLI({ history, userContent, onToolEvent })
+  return await runAgentTurnBridge({ history, userContent, onToolEvent, chatSessionId })
 }
 async function runAgentTurnSDK ({ apiKey, history, userContent, onToolEvent }) {
   const Ctor = await getAnthropic()
@@ -599,32 +599,56 @@ async function runAgentTurnSDK ({ apiKey, history, userContent, onToolEvent }) {
   }
   return 'I ran several steps but could not converge on a final answer. Please refine the request.'
 }
-async function runAgentTurnCLI ({ history, userContent, onToolEvent }) {
-  const toolList = toolSchemas().map(s => '- ' + s.name + ': ' + s.description).join('\n')
-  const protocol = [
-    'You have tools. To use one, reply with ONLY a fenced block:',
-    '```tool_call', '{"name":"<tool>","input":{...}}', '```',
-    'After I run it I will reply with ```tool_result {json}```; then continue.',
-    'When you have the final answer for the operator, reply in plain prose (no tool_call block).',
-    'Available tools:', toolList,
-  ].join('\n')
-  const convo = history.slice()
-  convo.push({ role: 'user', content: userContent })
-  for (let hop = 0; hop < 6; hop++) {
-    const text = await callClaudeViaCLI({
-      history: convo,
-      userContent: hop === 0 ? (protocol + '\n\n---\n\nOperator: ' + userContent) : convo[convo.length - 1].content,
-    })
-    const m = text.match(/```tool_call\s*([\s\S]*?)```/)
-    if (!m) return text.replace(/```tool_result[\s\S]*?```/g, '').trim()
-    let call
-    try { call = JSON.parse(m[1].trim()) } catch { return text }
-    const out = await executeTool(call.name, call.input || {})
-    if (onToolEvent) try { onToolEvent(call.name, call.input, out) } catch {}
-    convo.push({ role: 'assistant', content: text })
-    convo.push({ role: 'user', content: '```tool_result\n' + JSON.stringify(out) + '\n```\nContinue.' })
+// Ensure the subscription bridge daemon is running. Spawned on demand as a detached
+// child, singleton-guarded so concurrent calls don't double-spawn; if the port is
+// already held the spawned process exits on EADDRINUSE and the health check finds the
+// existing one. _BRIDGE_TOOL_PATH_V1
+let _bridgeStarting = null
+async function ensureBridge () {
+  const { healthCheck } = await import('./anthropic-claude-adapter.mjs')
+  if (await healthCheck()) return true
+  if (!_bridgeStarting) {
+    _bridgeStarting = (async () => {
+      try {
+        const fd = fs.openSync(path.join(STORE_DIR, 'claude-bridge.log'), 'a')
+        const child = spawn(process.execPath, [path.join(__dirname, 'claude-bridge.mjs')],
+          { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, INSTALL_PATH } })
+        child.unref()
+      } catch {}
+      for (let i = 0; i < 40; i++) {
+        await new Promise(r => setTimeout(r, 200))
+        if (await healthCheck()) return true
+      }
+      return await healthCheck()
+    })().finally(() => { _bridgeStarting = null })
   }
-  return 'I ran several steps but could not converge. Please refine the request.'
+  return _bridgeStarting
+}
+
+// No-API-key path: drive the `claude` CLI as a real agent via the subscription
+// bridge (claude-bridge.mjs) using the operator's Claude login. The host tools are
+// exposed to claude as a local MCP server and EXECUTE for real -- the same
+// mechanism the wider system uses. Bounded: claude gets only the allow-listed host
+// tools, no built-in tools, no skip-permissions. _BRIDGE_TOOL_PATH_V1
+async function runAgentTurnBridge ({ history, userContent, onToolEvent, chatSessionId }) {
+  const { makeMessage } = await import('./anthropic-claude-adapter.mjs')
+  await ensureBridge()
+  let recalled = []
+  try { recalled = await recallMemories(userContent) } catch {}
+  const system = buildSystemPrompt(recalled)
+  const messages = []
+  for (const m of history) if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content })
+  messages.push({ role: 'user', content: userContent })
+  return await makeMessage(system, messages, {
+    tools: toolSchemas(),
+    onToolCall: async (name, args) => {
+      const out = await executeTool(name, args || {})
+      if (onToolEvent) { try { onToolEvent(name, args, out) } catch {} }
+      return out
+    },
+    priority: 0,
+    chatSessionId: chatSessionId || null,
+  })
 }
 
 async function handleChat(req, res) {
@@ -637,7 +661,7 @@ async function handleChat(req, res) {
   const history = loadHistory(cid).slice(0, -1)
   try {
     const toolsUsed = []
-    const text = await runAgentTurn({ history, userContent: content, onToolEvent: (n) => toolsUsed.push(n) })
+    const text = await runAgentTurn({ history, userContent: content, chatSessionId: 'conv-' + cid, onToolEvent: (n) => toolsUsed.push(n) })
     const mid = recordMessage(cid, 'assistant', text)
     send(res, 200, { conversation_id: cid, message_id: mid, content: text, tools_used: toolsUsed })
   } catch (e) {
@@ -669,6 +693,7 @@ async function handleChatStream(req, res, url) {
     const text = await runAgentTurn({
       history,
       userContent: content,
+      chatSessionId: 'conv-' + cid,
       onToolEvent: (name, input, result) => {
         const ok = !(result && result.error)
         res.write(`event: tool\ndata: ${JSON.stringify({ name, ok })}\n\n`)

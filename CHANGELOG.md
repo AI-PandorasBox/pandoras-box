@@ -9,6 +9,22 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed -- Personal AI tools now work on a Claude Pro/Max login (no API key)
+
+A clean-room VM install surfaced that the Personal AI's tool loop only worked when
+the user supplied an `ANTHROPIC_API_KEY` (the SDK path). On a Claude Pro/Max
+subscription login (no key) it fell back to a homemade text protocol that the
+`claude` CLI refuses as prompt injection, so tools silently never executed and the
+assistant could fabricate a confirmation it never carried out.
+
+The no-API-key path now drives the `claude` CLI through a small subscription bridge
+(`claude-bridge.mjs`) that exposes the host tools to claude as a local MCP server
+(`mcp-tool-proxy.mjs` + `anthropic-claude-adapter.mjs`); tools execute for real and
+their results persist. The bridge is spawned on demand by the Personal AI runtime,
+binds localhost only, runs claude with **no built-in tools (`--tools ''`), only the
+explicit allow-list of host tools, and `--strict-mcp-config`** -- and notably
+without `--dangerously-skip-permissions`. The API-key SDK path is unchanged.
+
 ### Fixed -- macOS-portability bugs found by a clean-room VM install
 
 A clean-room install in a fresh macOS VM (no Homebrew, no prior state) surfaced
