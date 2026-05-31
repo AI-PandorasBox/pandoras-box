@@ -493,6 +493,140 @@ function handleLogout(req, res) {
   send(res, 200, { ok: true })
 }
 
+// ─── Tool layer (_PERSONAL_AI_TOOLS_V1) ──────────────────────────────────────
+function _addFact (fact) {
+  const f = String(fact || '').trim()
+  if (!f) return { error: 'fact required' }
+  if (f.length > 1000) return { error: 'fact too long (max 1000)' }
+  const r = db.prepare('INSERT INTO important_facts (fact, created_at, source_message_id) VALUES (?,?,?)').run(f, Date.now(), null)
+  return { ok: true, id: Number(r.lastInsertRowid), saved: f }
+}
+function _addTask (title) {
+  const t = String(title || '').trim()
+  if (!t) return { error: 'title required' }
+  const r = db.prepare('INSERT INTO tasks (title, done, created_at) VALUES (?,0,?)').run(t.slice(0, 300), Date.now())
+  return { ok: true, id: Number(r.lastInsertRowid), task: t }
+}
+function _listTasks () { return { ok: true, tasks: db.prepare('SELECT id, title, done FROM tasks ORDER BY done, id DESC LIMIT 100').all() } }
+function _addContact (name, detail) {
+  const n = String(name || '').trim()
+  if (!n) return { error: 'name required' }
+  const r = db.prepare('INSERT INTO contacts (name, detail, created_at) VALUES (?,?,?)').run(n.slice(0, 200), String(detail || '').slice(0, 1000), Date.now())
+  return { ok: true, id: Number(r.lastInsertRowid), contact: n }
+}
+function _listContacts () { return { ok: true, contacts: db.prepare('SELECT id, name, detail FROM contacts ORDER BY name LIMIT 200').all() } }
+function _saveFile (filename, content) {
+  const safe = String(filename || '').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 120) || ('note-' + Date.now() + '.txt')
+  try {
+    fs.writeFileSync(path.join(FILES_DIR, safe), String(content ?? ''))
+    db.prepare('INSERT INTO generated_files (kind, title, filename, created_at) VALUES (?,?,?,?)').run('file', safe, safe, Date.now())
+    return { ok: true, filename: safe }
+  } catch (e) { return { error: 'save failed: ' + (e.message || e) } }
+}
+function _saveNote (note) {
+  const n = String(note || '').trim()
+  if (!n) return { error: 'note required' }
+  const fname = 'note-' + Date.now() + '.txt'
+  try {
+    fs.writeFileSync(path.join(FILES_DIR, fname), n)
+    db.prepare('INSERT INTO drops (kind, content_path, created_at) VALUES (?,?,?)').run('note', fname, Date.now())
+    return { ok: true, saved: n.slice(0, 80) }
+  } catch (e) { return { error: 'save failed: ' + (e.message || e) } }
+}
+async function _recall (query) { return { ok: true, memories: await recallMemories(String(query || '')), pinned_facts: loadImportantFacts().slice(0, 20) } }
+async function _runSkill (skill_id, skill_input) {
+  const SAFE = /^[a-z0-9][a-z0-9_-]*$/i
+  if (!skill_id || !SAFE.test(skill_id)) return { error: 'invalid skill_id' }
+  const file = path.join(INSTALL_PATH, 'shared', 'skills', 'library', skill_id, 'v1', 'skill.mjs')
+  if (!fs.existsSync(file)) return { error: 'skill not found: ' + skill_id }
+  try {
+    const mod = await import('file://' + file + '?v=' + fs.statSync(file).mtimeMs)
+    if (typeof mod.default !== 'function') return { error: 'skill has no default export: ' + skill_id }
+    const skctx = {
+      tool: async (name, args) => executeTool(name, args || {}),
+      mcp: async (_t, name, args) => executeTool(name, args || {}),
+      log: (m) => { try { console.log('[skill:' + skill_id + '] ' + m) } catch {} },
+      paths: { skillDir: path.dirname(file), runsDir: path.join('/tmp', 'skill-runs', skill_id) },
+      available: Object.keys(TOOLS),
+    }
+    return await mod.default(skill_input || {}, skctx)
+  } catch (e) { return { error: 'skill ' + skill_id + ' failed: ' + (e.message || e) } }
+}
+const TOOLS = {
+  remember_fact: { schema: { name: 'remember_fact', description: 'Pin an important fact about the operator to long-term memory.', input_schema: { type: 'object', properties: { fact: { type: 'string' } }, required: ['fact'] } }, run: (i) => _addFact(i.fact) },
+  recall_memory: { schema: { name: 'recall_memory', description: 'Recall pinned facts + relevant memories for a query before answering.', input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } }, run: (i) => _recall(i.query) },
+  add_task: { schema: { name: 'add_task', description: "Add a task to the operator's task list.", input_schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } }, run: (i) => _addTask(i.title) },
+  list_tasks: { schema: { name: 'list_tasks', description: "List the operator's current tasks.", input_schema: { type: 'object', properties: {} } }, run: () => _listTasks() },
+  add_contact: { schema: { name: 'add_contact', description: "Add a person to the operator's contacts.", input_schema: { type: 'object', properties: { name: { type: 'string' }, detail: { type: 'string' } }, required: ['name'] } }, run: (i) => _addContact(i.name, i.detail) },
+  list_contacts: { schema: { name: 'list_contacts', description: 'List saved contacts.', input_schema: { type: 'object', properties: {} } }, run: () => _listContacts() },
+  save_file: { schema: { name: 'save_file', description: "Save text content to a file in the operator's files area.", input_schema: { type: 'object', properties: { filename: { type: 'string' }, content: { type: 'string' } }, required: ['content'] } }, run: (i) => _saveFile(i.filename, i.content) },
+  save_note: { schema: { name: 'save_note', description: 'Save a quick note/snippet (appears in Notes).', input_schema: { type: 'object', properties: { note: { type: 'string' } }, required: ['note'] } }, run: (i) => _saveNote(i.note) },
+  run_skill: { schema: { name: 'run_skill', description: 'Run a packaged skill from the skill library by id (e.g. session-close-extract, morning-prep, weekly-cost-report).', input_schema: { type: 'object', properties: { skill_id: { type: 'string' }, skill_input: { type: 'object' } }, required: ['skill_id'] } }, run: (i) => _runSkill(i.skill_id, i.skill_input) },
+}
+async function executeTool (name, input) {
+  const t = TOOLS[name]
+  if (!t) return { error: 'unknown tool: ' + name }
+  try { return await t.run(input || {}) } catch (e) { return { error: String(e && e.message || e) } }
+}
+function toolSchemas () { return Object.values(TOOLS).map(t => t.schema) }
+async function runAgentTurn ({ history, userContent, onToolEvent }) {
+  const apiKey = getApiKey()
+  if (apiKey) return await runAgentTurnSDK({ apiKey, history, userContent, onToolEvent })
+  return await runAgentTurnCLI({ history, userContent, onToolEvent })
+}
+async function runAgentTurnSDK ({ apiKey, history, userContent, onToolEvent }) {
+  const Ctor = await getAnthropic()
+  const client = new Ctor({ apiKey })
+  const recalled = await recallMemories(userContent)
+  const messages = []
+  for (const m of history) if (m.role === 'user' || m.role === 'assistant') messages.push({ role: m.role, content: m.content })
+  messages.push({ role: 'user', content: userContent })
+  const system = buildSystemPrompt(recalled)
+  const schemas = toolSchemas()
+  for (let hop = 0; hop < 6; hop++) {
+    const resp = await client.messages.create({ model: MODEL, max_tokens: 2048, system, tools: schemas, messages })
+    const toolUses = (resp.content || []).filter(b => b.type === 'tool_use')
+    const textOut = (resp.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
+    if (!toolUses.length) return textOut
+    messages.push({ role: 'assistant', content: resp.content })
+    const results = []
+    for (const tu of toolUses) {
+      const out = await executeTool(tu.name, tu.input || {})
+      if (onToolEvent) try { onToolEvent(tu.name, tu.input, out) } catch {}
+      results.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(out) })
+    }
+    messages.push({ role: 'user', content: results })
+  }
+  return 'I ran several steps but could not converge on a final answer. Please refine the request.'
+}
+async function runAgentTurnCLI ({ history, userContent, onToolEvent }) {
+  const toolList = toolSchemas().map(s => '- ' + s.name + ': ' + s.description).join('\n')
+  const protocol = [
+    'You have tools. To use one, reply with ONLY a fenced block:',
+    '```tool_call', '{"name":"<tool>","input":{...}}', '```',
+    'After I run it I will reply with ```tool_result {json}```; then continue.',
+    'When you have the final answer for the operator, reply in plain prose (no tool_call block).',
+    'Available tools:', toolList,
+  ].join('\n')
+  const convo = history.slice()
+  convo.push({ role: 'user', content: userContent })
+  for (let hop = 0; hop < 6; hop++) {
+    const text = await callClaudeViaCLI({
+      history: convo,
+      userContent: hop === 0 ? (protocol + '\n\n---\n\nOperator: ' + userContent) : convo[convo.length - 1].content,
+    })
+    const m = text.match(/```tool_call\s*([\s\S]*?)```/)
+    if (!m) return text.replace(/```tool_result[\s\S]*?```/g, '').trim()
+    let call
+    try { call = JSON.parse(m[1].trim()) } catch { return text }
+    const out = await executeTool(call.name, call.input || {})
+    if (onToolEvent) try { onToolEvent(call.name, call.input, out) } catch {}
+    convo.push({ role: 'assistant', content: text })
+    convo.push({ role: 'user', content: '```tool_result\n' + JSON.stringify(out) + '\n```\nContinue.' })
+  }
+  return 'I ran several steps but could not converge. Please refine the request.'
+}
+
 async function handleChat(req, res) {
   const body = await readJson(req)
   const content = typeof body.content === 'string' ? body.content.trim() : ''
