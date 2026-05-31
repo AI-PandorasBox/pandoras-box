@@ -29,10 +29,14 @@ APP_NAME="${ADMIN_SHELL_APP_NAME:-Pandoras Box Admin}"
 APP_PATH="${ADMIN_SHELL_APP_PATH:-$HOME/Applications/${APP_NAME}.app}"
 DESKTOP_LINK="$HOME/Desktop/${APP_NAME}.app"
 
-CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
+if [[ "$(uname)" == "Darwin" ]]; then
+  CHROME="${PBOX_CHROME_BIN:-/Applications/Google Chrome.app/Contents/MacOS/Google Chrome}"
+else
+  CHROME="${PBOX_CHROME_BIN:-/usr/bin/google-chrome-stable}"
+fi
 
 step 1 "Prerequisites"
-[[ -x "$CHROME" ]] || fail "Google Chrome not found at /Applications/Google Chrome.app"
+[[ -x "$CHROME" ]] || fail "Chrome/Chromium not found at $CHROME (set PBOX_CHROME_BIN to override)"
 ok "Chrome present"
 
 step 2 "Creating Chrome app bundle"

@@ -22,6 +22,11 @@ mkdirSync(TEMP_DIR,   { recursive: true });
 // ---------------------------------------------------------------------------
 function findChrome() {
   const candidates = [
+    ...(process.env.PBOX_CHROME_BIN ? [process.env.PBOX_CHROME_BIN] : []),
+    '/usr/bin/google-chrome-stable',
+    '/usr/bin/google-chrome',
+    '/usr/bin/chromium',
+    '/usr/bin/chromium-browser',
     '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
     '/Applications/Chromium.app/Contents/MacOS/Chromium',
     '/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary',

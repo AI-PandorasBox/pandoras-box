@@ -19,7 +19,7 @@ import { randomUUID } from 'crypto';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SKILL_DIR = __dirname;
 
-const CHROME = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+const CHROME = (process.env.PBOX_CHROME_BIN || (process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : '/usr/bin/google-chrome-stable'));
 const OUTPUT_DROPS = './output';
 const OUTPUT_PDFS = './output';
 const OUTPUT_COPY_DIR = './output';

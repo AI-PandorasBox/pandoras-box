@@ -19,7 +19,7 @@ const ExcelJS = _require('exceljs')
 
 const SKILL_DIR = dirname(fileURLToPath(import.meta.url))
 const RUNS_DIR  = join(SKILL_DIR, 'runs')
-const CHROME    = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+const CHROME    = (process.env.PBOX_CHROME_BIN || (process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : '/usr/bin/google-chrome-stable'))
 
 // Parse period string into { year, startWeek, endWeek }
 // Accepts: Q1-2026, Q2-2026, Q3-2026, Q4-2026, W1-W18-2026
