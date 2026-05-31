@@ -9,7 +9,7 @@
     "tts"
   ],
   "requires": [
-    "core"
+    "module:core"
   ],
   "config": {
     "ELEVENLABS_API_KEY": "ElevenLabs API key (or other TTS provider key)"

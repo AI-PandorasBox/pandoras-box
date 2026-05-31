@@ -10,7 +10,7 @@
     "email-campaign"
   ],
   "requires": [
-    "core"
+    "module:core"
   ],
   "config": {
     "LINKEDIN_TOKEN": "LinkedIn API token (optional)",

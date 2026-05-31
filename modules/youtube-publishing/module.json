@@ -8,7 +8,7 @@
     "youtube-publishing"
   ],
   "requires": [
-    "core"
+    "module:core"
   ],
   "config": {
     "YOUTUBE_OAUTH_JSON": "YouTube Data API OAuth client + token JSON"

@@ -8,8 +8,8 @@
     "visual-plan"
   ],
   "requires": [
-    "core",
-    "media-production"
+    "module:core",
+    "module:media-production"
   ],
   "config": {},
   "install": "install.sh",

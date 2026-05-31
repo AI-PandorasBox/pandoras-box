@@ -8,7 +8,7 @@
     "writing-toolkit"
   ],
   "requires": [
-    "core"
+    "module:core"
   ],
   "config": {},
   "install": "install.sh",

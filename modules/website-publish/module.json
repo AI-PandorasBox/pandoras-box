@@ -8,7 +8,7 @@
     "website-publish"
   ],
   "requires": [
-    "core"
+    "module:core"
   ],
   "config": {
     "SITE_FTP_HOST": "Target site FTP host",
