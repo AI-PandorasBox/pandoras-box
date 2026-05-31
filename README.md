@@ -3,8 +3,8 @@
 <!-- _A1_COVER_PAGE_V1 -->
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
-[![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)](https://apple.com/macos)
-[![Linux](https://img.shields.io/badge/Linux-Debian%2013%20%2F%20Ubuntu%2024.04%2B-orange.svg)](https://www.debian.org)
+[![Linux verified](https://img.shields.io/badge/Linux-Debian%2013%20%2F%20Ubuntu%2024.04%2B%20(verified)-brightgreen.svg)](https://www.debian.org)
+[![macOS beta](https://img.shields.io/badge/macOS-14%2B%20(beta)-yellow.svg)](https://apple.com/macos)
 [![Node.js 20+](https://img.shields.io/badge/Node.js-20%2B-brightgreen.svg)](https://nodejs.org)
 [![Latest Release](https://img.shields.io/github/v/release/AI-PandorasBox/pandoras-box.svg)](https://github.com/AI-PandorasBox/pandoras-box/releases)
 [![GitHub Stars](https://img.shields.io/github/stars/AI-PandorasBox/pandoras-box.svg?style=social)](https://github.com/AI-PandorasBox/pandoras-box/stargazers)
@@ -29,7 +29,7 @@ Built for people who want production-grade AI assistants on hardware they contro
 - **vs. Cursor / IDE assistants:** Those help you write code. This handles your inbox, your scheduling, your files, your voice work.
 - **vs. cloud agent platforms (Lindy, Relevance, etc.):** Those host your agents on someone else's machine. Here, your agents live on your own box. The only cloud calls are the LLM/voice APIs you authorise.
 
-> **Platforms:** Pandoras Box runs on **macOS** (14+, Apple Silicon) and **Linux** (Debian 13 / Ubuntu 24.04+, systemd). One installer detects your OS and runs the right setup path. See the [Linux install guide](manuals/02b-installation-linux.md).
+> **Platforms:** **Linux** (Debian 13 / Ubuntu 24.04+, systemd) is the **verified** install path for this release -- tested end-to-end from a clean machine through to a working assistant. **macOS** (14+, Apple Silicon) is **beta**: the macOS install path ships and is supported, but is not yet verified end-to-end in this release, so expect rough edges and please report issues. One installer detects your OS and runs the right setup path. See the [Linux install guide](manuals/02b-installation-linux.md).
 
 ### Realistic costs
 
