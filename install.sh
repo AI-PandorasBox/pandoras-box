@@ -148,6 +148,10 @@ download_installer() {
       exit 1
     fi
     ok "Checksum verified"
+    # Best-effort SSH-signature fetch. Verified after extraction (the public
+    # allowed_signers ships inside the tarball). A signed release proves it came
+    # from a holder of the release key, not just that the bytes are self-consistent.
+    curl -fsSL "${checksum_url}.sig" -o "$tmpdir/SHA256SUMS.sig" 2>/dev/null || true
   else
     warn "Could not fetch checksum file. Proceeding without verification."
     warn "For a verified install, download from: https://github.com/$REPO/releases"
@@ -156,6 +160,21 @@ download_installer() {
   # Extract and run
   info "Extracting ..."
   tar -xzf "$tmpdir/$tarball" -C "$tmpdir"
+
+  # Verify the SSH signature now that scripts/allowed_signers is extracted.
+  if [[ -f "$tmpdir/SHA256SUMS.sig" ]] && command -v ssh-keygen >/dev/null 2>&1; then
+    local _signers
+    _signers=$(find "$tmpdir" -name allowed_signers -path '*scripts*' | head -1)
+    if [[ -n "$_signers" ]]; then
+      if ssh-keygen -Y verify -f "$_signers" -I "${PBOX_SIGNER:-zeus@ai-pandorasbox.co.uk}" \
+           -n pbox-release -s "$tmpdir/SHA256SUMS.sig" < "$tmpdir/SHA256SUMS" >/dev/null 2>&1; then
+        ok "Release signature verified"
+      else
+        warn "Release signature did NOT verify. The checksum matched, but the"
+        warn "signature check failed. Only proceed if you trust this download."
+      fi
+    fi
+  fi
 
   local setup_script
   setup_script=$(find "$tmpdir" -name "pbox-setup.sh" | head -1)

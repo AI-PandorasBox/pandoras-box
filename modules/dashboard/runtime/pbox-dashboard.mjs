@@ -164,6 +164,98 @@ function readUpdateStatus() {
   return null
 }
 
+// --- skills library -------------------------------------------------------
+// Reads installed skill primitives from $INSTALL_PATH/shared/skills/library/*/SKILL.md
+// (YAML-ish frontmatter: name, description, version). No placeholder -- real files only.
+function loadSkills() {
+  const root = path.join(INSTALL_PATH, 'shared', 'skills', 'library')
+  const out = []
+  let dirs = []
+  try { dirs = fs.readdirSync(root, { withFileTypes: true }).filter(d => d.isDirectory()) } catch { return out }
+  for (const d of dirs) {
+    const md = path.join(root, d.name, 'SKILL.md')
+    let name = d.name, description = '', version = ''
+    try {
+      const raw = fs.readFileSync(md, 'utf8')
+      const fm = raw.match(/^---\n([\s\S]*?)\n---/)
+      const body = fm ? fm[1] : raw
+      const nm = body.match(/^name:\s*(.+)$/m); if (nm) name = nm[1].trim()
+      const vm = body.match(/^version:\s*(.+)$/m); if (vm) version = vm[1].trim()
+      // description may be a YAML folded block (description: > then indented lines)
+      const dm = body.match(/^description:\s*>?\s*\n((?:\s+.+\n?)+)/m)
+      if (dm) description = dm[1].replace(/\s+/g, ' ').trim()
+      else { const dl = body.match(/^description:\s*(.+)$/m); if (dl) description = dl[1].trim() }
+    } catch {}
+    out.push({ id: d.name, name, description, version })
+  }
+  return out
+}
+
+// --- projects -------------------------------------------------------------
+// Reads tracked projects from $INSTALL_PATH/projects/*/project.json. Real data
+// only; the Projects page filters client-side over whatever exists.
+function loadProjects() {
+  const root = path.join(INSTALL_PATH, 'projects')
+  const out = []
+  let dirs = []
+  try { dirs = fs.readdirSync(root, { withFileTypes: true }).filter(d => d.isDirectory()) } catch { return out }
+  for (const d of dirs) {
+    const pj = path.join(root, d.name, 'project.json')
+    if (!fs.existsSync(pj)) continue
+    try {
+      const j = JSON.parse(fs.readFileSync(pj, 'utf8'))
+      const tasks = Array.isArray(j.tasks) ? j.tasks : []
+      const done = tasks.filter(t => t.status === 'complete' || t.status === 'done' || t.status === 'deployed').length
+      out.push({
+        id: j.id || d.name,
+        title: j.title || j.name || d.name,
+        description: (j.description || '').replace(/\s+/g, ' ').slice(0, 180),
+        status: j.status || 'pending',
+        tasks_done: done, tasks_total: tasks.length,
+        updated: j.updated_at || j.created_at || '',
+      })
+    } catch {}
+  }
+  return out
+}
+
+// --- module registry (subsystems + capabilities source of truth) ----------
+function loadRegistry() {
+  for (const p of [path.join(INSTALL_PATH, 'modules', 'registry.json'),
+                   path.join(INSTALL_PATH, 'registry.json')]) {
+    try {
+      const j = JSON.parse(fs.readFileSync(p, 'utf8'))
+      return Array.isArray(j) ? j : (j.modules || [])
+    } catch {}
+  }
+  return []
+}
+
+// --- admin memory surface -------------------------------------------------
+// Reads the assistant's local memory store (facts/drops/tasks/contacts) so the
+// admin can review what the system knows. Read-only; counts + recent rows.
+async function loadAdminMemory() {
+  const dbPath = path.join(INSTALL_PATH, 'personal-ai', 'store', 'memory.db')
+  const res = { available: false, path: dbPath, tables: {}, facts: [], drops: [], tasks: [] }
+  if (!fs.existsSync(dbPath)) return res
+  let DatabaseSync
+  try { ({ DatabaseSync } = await import('node:sqlite')) } catch { return res }
+  try {
+    const db = new DatabaseSync(dbPath, { readOnly: true })
+    res.available = true
+    const tbls = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name)
+    for (const t of tbls) {
+      try { res.tables[t] = db.prepare(`SELECT count(*) c FROM "${t}"`).get().c } catch {}
+    }
+    const safe = (sql) => { try { return db.prepare(sql).all() } catch { return [] } }
+    res.facts = safe('SELECT * FROM important_facts ORDER BY rowid DESC LIMIT 50')
+    res.drops = safe('SELECT * FROM drops ORDER BY rowid DESC LIMIT 50')
+    res.tasks = safe('SELECT * FROM tasks ORDER BY rowid DESC LIMIT 50')
+    db.close()
+  } catch {}
+  return res
+}
+
 async function gatherStatus() {
   const services = serviceList()
   const modules = discoverModules()
@@ -299,9 +391,12 @@ ${SHARED_CSS()}
     <a href="#" data-port="${esc(String(paPort))}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-agents"/></svg>Assistant</a>
     <a href="/modules"${on('/modules')}><svg class="ic"><use href="#i-blocks"/></svg>Modules</a>
     <a href="/projects"${on('/projects')}><svg class="ic"><use href="#i-projects"/></svg>Projects</a>
-    <a href="#" data-port="${esc(String(docsPort))}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-book"/></svg>Docs</a>
+    <a href="/skills"${on('/skills')}><svg class="ic"><use href="#i-projects"/></svg>Skills</a>
+    <a href="/subsystems"${on('/subsystems')}><svg class="ic"><use href="#i-shield"/></svg>Subsystems</a>
+    <a href="#" data-port="${esc(String(docsPort))}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-book"/></svg>Guide</a>
+    <a href="/memory"${on('/memory')}><svg class="ic"><use href="#i-agents"/></svg>Memory</a>
     <a href="#" data-port="${esc(String(termPort))}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-term"/></svg>Terminal</a>
-    <a href="/status"${on('/status')}><svg class="ic"><use href="#i-shield"/></svg>Status</a>
+    <a href="/status"${on('/status')}><svg class="ic"><use href="#i-blocks"/></svg>Status</a>
   </nav>
   <div class="bar-right"><span class="pill ${anyRunning?'on':'off'}"><span class="d"></span>${anyRunning?'ONLINE':'IDLE'}</span></div>
 </header>
@@ -432,59 +527,209 @@ function renderStatusPage(s) {
   return pageShell(s, { title: 'Status', currentPath: '/status' }, body)
 }
 
-// /projects -- placeholder. The autonomous Projects pipeline is a separate,
-// optional layer not shipped in the public installer's MVP. Stub explains.
+// /projects -- tracked projects with client-side status filters. Reads real
+// project.json files; if none exist, explains how a project gets created (no
+// fake rows). Filter groups map the status flow to the mockup's pills.
 function renderProjectsPage(s) {
-  const projectsDir = path.join(INSTALL_PATH, 'projects')
-  let projects = []
-  try {
-    if (fs.existsSync(projectsDir)) {
-      for (const d of fs.readdirSync(projectsDir, { withFileTypes: true })) {
-        if (!d.isDirectory()) continue
-        const pj = path.join(projectsDir, d.name, 'project.json')
-        if (!fs.existsSync(pj)) continue
-        try { projects.push(JSON.parse(fs.readFileSync(pj, 'utf8'))) } catch {}
-      }
-    }
-  } catch {}
+  const projects = loadProjects()
+  // status -> {label, badgeClass, filterGroup}
+  const META = {
+    in_progress:   { label: 'IN PROGRESS',  cls: 'b-prog',  group: 'active' },
+    review_needed: { label: 'NEEDS REVIEW', cls: 'b-rev',   group: 'review' },
+    pending:       { label: 'PLANNING',     cls: 'b-pend',  group: 'active' },
+    brief_ready:   { label: 'PLANNING',     cls: 'b-pend',  group: 'active' },
+    approved:      { label: 'APPROVED',     cls: 'b-prog',  group: 'active' },
+    blocked:       { label: 'BLOCKED',      cls: 'b-block', group: 'blocked' },
+    deployed:      { label: 'DEPLOYED',     cls: 'b-done',  group: 'done' },
+  }
+  const grp = st => (META[st] || { group: 'active' }).group
+  const counts = {
+    all: projects.length,
+    active: projects.filter(p => grp(p.status) === 'active').length,
+    review: projects.filter(p => grp(p.status) === 'review').length,
+    blocked: projects.filter(p => grp(p.status) === 'blocked').length,
+    done: projects.filter(p => grp(p.status) === 'done').length,
+  }
 
+  if (!projects.length) {
+    const body = `
+<section class="welcome">
+  <h1>Projects</h1>
+  <p>Hand a goal to your assistant. It plans the work, builds it in stages, and holds it for your approval before anything ships.</p>
+</section>
+<div class="lbl"><h2>No projects yet</h2><div class="ln"></div></div>
+<section class="card-grid">
+  <div class="card"><h3>How to start</h3><p>Ask your assistant: "Create a project to &lt;goal&gt;." It writes a brief, breaks it into tasks, and it appears here with a live status.</p></div>
+  <div class="card"><h3>Status flow</h3><p>planning &rarr; in progress &rarr; needs review &rarr; approved &rarr; deployed. Anything needing your input shows as blocked.</p></div>
+</section>`
+    return pageShell(s, { title: 'Projects', currentPath: '/projects' }, body)
+  }
+
+  const rows = projects.map(p => {
+    const m = META[p.status] || { label: String(p.status || 'unknown').toUpperCase(), cls: 'b-pend', group: 'active' }
+    const pct = p.tasks_total ? Math.round((p.tasks_done / p.tasks_total) * 100) : 0
+    const trackCls = m.group === 'review' || m.group === 'done' ? ' gold' : ''
+    const taskLabel = p.tasks_total ? `${p.tasks_done} / ${p.tasks_total} tasks` : 'no tasks yet'
+    return `<div class="proj" data-group="${esc(m.group)}">
+  <span class="badge ${m.cls}"><span class="bd"></span>${esc(m.label)}</span>
+  <div class="pmid">
+    <div class="pt">${esc(p.title)}</div>
+    <div class="pd">${esc(p.description || '')}</div>
+    <div class="prog"><div class="track"><i class="${trackCls.trim()}" style="width:${pct}%"></i></div><span class="tk">${esc(taskLabel)}</span></div>
+  </div>
+  <div class="pright"><div class="upd">${esc(p.updated || '')}</div></div>
+</div>`
+  }).join('\n')
+
+  const fbtn = (g, label, n) => `<button data-f="${g}"${g === 'all' ? ' class="on"' : ''}>${label} · ${n}</button>`
+  const body = `
+<section class="welcome">
+  <h1>Projects</h1>
+  <p>Tracked work, each with its own brief, tasks, and approval gate. Filter by status below.</p>
+</section>
+<div class="pfilters">
+  ${fbtn('all','All',counts.all)}${fbtn('active','Active',counts.active)}${fbtn('review','Needs review',counts.review)}${fbtn('blocked','Blocked',counts.blocked)}${fbtn('done','Done',counts.done)}
+</div>
+<section class="plist">${rows}</section>
+<style>
+.pfilters{display:flex;gap:9px;margin:6px 0 22px;flex-wrap:wrap}
+.pfilters button{font-family:var(--mono);font-size:11.5px;padding:7px 14px;border-radius:20px;border:1px solid var(--rule);background:transparent;color:var(--muted);cursor:pointer;transition:.2s}
+.pfilters button.on{color:var(--fg);border-color:var(--accent);background:rgba(123,104,238,.12)}
+.pfilters button:hover{color:var(--fg)}
+.plist{display:flex;flex-direction:column;gap:13px;margin-bottom:50px}
+.proj{background:var(--elev);border:1px solid var(--rule);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;transition:.18s}
+.proj:hover{border-color:var(--accent)}
+.badge{font-family:var(--mono);font-size:10px;letter-spacing:.5px;padding:5px 11px;border-radius:20px;border:1px solid;white-space:nowrap;display:flex;align-items:center;gap:7px;align-self:flex-start}
+.badge .bd{width:7px;height:7px;border-radius:50%}
+.b-prog{color:var(--cyan);border-color:rgba(0,212,255,.4)}.b-prog .bd{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
+.b-rev{color:var(--gold);border-color:rgba(212,175,55,.4)}.b-rev .bd{background:var(--gold);box-shadow:0 0 6px var(--gold)}
+.b-pend{color:var(--brand);border-color:rgba(123,104,238,.4)}.b-pend .bd{background:var(--brand)}
+.b-block{color:var(--red);border-color:rgba(255,92,92,.4)}.b-block .bd{background:var(--red);box-shadow:0 0 6px var(--red)}
+.b-done{color:var(--green);border-color:rgba(0,255,136,.4)}.b-done .bd{background:var(--green);box-shadow:0 0 6px var(--green)}
+.pmid .pt{font-weight:600;font-size:16px}.pmid .pd{color:var(--muted);font-size:13px;margin:3px 0 11px}
+.prog{display:flex;align-items:center;gap:12px}.track{flex:1;max-width:280px;height:6px;background:var(--surface);border-radius:6px;overflow:hidden}.track i{display:block;height:100%;background:var(--grad);border-radius:6px}.track i.gold{background:linear-gradient(90deg,var(--accent),var(--gold))}
+.prog .tk{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.pright{text-align:right}.pright .upd{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+@media(max-width:820px){.proj{grid-template-columns:1fr;gap:12px}.pright{text-align:left}.track{max-width:none}}
+</style>
+<script>
+(function(){
+  var btns=document.querySelectorAll('.pfilters button'), rows=document.querySelectorAll('.proj');
+  btns.forEach(function(b){b.addEventListener('click',function(){
+    btns.forEach(function(x){x.classList.remove('on')}); b.classList.add('on');
+    var f=b.dataset.f;
+    rows.forEach(function(r){ r.style.display=(f==='all'||r.dataset.group===f)?'':'none'; });
+  });});
+})();
+</script>`
+  return pageShell(s, { title: 'Projects', currentPath: '/projects' }, body)
+}
+
+// /skills -- the installed skills library. Real SKILL.md files only; if none are
+// installed, says so honestly (no fabricated entries).
+function renderSkillsPage(s) {
+  const skills = loadSkills()
   let body
-  if (projects.length) {
-    const cards = projects.map(p => `<div class="card">
-  <h3>${esc(p.title || p.id || '(untitled)')}</h3>
-  <p style="color:var(--muted);font-size:12px;font-family:var(--mono);margin-bottom:14px">${esc(p.id || '')}</p>
-  <div class="row"><span class="k">Status</span><span class="v ${p.status==='deployed'?'ok':(p.status==='blocked'?'warn':'')}">${esc(p.status||'unknown')}</span></div>
-  <div class="row"><span class="k">Updated</span><span class="v">${esc(p.updated_at||p.created_at||'--')}</span></div>
+  if (skills.length) {
+    const cards = skills.map(k => `<div class="card">
+  <h3>${esc(k.name)}${k.version ? ` <span class="lt-port">v${esc(k.version)}</span>` : ''}</h3>
+  <p style="color:var(--muted);font-size:12px;font-family:var(--mono);margin-bottom:12px">${esc(k.id)}</p>
+  <p>${esc(k.description || 'No description provided.')}</p>
 </div>`).join('\n')
     body = `
 <section class="welcome">
-  <h1>Projects</h1>
-  <p>Tracked work, each with its own staged files, build log, and deploy gate.</p>
+  <h1>Skills</h1>
+  <p>Reusable skill primitives your assistant and agents can call. Each is a self-contained, tenant-agnostic capability.</p>
 </section>
-<div class="lbl"><h2>${projects.length} project${projects.length===1?'':'s'}</h2><div class="ln"></div></div>
+<div class="lbl"><h2>${skills.length} skill${skills.length===1?'':'s'} installed</h2><div class="ln"></div><span class="ct">shared/skills/library</span></div>
 <section class="card-grid">${cards}</section>`
   } else {
     body = `
 <section class="welcome">
-  <h1>Projects</h1>
-  <p>The autonomous Projects pipeline is a separate, optional layer. It is not enabled on this build.</p>
-</section>
-<div class="lbl"><h2>What this would do</h2><div class="ln"></div></div>
-<section class="grid2">
-  <div class="card">
-    <h3>Track work</h3>
-    <p>Each project is a JSON file with a status flow: pending &rarr; in_progress &rarr; review_needed &rarr; approved &rarr; deployed. The dashboard would list them here, with build.log + staged-files links.</p>
-  </div>
-  <div class="card">
-    <h3>Autonomous runner</h3>
-    <p>A background runner polls the project store every 60 s, picks up pending tasks, pre-builds deploy + test scripts under <code>staged/</code>, and waits for your gate before flipping any DRY_RUN off.</p>
-  </div>
-</section>
-<div class="placeholder">
-  This module ships in the internal stack only. To bring it online here, a future installer step would create <code>${esc(projectsDir)}</code> and add a runner service.
-</div>`
+  <h1>Skills</h1>
+  <p>No skills are installed yet. The skills-library module is a core module; re-run the installer or add it to populate this library.</p>
+</section>`
   }
-  return pageShell(s, { title: 'Projects', currentPath: '/projects' }, body)
+  return pageShell(s, { title: 'Skills', currentPath: '/skills' }, body)
+}
+
+// /subsystems -- inventory + capabilities, grouped by tier, from the module
+// registry joined with live service state. This is the public equivalent of the
+// internal subsystems/capabilities view.
+function renderSubsystemsPage(s) {
+  const reg = loadRegistry()
+  const liveByName = Object.fromEntries(s.installed.map(m => [m.name, m]))
+  const TIERS = [
+    { key: 'core',             label: 'Core',             note: 'always installed' },
+    { key: 'official',         label: 'Official',         note: 'opt-in, maintained' },
+    { key: 'community-vetted', label: 'Community (vetted)', note: 'reviewed contributions' },
+    { key: 'experimental',     label: 'Experimental',     note: 'use with care' },
+  ]
+  const kindCounts = {}
+  for (const r of reg) kindCounts[r.kind || 'other'] = (kindCounts[r.kind || 'other'] || 0) + 1
+  const capChips = Object.entries(kindCounts).map(([k, n]) =>
+    `<span>${esc(k)} <b style="color:var(--cyan)">${n}</b></span>`).join('')
+
+  const sections = TIERS.map(t => {
+    const rows = reg.filter(r => (r.tier || 'experimental') === t.key)
+    if (!rows.length) return ''
+    const cards = rows.map(r => {
+      const live = liveByName[r.name]
+      const st = live ? stateOf(live) : { s: r.kind === 'service' ? 'not installed' : 'config', cls: r.kind === 'service' ? 'down' : 'warn' }
+      return `<div class="card">
+  <h3><span class="dot ${st.cls === 'ok' ? 'on' : (st.cls === 'warn' ? 'warn' : 'off')}"></span>${esc(pretty(r.name))}</h3>
+  <p style="color:var(--muted);font-size:11px;font-family:var(--mono);margin-bottom:10px">${esc(r.kind || '')}</p>
+  <p>${esc(r.purpose || '')}</p>
+  <div class="row"><span class="k">State</span><span class="v ${st.cls}">${esc(st.s)}</span></div>
+</div>`
+    }).join('\n')
+    return `<div class="lbl"><h2>${esc(t.label)}</h2><div class="ln"></div><span class="ct">${esc(t.note)} · ${rows.length}</span></div>
+<section class="card-grid">${cards}</section>`
+  }).join('\n')
+
+  const body = `
+<section class="welcome">
+  <h1>Subsystems &amp; capabilities</h1>
+  <p>Every subsystem this build knows about, grouped by tier, joined with live service state. ${reg.length} registered.</p>
+</section>
+<div class="lbl"><h2>Capabilities</h2><div class="ln"></div><span class="ct">by kind</span></div>
+<section><div class="mods" style="margin-bottom:30px">${capChips || '<span class="off">none</span>'}</div></section>
+${sections || '<div class="placeholder">Module registry not found.</div>'}`
+  return pageShell(s, { title: 'Subsystems', currentPath: '/subsystems' }, body)
+}
+
+// /memory -- admin view of what the assistant remembers (facts, drops, tasks).
+// Read-only. Reads the live memory.db; if absent or empty, says so plainly.
+async function renderMemoryPage(s) {
+  const mem = await loadAdminMemory()
+  if (!mem.available) {
+    const body = `
+<section class="welcome">
+  <h1>Memory</h1>
+  <p>No memory store found yet at <code>${esc(mem.path)}</code>. It is created the first time your assistant runs.</p>
+</section>`
+    return pageShell(s, { title: 'Memory', currentPath: '/memory' }, body)
+  }
+  const countChips = Object.entries(mem.tables).map(([t, n]) =>
+    `<span>${esc(t)} <b style="color:var(--cyan)">${n}</b></span>`).join('')
+  const rowsOf = (arr, cols) => arr.length
+    ? arr.map(r => `<div class="card" style="padding:14px">${cols.map(c => r[c] != null && r[c] !== ''
+        ? `<div class="row"><span class="k">${esc(c)}</span><span class="v">${esc(String(r[c]).slice(0,160))}</span></div>` : '').join('')}</div>`).join('\n')
+    : '<div class="placeholder">None recorded yet.</div>'
+  const body = `
+<section class="welcome">
+  <h1>Memory</h1>
+  <p>What your assistant remembers, for you to review. Read-only here; manage facts and drops from the Assistant.</p>
+</section>
+<div class="lbl"><h2>Store</h2><div class="ln"></div><span class="ct">${esc(path.basename(mem.path))}</span></div>
+<section><div class="mods" style="margin-bottom:24px">${countChips || '<span class="off">empty</span>'}</div></section>
+<div class="lbl"><h2>Important facts</h2><div class="ln"></div></div>
+<section class="card-grid">${rowsOf(mem.facts, ['fact','content','text','value','created_at'])}</section>
+<div class="lbl"><h2>Drops</h2><div class="ln"></div></div>
+<section class="card-grid">${rowsOf(mem.drops, ['title','content','text','url','created_at'])}</section>
+<div class="lbl"><h2>Tasks</h2><div class="ln"></div></div>
+<section class="card-grid">${rowsOf(mem.tasks, ['title','status','due','created_at'])}</section>`
+  return pageShell(s, { title: 'Memory', currentPath: '/memory' }, body)
 }
 
 const server = http.createServer(async (req, res) => {
@@ -497,6 +742,11 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/modules') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderModulesPage(s)); return }
     if (url.pathname === '/status') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderStatusPage(s)); return }
     if (url.pathname === '/projects') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderProjectsPage(s)); return }
+    if (url.pathname === '/skills') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderSkillsPage(s)); return }
+    if (url.pathname === '/subsystems') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderSubsystemsPage(s)); return }
+    if (url.pathname === '/memory') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(await renderMemoryPage(s)); return }
+    if (url.pathname === '/api/skills') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(loadSkills(), null, 2)); return }
+    if (url.pathname === '/api/subsystems') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(loadRegistry(), null, 2)); return }
     res.writeHead(404, {'content-type':'text/plain'}); res.end('not found')
   } catch (e) { res.writeHead(500); res.end(`error: ${e.message}`) }
 })

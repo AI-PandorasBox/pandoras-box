@@ -1,0 +1,17 @@
+{
+  "name": "visual-plan",
+  "version": "0.1.0",
+  "description": "Visual planning helper: selects a layout/style preset and dispatches cover/thumbnail/card image generation.",
+  "kind": "config",
+  "tier": "official",
+  "provides": [
+    "visual-plan"
+  ],
+  "requires": [
+    "core",
+    "media-production"
+  ],
+  "config": {},
+  "install": "install.sh",
+  "author": "AI-PandorasBox"
+}

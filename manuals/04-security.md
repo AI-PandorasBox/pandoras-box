@@ -7,7 +7,7 @@
 
 ## Disclaimer
 
-This software is provided under the MIT License on an "as-is" basis, without warranty.
+This software is provided under the Apache 2.0 License on an "as-is" basis, without warranty.
 You are responsible for securing the machine it runs on, rotating credentials, maintaining
 access controls, and ensuring compliance with applicable laws. Nothing here constitutes
 professional security or legal advice.

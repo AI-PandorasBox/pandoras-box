@@ -21,7 +21,7 @@ How it decides:
 - **Weekly dependency + integrity scan** — once a week Argus runs a dependency/`npm audit` pass over the install and checks a file-integrity baseline of high-value files (service code, plists, config). Drift or a known-vulnerable dependency is surfaced as a pending mitigation for the operator to approve.
 - **Fail-closed** — if Argus itself is unavailable, jobs do not execute. The safe default is "don't run", not "run unchecked".
 
-### The Content Classifier (Cerberus)
+### The Content Classifier
 A lightweight, local content-safety classifier that screens **outbound** content across six axes: prompt safety, response safety, response refusal, prompt toxicity, response toxicity, and jailbreak detection. It runs on-device (no content leaves the machine) and ships in **shadow mode** — it observes and records what it *would* have flagged for a calibration period before it ever blocks anything, so you can see its judgement before trusting it. Argus consumes its verdicts when screening jobs.
 
 ---

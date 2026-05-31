@@ -1,0 +1,20 @@
+{
+  "name": "website-publish",
+  "version": "0.1.0",
+  "description": "Publish generated pages/assets to a website over FTP/SFTP. Per-site credentials, dry-run by default.",
+  "kind": "config",
+  "tier": "official",
+  "provides": [
+    "website-publish"
+  ],
+  "requires": [
+    "core"
+  ],
+  "config": {
+    "SITE_FTP_HOST": "Target site FTP host",
+    "SITE_FTP_USER": "FTP user",
+    "SITE_FTP_PASS": "FTP password"
+  },
+  "install": "install.sh",
+  "author": "AI-PandorasBox"
+}

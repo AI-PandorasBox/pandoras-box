@@ -19,10 +19,10 @@ brew "rclone"      # off-site backup (Backblaze B2 / S3-compatible)
 # ── Cask: Tailscale for mobile-to-Pbox access ────────────────────────────────
 cask "tailscale"   # free for personal use; alternatives: WireGuard, ZeroTier
 
-# ── Calliope (video / audio production module) ───────────────────────────────
+# ── Media production module (video / audio) ──────────────────────────────────
 brew "ffmpeg"      # video pipeline
 
-# ── Athena (offline knowledge / Kiwix module) ────────────────────────────────
+# ── Offline knowledge module (Kiwix) ─────────────────────────────────────────
 brew "kiwix-tools" # Kiwix CLI
 cask "docker"      # Docker Desktop hosts the Kiwix container
 

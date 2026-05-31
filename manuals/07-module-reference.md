@@ -7,7 +7,7 @@
 
 ## Disclaimer
 
-This software is provided under the MIT License on an "as-is" basis, without warranty.
+This software is provided under the Apache 2.0 License on an "as-is" basis, without warranty.
 Module costs are estimates only. You are responsible for verifying pricing with each
 third-party service provider. Nothing here constitutes financial advice.
 

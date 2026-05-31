@@ -1,0 +1,25 @@
+{
+  "id": "live-stream-vision",
+  "name": "Live Stream Vision",
+  "tier": "official",
+  "kind": "service",
+  "summary": "Real-time visual awareness for the personal AI: screen share, camera, and frame-by-frame analysis via a vision model.",
+  "description": "Lets the personal AI see a live video stream - a shared screen or a phone/desktop camera - and reason over it. Frames are sampled into a ring buffer, dispatched to a vision model (Gemini by default), and salient observations are written to memory. Session-scoped and operator-gated: the stream only runs while a session is explicitly open. Optional module; off unless enabled in the activation matrix.",
+  "provides": [
+    "live-stream-vision",
+    "screen-share",
+    "camera-vision"
+  ],
+  "requires": [
+    "core",
+    "personal-ai"
+  ],
+  "services": [
+    "pbox-live-stream-vision"
+  ],
+  "config": {
+    "GEMINI_API_KEY": "Google AI API key for the vision model (required to enable)"
+  },
+  "install": "install.sh",
+  "docs": "README.md"
+}

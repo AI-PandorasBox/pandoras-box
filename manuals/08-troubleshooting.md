@@ -7,7 +7,7 @@
 
 ## Disclaimer
 
-This software is provided under the MIT License on an "as-is" basis, without warranty.
+This software is provided under the Apache 2.0 License on an "as-is" basis, without warranty.
 If you cannot resolve an issue using this guide, open a GitHub issue with the relevant
 log output.
 
@@ -134,7 +134,7 @@ refresh token itself has expired, re-authentication is needed.
 
 **Check when the token last refreshed:**
 ```
-tail -20 /tmp/zeus-ms365-refresh.log
+tail -20 /tmp/pandoras-box-ms365-refresh.log
 ```
 
 Look for the last successful refresh timestamp. If it is more than 24 hours ago, the

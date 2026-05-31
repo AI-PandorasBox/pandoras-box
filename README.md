@@ -42,16 +42,29 @@ API-key (pay-per-token) Anthropic billing is not supported in this release; API 
 
 ---
 
+## What ships (at a glance)
+
+| Count | What |
+|------:|------|
+| **40** | installable modules (core + official tiers) |
+| **15** | packaged skills (SKILL.md + code): 2 hand-built + 13 promoted from recipe specs via the skill promoter |
+| **1** | recipe spec remaining in the catalogue -- promote with the skill promoter, or add your own |
+| **181** | tools (LLM-callable functions) available to the assistant |
+| **12** | Personal AI capability surfaces (chat, summary, tasks, create, research, files, knowledge, contacts, calendar, email, call, camera) |
+| **8** | connectors: Gmail, Microsoft 365, calendar, files, plus Telegram / Slack / Discord / WhatsApp relays |
+| **3** | independent agent tiers (admin, oversight, per-company conductor + task agents) |
+| **4** | platform layers shipped: security (oversight + content classifier), memory (history + recall + knowledge), self-improvement (weekly pipeline), and per-agent operating guides |
+
 ## Key Features
 
 | | |
 |---|---|
-| **Browser-first Personal AI** | Full Chrome-app interface. Voice-to-voice conversation, screen share, video share, and remote browser control. Phone + watch surfaces for when you're away from the desk. |
-| **An Admin agent that runs the platform** | Dedicated administrator oversees every service, runs scripted deploy sessions, holds the systems dashboard, operates a project + multi-project build system, and can spawn its own sub-agents for parallel work. |
-| **Per-company agents, compartmentalised** | Each company gets its own assistant -- mail, calendar, files, voice, marketing, web -- isolated at the operating-system level. Separate user accounts, separate credentials, separate job queues, no cross-tenant data path. |
-| **Security that acts, not just watches** | Independent oversight daemon approves every queued action. Content classifier sidecar. Lockdown manager quarantines an agent in under 30 seconds. Watchdog runs 13 daily health checks. Weekly dependency scan. Encrypted offsite backup. |
-| **Memory built for continuity** | Three working layers -- rolling history, semantic vector recall, and structured knowledge (vault, notes, important facts, drops, relationship graph). On top: a six-worker self-improvement loop with weekly digest. Nothing self-applies without your approval. |
-| **Specialised systems for real work** | Offline knowledge library (full Wikipedia + reference packs). Media production pipeline (music + narration + image + video + YouTube). Trading research. Asynchronous deep research. Sandboxed code execution. Live-stream vision. Windows remote diagnostics. Local-model intent routing with frontier fallback. |
+| **Browser-first Personal AI** | Full browser-app interface: chat with streaming replies, daily briefing, tasks, notes/drops, research, files, contacts, optional voice input and TTS. Reachable from your phone over Tailscale. |
+| **An Admin agent that runs the platform** | A dedicated administrator agent oversees every service, runs gated deploy sessions, and holds the system dashboard. It works from an operating guide shipped with the install. |
+| **Per-company agents, compartmentalised** | Each company gets its own assistant -- mail, calendar, files, voice -- isolated at the operating-system level. Separate user accounts, separate credentials, separate job queues, no cross-tenant data path. |
+| **Security that acts, not just watches** | An independent oversight daemon approves every queued action before it runs. A local content-classifier sidecar scores outbound content. Failing agents are quarantined; a watchdog runs twice-daily integrity checks; dependencies are scanned weekly. Optional encrypted backups. |
+| **Memory built for continuity** | Three working layers -- rolling history, semantic vector recall, and structured knowledge (notes, important facts, drops). On top, a self-improvement pipeline produces a weekly digest of suggested prompt improvements. Nothing self-applies without your approval. |
+| **Specialised systems for real work** | Offline knowledge library (Wikipedia + reference packs). Media production pipeline (music + narration + image + video + YouTube). Trading research (paper). Asynchronous deep research. Local-model intent routing with frontier fallback. |
 
 Read the full feature deep-dive at [ai-pandorasbox.co.uk](https://ai-pandorasbox.co.uk).
 
@@ -123,7 +136,7 @@ Four tiers. A higher tier cannot be instructed by a lower one.
 
 | Tier | Component | Role |
 |------|-----------|------|
-| **0** | The admin agent | System administrator. CLI interface (Claude Code). No external connectivity. Manages infrastructure, deploys code, monitors services. |
+| **0** | The admin agent | System administrator. Command-line interface. No external connectivity. Manages infrastructure, deploys code, monitors services. |
 | **1** | Argus | Independent oversight daemon. Approves or blocks every queued job. Cannot be instructed by any agent. Active blocking enabled by default. |
 | **2** | Conductors | One per company. Receives owner messages, classifies intent, routes jobs to the queue. Holds no company credentials. |
 | **3** | Task Agents | Mail, Calendar, Files, Voice -- one per function per company. Each holds only its own scoped credentials. Fully OS-isolated from other companies. |
@@ -178,9 +191,8 @@ A fifth component -- **the Personal AI** -- is the owner's personal AI interface
 | **self-improvement** | Self-improvement | Agent self-analysis and prompt optimisation pipeline | [catalog](docs/modules.md#self-improvement) · [module reference](manuals/07-module-reference.md#self-improvement) | Optional |
 | **video-publisher** | Video production | Automated video production and YouTube publishing | [catalog](docs/modules.md#video-publisher) · [module reference](manuals/07-module-reference.md#video-publisher) | Optional |
 | **backups** | Encrypted offsite-ready backups | Daily age-encrypted tarball + Sunday freshness probe | [README](modules/backups/README.md) | Recommended |
-| **personal-sensor** | Personal intelligence layer | Ambient sensor daemon + Watch companion (Wear OS / Apple Watch) | [README](modules/personal-sensor/README.md) | Optional |
-| **desktop-launchers** | Desktop shortcuts | .app launchers on the Desktop for Dashboard / Terminal / Assistant | [README](modules/desktop-launchers/README.md) | Recommended |
-| **website-builder** | Static site publisher | AI-managed brochure site via FTP/SFTP | [README](modules/website-builder/README.md) | Optional |
+| **personal-sensor** | Personal intelligence layer | Ambient sensor daemon + Watch companion (Wear OS) | [README](modules/personal-sensor/README.md) | Optional |
+| **desktop-launchers** | Desktop shortcuts | .app / .desktop launchers for Dashboard / Terminal / Assistant | [README](modules/desktop-launchers/README.md) | Recommended |
 
 Full module documentation: [docs/modules.md](docs/modules.md)
 
@@ -190,10 +202,12 @@ Full module documentation: [docs/modules.md](docs/modules.md)
 
 | Document | Description |
 |----------|-------------|
+| [Glossary](docs/GLOSSARY.md) | Canonical terms: module, skill, tool, agent, conductor — aligned to Claude's vocabulary |
 | [Architecture](docs/architecture.md) | Four-tier design, security layers, component reference |
-| [Security](docs/security.md) | Isolation model, Argus design, threat model, automated defences |
+| [Security](docs/security.md) | Isolation model, oversight daemon design, threat model, automated defences |
 | [Multi-Tenant Setup](docs/multi-tenant.md) | Running multiple companies on one machine |
 | [Modules](docs/modules.md) | Complete module catalog with prerequisites |
+| [Release process](docs/RELEASE-PROCESS.md) | How releases are built, signed, and verified |
 
 **PDF Manuals** -- download from [GitHub Releases](https://github.com/AI-PandorasBox/pandoras-box/releases/latest):
 

@@ -7,8 +7,8 @@
 # "no" and are skipped; required fields (prompt_required) get a placeholder so the
 # install completes with dummy/absent credentials.
 #
-# Use case: building the Hades base-master-mirror test snapshot, CI installs, and
-# any headless deployment. NO action shims are installed -- real dirs/users/services.
+# Use case: building base system snapshots, CI installs, and any headless
+# deployment. NO action shims are installed -- real dirs/users/services.
 #
 #   PBOX_UNATTENDED=1 bash pbox-setup.sh
 #   PBOX_UNATTENDED_TIER=2          # default 1 (Personal)

@@ -72,7 +72,7 @@ function safeLabel (s) {
 }
 
 // _SKILL_ATTENDEES_FROM_DESC_V1: extract attendee count from bodyPreview / subject.
-// Levels event template uses "Attending N..." line; fallbacks for free-text.
+// Some event templates use an "Attending N..." line; fallbacks for free-text.
 function extractAttendees (subject, description) {
   // _ATTENDEES_REGEX_V2: widened further -- "Number of pupils:", "N students attended", "N person(s)", "N people"
   const text = (description || '').replace(/\s+/g, ' ')

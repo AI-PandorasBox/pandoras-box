@@ -104,7 +104,7 @@ What the framework lets you actually do. Each capability is a module the install
 ### Production
 
 - **the Media Production Pipeline** — end-to-end content production. PRS-free music composition, ElevenLabs voice narration, AI image generation via Imagen, video generation via Veo, YouTube publishing automation.
-- **Aetheria toolchain** — the publishing-side toolchain that consumes the Media Production Pipeline outputs to produce books, audiobooks, and adapted video content.
+- **Publishing toolchain** — an optional publishing-side toolchain that consumes the Media Production Pipeline outputs to produce books, audiobooks, and adapted video content.
 
 ### Marketing (beta)
 

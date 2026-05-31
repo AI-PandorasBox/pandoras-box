@@ -193,7 +193,7 @@ Full chapter titled "Before You Begin -- Understanding the Risks". Contains all 
 Per-module disclaimer where relevant:
 - AI modules (any module using Claude API): AI Output disclaimer
 - API-cost modules (ElevenLabs, MS365, Google, etc.): API Cost disclaimer
-- Security-related modules (Nemesis excluded, but Argus): Security note
+- Security-related modules (e.g. the oversight daemon): Security note
 
 ### Tone guidance:
 Disclaimers must be clear and plain English -- not buried in legalese that people skip.

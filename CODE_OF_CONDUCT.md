@@ -43,9 +43,12 @@ It also applies when an individual is representing the project in public spaces.
 
 ## Enforcement
 
-Instances of unacceptable behaviour may be reported to the project maintainers at:
+Instances of unacceptable behaviour may be reported to the project maintainers by opening a
+report through GitHub:
 
-**pandoras-box-conduct@ai-pandorasbox.co.uk**
+- For sensitive reports, use a **private security advisory**: the repository's **Security ->
+  Report a vulnerability** form (visible to maintainers only), or
+- For non-sensitive matters, open an issue or a **GitHub Discussion**.
 
 All reports will be reviewed promptly and treated with discretion. Maintainers will respect
 the privacy of those reporting incidents.

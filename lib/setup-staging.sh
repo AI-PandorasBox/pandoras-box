@@ -81,13 +81,32 @@ run_staging() {
     fi
   done
 
-  # _ADMIN_OPERATING_DOC_V1: give the admin agent (Layer 0) its day-1 operating
+  # _ADMIN_OPERATING_DOC_V1: give the admin agent its day-1 operating
   # loop. The admin agent reads CLAUDE.md from its working dir ($INSTALL_PATH);
   # without this it has no session-start / deploy-gate / session-close workflow.
   # Don't clobber an operator-customised CLAUDE.md on re-runs.
   if [[ -f "$SETUP_DIR/config/admin-CLAUDE.md.template" && ! -f "$INSTALL_PATH/CLAUDE.md" ]]; then
     sudo cp "$SETUP_DIR/config/admin-CLAUDE.md.template" "$INSTALL_PATH/CLAUDE.md"
     check_pass "staged admin operating guide: $INSTALL_PATH/CLAUDE.md"
+  fi
+
+  # Personal Assistant operating guide -- loaded into the assistant's system prompt.
+  # Staged to the personal-ai dir; don't clobber an operator-customised copy.
+  if [[ -f "$SETUP_DIR/config/personal-ai-CLAUDE.md.template" ]]; then
+    sudo mkdir -p "$INSTALL_PATH/personal-ai"
+    if [[ ! -f "$INSTALL_PATH/personal-ai/CLAUDE.md" ]]; then
+      sudo cp "$SETUP_DIR/config/personal-ai-CLAUDE.md.template" "$INSTALL_PATH/personal-ai/CLAUDE.md"
+      check_pass "staged personal assistant guide: $INSTALL_PATH/personal-ai/CLAUDE.md"
+    fi
+  fi
+
+  # Company agent (conductor) operating guide -- kept available for per-tenant
+  # staging by setup-company.sh / setup-tenant-runtimes.sh (each tenant gets a
+  # copy at $INSTALL_PATH/<slug>/CLAUDE.md, loaded into that conductor's prompt).
+  if [[ -f "$SETUP_DIR/config/conductor-CLAUDE.md.template" ]]; then
+    sudo mkdir -p "$INSTALL_PATH/config"
+    sudo cp "$SETUP_DIR/config/conductor-CLAUDE.md.template" "$INSTALL_PATH/config/conductor-CLAUDE.md.template"
+    check_pass "staged company-agent guide template: $INSTALL_PATH/config/conductor-CLAUDE.md.template"
   fi
 
   # Permissions: lib + scripts + modules executable; everything readable.

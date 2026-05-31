@@ -7,7 +7,7 @@
 
 ## Disclaimer
 
-This software is provided under the MIT License on an "as-is" basis, without warranty.
+This software is provided under the Apache 2.0 License on an "as-is" basis, without warranty.
 AI responses are not professional advice. You are responsible for reviewing all AI-generated
 drafts before they are sent. You are responsible for your API costs and credential security.
 

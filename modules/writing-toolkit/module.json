@@ -1,0 +1,16 @@
+{
+  "name": "writing-toolkit",
+  "version": "0.1.0",
+  "description": "Long-form writing toolchain: draft, review, and assemble multi-section documents (chapters, reports).",
+  "kind": "config",
+  "tier": "official",
+  "provides": [
+    "writing-toolkit"
+  ],
+  "requires": [
+    "core"
+  ],
+  "config": {},
+  "install": "install.sh",
+  "author": "AI-PandorasBox"
+}

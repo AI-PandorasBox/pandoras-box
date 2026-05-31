@@ -7,6 +7,15 @@
 <link rel="stylesheet" href="/public/style.css">
 <style>
   :root { --accent: {{COLOR_ACCENT}}; }
+  /* _PA_NO_CHATLIST_V1 -- the assistant is memory-driven (pinned facts + semantic
+     recall), not a chat archive. Hide the ChatGPT-style recent-chats list, its
+     "Recent chats" label, and the New-chat button so the surface stays clean.
+     The elements remain in the DOM so app.js keeps working untouched;
+     conversations still persist server-side for continuity. */
+  #conv-list, #new-conv { display:none !important; }
+  /* hide only the "Recent chats" label (the .convlabel immediately before the
+     conv list), not the "Tools" label which shares the class */
+  .convlabel:has(+ #conv-list) { display:none !important; }
   /* _COCKPIT_2026-05-30 panel styling */
   #panel{flex:1;overflow:auto;background:#0e0b1e}
   #panel:not([hidden]){display:flex;flex-direction:column}

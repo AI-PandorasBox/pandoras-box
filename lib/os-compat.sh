@@ -107,7 +107,7 @@ pbox_create_service() {
   fi
 
   # Real-deployment hardening: daemon agents run as a dedicated per-service
-  # account, never root. (Zeus/admin is the operator's own login, not a daemon,
+  # account, never root. (the admin login is the operator's own account, not a daemon,
   # so it is never provisioned here.) Caller may pass an explicit non-root user
   # to override. Group 'pbox' + 0750 lets Argus oversee peers via the shared group.
   if [[ "$user" == "root" || -z "$user" ]]; then

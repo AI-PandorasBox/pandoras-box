@@ -1,0 +1,19 @@
+{
+  "name": "audio-narrate",
+  "version": "0.1.0",
+  "description": "Text-to-speech narration via a TTS provider (ElevenLabs by default). Turns scripts/articles into narrated audio.",
+  "kind": "config",
+  "tier": "official",
+  "provides": [
+    "audio-narrate",
+    "tts"
+  ],
+  "requires": [
+    "core"
+  ],
+  "config": {
+    "ELEVENLABS_API_KEY": "ElevenLabs API key (or other TTS provider key)"
+  },
+  "install": "install.sh",
+  "author": "AI-PandorasBox"
+}

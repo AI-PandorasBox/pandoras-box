@@ -375,21 +375,247 @@ scheduling.
 
 ---
 
-## website-builder
+## live-stream-vision
 
 **Status:** Optional
 
-Automated website generation and deployment pipeline.
+Real-time visual awareness for the Personal AI: screen share, camera, and frame-by-frame analysis via a vision model. Frames are sampled into a ring buffer, sent to the vision model (Gemini by default), and salient observations are written to memory. Session-scoped and operator-gated; only runs while a session is explicitly open.
 
-Generates static websites from a brief and deploys them to a configured hosting provider.
-When a company agent receives a website request, it creates a job for the website-builder
-module, which builds the site and deploys it via FTP or a supported hosting API.
+**Prerequisites:**
+- `core`, `personal-ai`
+- Google AI API key (`GEMINI_API_KEY`)
 
-Review the generated site before publishing -- the agent emails a preview link before any
-deployment.
+**Depends on:** personal-ai
+
+---
+
+## marketing
+
+**Status:** Optional
+
+Outbound marketing channels for an agent: draft and post to LinkedIn, Mailchimp email, and Meta. Each channel is optional and only activates when its credential is set. All outbound posts pass the oversight/classifier layer before sending.
 
 **Prerequisites:**
 - `core`
-- FTP credentials or hosting API key for the target service
+- Per-channel API tokens (LinkedIn / Mailchimp / Meta), each optional
 
 **Depends on:** core
+
+---
+
+## website-publish
+
+**Status:** Optional
+
+Publish generated pages and assets to a website over FTP/SFTP. Credentials are per-site and never committed. Runs in dry-run until a live publish is explicitly authorised.
+
+**Prerequisites:**
+- `core`
+- Per-site FTP/SFTP credentials
+
+**Depends on:** core
+
+---
+
+## audio-narrate
+
+**Status:** Optional
+
+Text-to-speech narration via a TTS provider (ElevenLabs by default). Turns scripts and articles into narrated audio. Inert until a provider key is configured.
+
+**Prerequisites:**
+- `core`
+- ElevenLabs (or other TTS provider) API key
+
+**Depends on:** core
+
+---
+
+## youtube-publishing
+
+**Status:** Optional
+
+Upload videos to YouTube and reconcile/monitor their published status via the YouTube Data API.
+
+**Prerequisites:**
+- `core`
+- YouTube Data API OAuth credentials
+
+**Depends on:** core
+
+---
+
+## visual-plan
+
+**Status:** Optional
+
+A generic visual planner. Given a brief, it selects a layout/style preset and dispatches image generation (covers, thumbnails, cards) to the media-production pipeline. Brand-specific presets are supplied by the operator, not shipped.
+
+**Prerequisites:**
+- `core`, `media-production`
+
+**Depends on:** media-production
+
+---
+
+## writing-toolkit
+
+**Status:** Optional
+
+A generic long-form writing toolchain: draft sections, review them against a rubric, and assemble them into a finished multi-section document (e.g. chapters or report sections). No project- or brand-specific content ships with the module.
+
+**Prerequisites:**
+- `core`
+
+**Depends on:** core
+
+
+---
+
+## content-classifier
+
+**Status:** Optional
+
+Localhost content-safety classification sidecar.
+
+**Depends on:** `core`
+
+---
+
+## argus
+
+**Status:** Optional
+
+Security overseer: reviews pending jobs via the content-classifier, quarantines repeat offenders, weekly dependency scan.
+
+**Depends on:** `module:content-classifier`
+
+---
+
+## skills-library
+
+**Status:** Optional
+
+Reusable skill primitives the assistant and agents can call.
+
+**Depends on:** `core`
+
+---
+
+## admin-shell
+
+**Status:** Optional
+
+(see module README)
+
+**Depends on:** `core`
+
+---
+
+## data-import
+
+**Status:** Optional
+
+Import existing memories from another assistant into your Personal Assistant.
+
+**Depends on:** `module:personal-ai`
+
+---
+
+## deck-builder
+
+**Status:** Optional
+
+Build PowerPoint decks (.pptx) from a simple JSON spec, locally via python-pptx.
+
+**Depends on:** `core`
+
+---
+
+## vector-kb
+
+**Status:** Optional
+
+Local semantic memory: embeds text via Ollama, stores vectors in SQLite, nearest-neighbour search.
+
+**Depends on:** `module:ollama`
+
+---
+
+## vault-graph
+
+**Status:** Optional
+
+Renders the assistant's memory as a browsable, linked Obsidian vault on disk (graph view).
+
+**Depends on:** `module:personal-ai`
+
+---
+
+## browser-actions
+
+**Status:** Optional
+
+Interactive browser surface for agents (navigate/read/click/type/screenshot) via local Playwright; token + domain allowlist + audit.
+
+**Depends on:** `core`
+
+---
+
+## personal-sensor
+
+**Status:** Optional
+
+(see module README)
+
+**Depends on:** `core`
+
+---
+
+## relay-telegram
+
+**Status:** Optional
+
+Telegram bot relay: talk to your assistant from Telegram (long-poll, optional single-chat allowlist).
+
+**Depends on:** `core`
+
+---
+
+## backups
+
+**Status:** Optional
+
+(see module README)
+
+**Depends on:** `core`
+
+---
+
+## desktop-launchers
+
+**Status:** Optional
+
+(see module README)
+
+**Depends on:** `core`
+
+---
+
+## voice-agent
+
+**Status:** Optional
+
+(see module README)
+
+**Depends on:** `core`
+
+---
+
+## voice-call
+
+**Status:** Optional
+
+(see module README)
+
+**Depends on:** `core`

@@ -502,9 +502,10 @@ async function handleChat(req, res) {
   recordMessage(cid, 'user', content)
   const history = loadHistory(cid).slice(0, -1)
   try {
-    const text = await callClaude({ history, userContent: content, stream: false })
+    const toolsUsed = []
+    const text = await runAgentTurn({ history, userContent: content, onToolEvent: (n) => toolsUsed.push(n) })
     const mid = recordMessage(cid, 'assistant', text)
-    send(res, 200, { conversation_id: cid, message_id: mid, content: text })
+    send(res, 200, { conversation_id: cid, message_id: mid, content: text, tools_used: toolsUsed })
   } catch (e) {
     send(res, 502, { error: 'llm_error', detail: String(e.message || e) })
   }
@@ -526,33 +527,21 @@ async function handleChatStream(req, res, url) {
   })
   res.write(`event: start\ndata: ${JSON.stringify({ conversation_id: cid })}\n\n`)
 
-  // Bridge mode (no API key): the CLI path returns the full reply, not a token
-  // stream. Emit it as a single SSE token, then end. _CLI_BRIDGE_V1
-  if (!getApiKey()) {
-    try {
-      const text = await callClaude({ history, userContent: content, stream: false })
-      res.write(`event: token\ndata: ${JSON.stringify({ text })}\n\n`)
-      const mid = recordMessage(cid, 'assistant', text)
-      res.write(`event: end\ndata: ${JSON.stringify({ message_id: mid })}\n\n`)
-    } catch (e) {
-      res.write(`event: error\ndata: ${JSON.stringify({ message: String(e.message || e) })}\n\n`)
-    }
-    return res.end()
-  }
-
-  let acc = ''
+  // Agentic turn: the assistant may call tools mid-turn. We surface each tool
+  // call as an SSE `tool` event (UI can show "ran add_task"), then stream the
+  // final answer text. Tool-use + token streaming don't compose cleanly, so the
+  // final text is emitted as one token after the loop converges. _PERSONAL_AI_TOOLS_V1
   try {
-    const stream = await callClaude({ history, userContent: content, stream: true })
-    stream.on('text', (chunk) => {
-      acc += chunk
-      res.write(`event: token\ndata: ${JSON.stringify({ text: chunk })}\n\n`)
+    const text = await runAgentTurn({
+      history,
+      userContent: content,
+      onToolEvent: (name, input, result) => {
+        const ok = !(result && result.error)
+        res.write(`event: tool\ndata: ${JSON.stringify({ name, ok })}\n\n`)
+      },
     })
-    stream.on('error', (err) => {
-      res.write(`event: error\ndata: ${JSON.stringify({ message: String(err.message || err) })}\n\n`)
-      res.end()
-    })
-    await stream.finalMessage()
-    const mid = recordMessage(cid, 'assistant', acc)
+    res.write(`event: token\ndata: ${JSON.stringify({ text })}\n\n`)
+    const mid = recordMessage(cid, 'assistant', text)
     res.write(`event: end\ndata: ${JSON.stringify({ message_id: mid })}\n\n`)
     res.end()
   } catch (e) {

@@ -7,7 +7,7 @@
 
 ## Disclaimer
 
-This software is provided under the MIT License on an "as-is" basis, without warranty of
+This software is provided under the Apache 2.0 License on an "as-is" basis, without warranty of
 any kind. You are responsible for your API costs and spend limits. You are responsible for
 the security of your credentials and the machine the system runs on. Nothing in this manual
 constitutes financial, legal, or professional advice.

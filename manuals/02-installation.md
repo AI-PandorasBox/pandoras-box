@@ -7,7 +7,7 @@
 
 ## Disclaimer
 
-This software is provided under the MIT License on an "as-is" basis, without warranty of
+This software is provided under the Apache 2.0 License on an "as-is" basis, without warranty of
 any kind.
 
 The installer's first prompt (after the welcome banner) is a typed-acceptance disclaimer

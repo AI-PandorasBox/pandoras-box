@@ -1,0 +1,22 @@
+{
+  "name": "marketing",
+  "version": "0.1.0",
+  "description": "Outbound marketing channels for an agent: draft and post to LinkedIn, Mailchimp email, and Meta. Operator-gated, audit-logged.",
+  "kind": "config",
+  "tier": "official",
+  "provides": [
+    "marketing",
+    "social-post",
+    "email-campaign"
+  ],
+  "requires": [
+    "core"
+  ],
+  "config": {
+    "LINKEDIN_TOKEN": "LinkedIn API token (optional)",
+    "MAILCHIMP_API_KEY": "Mailchimp API key (optional)",
+    "META_TOKEN": "Meta Graph API token (optional)"
+  },
+  "install": "install.sh",
+  "author": "AI-PandorasBox"
+}
