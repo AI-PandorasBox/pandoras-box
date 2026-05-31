@@ -603,6 +603,20 @@ async function runAgentTurnSDK ({ apiKey, history, userContent, onToolEvent }) {
 // child, singleton-guarded so concurrent calls don't double-spawn; if the port is
 // already held the spawned process exits on EADDRINUSE and the health check finds the
 // existing one. _BRIDGE_TOOL_PATH_V1
+// The `claude` CLI initialises its config (~/.claude.json) on its FIRST invocation
+// and does not load MCP tool servers during that one-time init -- so without priming,
+// the user's very first chat after install would have no tools. After spawning the
+// bridge we fire one throwaway call (with the tool set, to also trigger MCP first-run)
+// so the user's first real chat is already the second claude invocation. _BRIDGE_WARMUP_V1
+async function warmUpBridge () {
+  try {
+    const { makeMessage } = await import('./anthropic-claude-adapter.mjs')
+    await makeMessage('Setup probe. Reply with the single word: ready.',
+      [{ role: 'user', content: 'ready?' }],
+      { tools: toolSchemas(), onToolCall: async () => ({ ok: true }), priority: 9 })
+  } catch {}
+}
+
 let _bridgeStarting = null
 async function ensureBridge () {
   const { healthCheck } = await import('./anthropic-claude-adapter.mjs')
@@ -615,11 +629,15 @@ async function ensureBridge () {
           { detached: true, stdio: ['ignore', fd, fd], env: { ...process.env, INSTALL_PATH } })
         child.unref()
       } catch {}
+      let up = false
       for (let i = 0; i < 40; i++) {
         await new Promise(r => setTimeout(r, 200))
-        if (await healthCheck()) return true
+        if (await healthCheck()) { up = true; break }
       }
-      return await healthCheck()
+      // We just cold-started the bridge -> prime claude's first-run init before
+      // the caller's real turn, so that turn has its tools.
+      if (up) await warmUpBridge()
+      return up
     })().finally(() => { _bridgeStarting = null })
   }
   return _bridgeStarting
