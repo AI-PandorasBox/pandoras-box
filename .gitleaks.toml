@@ -1,38 +1,39 @@
-# Pandora's Box public-repo leak gate (2026-05-30)
-# Extends gitleaks defaults (all standard cred detectors) and adds PBox-specific
-# DATA-leak rules (internal identifiers that must never reach the public repo),
-# plus an allowlist for known-safe docs placeholders / dry-run values.
+# Pandora's Box public-repo leak gate
+# Extends gitleaks defaults (all standard credential detectors) and adds PBox-specific
+# DATA-leak rules. These rules detect CLASSES of internal identifiers by SHAPE only --
+# they deliberately do NOT hardcode any real operator value (chat ID, exact tailnet host,
+# email domain, paths), so this config is itself safe to publish.
+#
+# Exact-value detection (the specific operator email, Telegram chat ID, tailnet host) is
+# performed in CI from repository SECRETS, not from this committed file -- see
+# .github/workflows + the PBOX_LEAK_VALUES secret (TODO: wire if not present).
 title = "Pandora's Box public-repo leak gate"
 
 [extend]
 useDefault = true
 
-# ── PBox internal-DATA rules (beyond credentials) ───────────────────────────
+# ── PBox internal-DATA rules (shape-based; no real values embedded) ─────────
 [[rules]]
-id = "pbox-internal-email-domain"
-description = "Internal Levels/Whitehaven email or domain"
-regex = '''(?i)(ian@REDACTED|REDACTED\.co\.uk)'''
+id = "pbox-telegram-bot-token"
+description = "Telegram bot token (the actual secret; a chat ID alone is not)"
+regex = '''\b\d{8,10}:[A-Za-z0-9_-]{35}\b'''
 tags = ["pbox-data"]
 
 [[rules]]
-id = "pbox-telegram-chatid"
-description = "Hardcoded allowed Telegram chat ID (operator-only)"
-regex = '''\bREDACTED\b'''
-tags = ["pbox-data"]
-
-[[rules]]
-id = "pbox-tailnet"
-description = "Tailnet 100.x address or private ts.net host"
-regex = '''(100\.(9[0-9]|1[0-1][0-9]|12[0-7])\.\d{1,3}\.\d{1,3}|[a-z0-9-]+\.REDACTED\.ts\.net)'''
+id = "pbox-tailnet-host"
+description = "Tailnet ts.net hostname (any) or Tailscale 100.64/10 CGNAT address"
+regex = '''([a-z0-9-]+\.ts\.net|100\.(6[4-9]|[7-9][0-9]|1[01][0-9]|12[0-7])\.\d{1,3}\.\d{1,3})'''
 tags = ["pbox-data"]
 
 [[rules]]
 id = "pbox-operator-path"
-description = "Admin-only operator paths (must not appear in public source)"
-regex = '''(/Users/qwerty|/opt/zeus/|/Users/[^/]+/Desktop/ZEUS)'''
+description = "Operator-only desktop/admin paths (shape, not a specific user)"
+regex = '''(/Users/[^/]+/Desktop/ZEUS|/Users/[^/]+/Library/Mobile Documents)'''
 tags = ["pbox-data"]
 
 # ── Allowlist: known-safe placeholders and documentation examples ───────────
+# NOTE: this file is NO LONGER self-allowlisted -- it now contains no real values, and
+# removing the self-exemption means any real value added here in future WILL be flagged.
 [allowlist]
 description = "Docs placeholders, dry-run sample values, example GUIDs"
 regexes = [
@@ -43,5 +44,4 @@ regexes = [
 ]
 paths = [
   '''docs/setup/ms365\.md''',                    # documented example credential block
-  '''\.gitleaks\.toml''',                         # this file (contains the patterns it scans for)
 ]
