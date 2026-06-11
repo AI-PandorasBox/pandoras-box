@@ -44,7 +44,7 @@ for (const name of entries) {
     }
     if (m.name && m.name !== name) fail(name, `module.json name "${m.name}" != directory "${name}"`)
     if (m.version && !/^[0-9]+\.[0-9]+\.[0-9]+/.test(m.version)) fail(name, `module.json version "${m.version}" is not semver`)
-    if (m.kind && !['service', 'config', 'skill-pack'].includes(m.kind)) fail(name, `module.json kind "${m.kind}" invalid (service|config|skill-pack)`)
+    if (m.kind && !['service', 'config', 'skill-pack', 'library'].includes(m.kind)) fail(name, `module.json kind "${m.kind}" invalid (service|config|skill-pack|library)`)
 
     if (m.kind === 'service') {
       if (!has('runtime')) fail(name, 'kind=service but no runtime/ dir')
@@ -53,6 +53,10 @@ for (const name of entries) {
         if (!rt.some(f => f.endsWith('.plist.template'))) fail(name, 'kind=service but no *.plist.template in runtime/')
       }
     }
+
+    // library: a no-daemon code module imported by other components (no ports/plist).
+    // Ships its code under runtime/ but, unlike service, has no *.plist.template.
+    if (m.kind === 'library' && !has('runtime')) fail(name, 'kind=library but no runtime/ dir (ship the code there)')
 
     if (m.ports) {
       if (!Array.isArray(m.ports)) fail(name, 'module.json ports must be an array')

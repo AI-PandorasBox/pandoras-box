@@ -29,7 +29,7 @@ modules/<name>/
   "name": "offline-kb",                 // REQUIRED, matches the dir name
   "version": "1.0.0",                   // REQUIRED, semver
   "description": "Local vector knowledge base.",  // REQUIRED, one line
-  "kind": "service",                    // REQUIRED: "service" | "config" | "skill-pack"
+  "kind": "service",                    // REQUIRED: "service" | "config" | "skill-pack" | "library"
   "ports": [8489],                      // service modules: ports it binds (must be unique across all modules)
   "service_user": "pbox-<name>",        // optional, the account the daemon runs as
   "launchdaemon_label": "${PREFIX}.offline-kb", // service modules: the launchd label
@@ -43,6 +43,7 @@ modules/<name>/
 - `kind: "service"` modules MUST ship `runtime/<name>.mjs` and a `*.plist.template`, and SHOULD declare `ports` + `launchdaemon_label`.
 - `kind: "config"` modules configure an existing agent/conductor capability and need no daemon.
 - `kind: "skill-pack"` modules add skills (see `skills-library` and `SKILL.md`).
+- `kind: "library"` modules are no-daemon code libraries imported by other components (e.g. the fleet skill-sync verifier); they ship their code under `runtime/` but have no `*.plist.template`, ports, or daemon.
 - `requires` entries are typed: `module:<name>`, `surface:<name>`, `principal_type:<name>`.
 
 ## `install.sh` contract

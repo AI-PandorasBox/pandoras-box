@@ -1,0 +1,10 @@
+{
+  "name": "skill-governance",
+  "version": "1.0.0",
+  "description": "Skill governance layer (NVIDIA Agent-Skills pattern): ed25519 detached sign/verify, instruction-safety + supply-chain scan, skill-card generation, and a single gate() a skill revision must pass before promotion. No external deps (node crypto only). Signing private key lives OFF-repo.",
+  "kind": "library",
+  "requires": [],
+  "cost_estimate": "free (local, node crypto only)",
+  "uninstall": "documented in README",
+  "author": "AI-PandorasBox"
+}

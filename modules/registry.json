@@ -250,6 +250,12 @@
       "kind": "config",
       "tier": "official",
       "summary": "Long-form writing toolchain: draft, review, assemble multi-section documents."
+    },
+    {
+      "name": "skill-governance",
+      "tier": "official",
+      "kind": "library",
+      "purpose": "Skill signing/verification + safety scan + promotion gate (no daemon)."
     }
   ]
 }
