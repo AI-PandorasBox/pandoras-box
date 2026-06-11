@@ -32,8 +32,8 @@ cask "obsidian"    # vault host
 # ── Argus dep-scan (optional) ────────────────────────────────────────────────
 brew "gh"          # GitHub CLI (used for dep-scan + release downloads)
 
-# ── Cerberus content classifier ──────────────────────────────────────────────
-brew "python@3.11" # Cerberus sidecar runs in Python 3.11+
+# ── content-classifier sidecar ───────────────────────────────────────────────
+brew "python@3.11" # content-classifier sidecar runs in Python 3.11+
 
 # ── Optional convenience ─────────────────────────────────────────────────────
 # cask "iterm2"    # better terminal
