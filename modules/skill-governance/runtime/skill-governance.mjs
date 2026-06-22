@@ -97,14 +97,20 @@ export function scanSkill (skillDir) {
 
 // ── skill card (CC0 template shape) ──
 export function genCard (skillDir, meta = {}) {
-  let fm = {}
+  let fm = {}, fmDescription = ''
   const sm = join(skillDir, 'SKILL.md')
   if (existsSync(sm)) {
-    const m = readFileSync(sm, 'utf8').match(/^---\s*\n([\s\S]*?)\n---/)
-    if (m) for (const ln of m[1].split('\n')) { const i = ln.indexOf(':'); if (i > 0) fm[ln.slice(0, i).trim()] = ln.slice(i + 1).trim().replace(/^["']|["']$/g, '') }
+    const raw = readFileSync(sm, 'utf8')
+    const fence = raw.match(/^---\s*\n([\s\S]*?)\n---/)
+    const body = fence ? fence[1] : raw   // SKILL.md may be unfenced (bare header) -- _CARD_DESC_ROBUST_V1
+    for (const ln of body.split('\n')) { const i = ln.indexOf(':'); if (i > 0 && /^\S/.test(ln)) { const k = ln.slice(0, i).trim(); if (!(k in fm)) fm[k] = ln.slice(i + 1).trim().replace(/^["']|["']$/g, '') } }
+    // description may be a folded block (description: > then indented lines) or inline
+    const dm = body.match(/^description:\s*>?\s*\n((?:[ \t]+.+\n?)+)/m)
+    if (dm) fmDescription = dm[1].replace(/\s+/g, ' ').trim()
+    else { const dl = body.match(/^description:\s*(.+)$/m); if (dl && dl[1].trim() !== '>') fmDescription = dl[1].trim() }
   }
   const scan = scanSkill(skillDir)
-  const card = `## Description:\n${meta.description || fm.description || '(none)'}\n\n## Owner\n${meta.owner || 'Pandora\'s Box'}\n\n### License:\n${fm.license || meta.license || 'Apache-2.0'}\n\n## Known Risks and Mitigations:\nScan verdict: ${scan.pass ? 'PASS (no blocking instruction-safety/supply-chain risks)' : 'BLOCKED — ' + scan.blocking.map(b => b.category).join(', ')}\nMitigation: signed (ed25519) + scanned before promotion; review against this card.\n\n## Signature:\n${existsSync(join(skillDir, 'skill.sig')) ? 'skill.sig present (verify against fleet/signing-keys)' : 'unsigned'}\n\n## Generated:\n${new Date().toISOString()}\n`
+  const card = `## Description:\n${meta.description || fmDescription || '(none)'}\n\n## Owner\n${meta.owner || 'Pandora\'s Box'}\n\n### License:\n${fm.license || meta.license || 'Apache-2.0'}\n\n## Known Risks and Mitigations:\nScan verdict: ${scan.pass ? 'PASS (no blocking instruction-safety/supply-chain risks)' : 'BLOCKED — ' + scan.blocking.map(b => b.category).join(', ')}\nMitigation: signed (ed25519) + scanned before promotion; review against this card.\n\n## Signature:\n${existsSync(join(skillDir, 'skill.sig')) ? 'skill.sig present (verify against fleet/signing-keys)' : 'unsigned'}\n\n## Generated:\n${new Date().toISOString()}\n`
   writeFileSync(join(skillDir, 'skill-card.md'), card)
   return { ok: true }
 }
