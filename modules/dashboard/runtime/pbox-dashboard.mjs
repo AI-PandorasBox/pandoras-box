@@ -173,7 +173,18 @@ function loadSkills() {
   let dirs = []
   try { dirs = fs.readdirSync(root, { withFileTypes: true }).filter(d => d.isDirectory()) } catch { return out }
   for (const d of dirs) {
-    const md = path.join(root, d.name, 'SKILL.md')
+    let md = path.join(root, d.name, 'SKILL.md')
+    // Governed/fleet skills keep SKILL.md under the latest version dir (v1/, v2/...),
+    // with only skill-card.md at top level -- fall back to vN/SKILL.md so the
+    // description still renders for packaged skills. _SKILLS_VERSIONED_READ_V1
+    if (!fs.existsSync(md)) {
+      try {
+        const vs = fs.readdirSync(path.join(root, d.name), { withFileTypes: true })
+          .filter(e => e.isDirectory() && /^v\d+$/.test(e.name)).map(e => e.name)
+          .sort((a, b) => parseInt(b.slice(1)) - parseInt(a.slice(1)))
+        for (const v of vs) { const c = path.join(root, d.name, v, 'SKILL.md'); if (fs.existsSync(c)) { md = c; break } }
+      } catch {}
+    }
     let name = d.name, description = '', version = ''
     try {
       const raw = fs.readFileSync(md, 'utf8')
