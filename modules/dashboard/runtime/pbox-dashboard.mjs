@@ -581,7 +581,7 @@ function renderProjectsPage(s) {
     const pct = p.tasks_total ? Math.round((p.tasks_done / p.tasks_total) * 100) : 0
     const trackCls = m.group === 'review' || m.group === 'done' ? ' gold' : ''
     const taskLabel = p.tasks_total ? `${p.tasks_done} / ${p.tasks_total} tasks` : 'no tasks yet'
-    return `<div class="proj" data-group="${esc(m.group)}">
+    return `<a class="proj" href="/projects/${esc(p.id)}" data-group="${esc(m.group)}">
   <span class="badge ${m.cls}"><span class="bd"></span>${esc(m.label)}</span>
   <div class="pmid">
     <div class="pt">${esc(p.title)}</div>
@@ -589,7 +589,7 @@ function renderProjectsPage(s) {
     <div class="prog"><div class="track"><i class="${trackCls.trim()}" style="width:${pct}%"></i></div><span class="tk">${esc(taskLabel)}</span></div>
   </div>
   <div class="pright"><div class="upd">${esc(p.updated || '')}</div></div>
-</div>`
+</a>`
   }).join('\n')
 
   const fbtn = (g, label, n) => `<button data-f="${g}"${g === 'all' ? ' class="on"' : ''}>${label} · ${n}</button>`
@@ -610,6 +610,7 @@ function renderProjectsPage(s) {
 .plist{display:flex;flex-direction:column;gap:13px;margin-bottom:50px}
 .proj{background:var(--elev);border:1px solid var(--rule);border-radius:14px;padding:18px 22px;display:grid;grid-template-columns:auto 1fr auto;gap:20px;align-items:center;transition:.18s}
 .proj:hover{border-color:var(--accent)}
+a.proj{color:inherit;text-decoration:none;cursor:pointer}
 .badge{font-family:var(--mono);font-size:10px;letter-spacing:.5px;padding:5px 11px;border-radius:20px;border:1px solid;white-space:nowrap;display:flex;align-items:center;gap:7px;align-self:flex-start}
 .badge .bd{width:7px;height:7px;border-radius:50%}
 .b-prog{color:var(--cyan);border-color:rgba(0,212,255,.4)}.b-prog .bd{background:var(--cyan);box-shadow:0 0 6px var(--cyan)}
@@ -634,6 +635,47 @@ function renderProjectsPage(s) {
 })();
 </script>`
   return pageShell(s, { title: 'Projects', currentPath: '/projects' }, body)
+}
+
+// /projects/<id> -- single project detail: tasks + brief. _PROJECT_DETAIL_V1
+function renderProjectDetailPage(s, id) {
+  const safe = String(id).replace(/[^a-zA-Z0-9_.-]/g, '')
+  const dir = path.join(INSTALL_PATH, 'projects', safe)
+  let j = null
+  try { j = JSON.parse(fs.readFileSync(path.join(dir, 'project.json'), 'utf8')) } catch {}
+  if (!j) {
+    return pageShell(s, { title: 'Project', currentPath: '/projects' },
+      `<section class="welcome"><p><a href="/projects">&larr; All projects</a></p><h1>Project not found</h1><p>No project.json for <code>${esc(safe)}</code>.</p></section>`)
+  }
+  const tasks = Array.isArray(j.tasks) ? j.tasks : []
+  const STMAP = { complete:'b-done', done:'b-done', deployed:'b-done', in_progress:'b-prog', pending:'b-pend', blocked:'b-block', review_needed:'b-rev' }
+  const taskRows = tasks.length ? tasks.map(t => {
+    const cls = STMAP[t.status] || 'b-pend'
+    const extra = [t.note, t.needs ? ('needs: ' + t.needs) : ''].filter(Boolean).join(' — ')
+    return `<tr><td class="mono">${esc(t.id||'')}</td><td>${esc(t.title||t.description||'')}${extra?`<div class="tnote">${esc(extra)}</div>`:''}</td><td><span class="badge ${cls}"><span class="bd"></span>${esc(String(t.status||'pending').toUpperCase())}</span></td></tr>`
+  }).join('') : `<tr><td colspan="3" style="color:var(--muted)">No tasks defined.</td></tr>`
+  let brief = ''
+  for (const f of ['BRIEF.md','SCOPE.md','brief.md']) {
+    try { const c = fs.readFileSync(path.join(dir, f), 'utf8'); brief = `<details class="brief"><summary>${esc(f)}</summary><pre>${esc(c.slice(0,8000))}</pre></details>`; break } catch {}
+  }
+  const body = `
+<section class="welcome"><p><a href="/projects">&larr; All projects</a></p>
+  <h1>${esc(j.title || j.id || safe)}</h1>
+  <p>${esc(j.description || '')}</p>
+  <p class="mono" style="color:var(--muted)">status: ${esc(j.status||'pending')} · ${tasks.length} task${tasks.length===1?'':'s'}</p>
+</section>
+<section><table class="ptbl"><thead><tr><th>Task</th><th>Title</th><th>Status</th></tr></thead><tbody>${taskRows}</tbody></table></section>
+${brief}
+<style>
+.ptbl{width:100%;border-collapse:collapse;font-size:13.5px;margin-bottom:24px}
+.ptbl th,.ptbl td{border-bottom:1px solid var(--rule);padding:9px 12px;text-align:left;vertical-align:top}
+.ptbl th{color:var(--muted);font-family:var(--mono);font-size:11px;letter-spacing:.5px}
+.tnote{color:var(--muted);font-size:12px;margin-top:3px}
+.brief summary{cursor:pointer;color:var(--accent);font-family:var(--mono);font-size:12px;margin:8px 0}
+.brief pre{background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:14px;overflow:auto;font-size:12px;white-space:pre-wrap}
+.mono{font-family:var(--mono)}
+</style>`
+  return pageShell(s, { title: j.title || 'Project', currentPath: '/projects' }, body)
 }
 
 // /skills -- the installed skills library. Real SKILL.md files only; if none are
@@ -753,6 +795,7 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/modules') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderModulesPage(s)); return }
     if (url.pathname === '/status') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderStatusPage(s)); return }
     if (url.pathname === '/projects') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderProjectsPage(s)); return }
+    if (url.pathname.startsWith('/projects/')) { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderProjectDetailPage(s, decodeURIComponent(url.pathname.slice('/projects/'.length)))); return }
     if (url.pathname === '/skills') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderSkillsPage(s)); return }
     if (url.pathname === '/subsystems') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderSubsystemsPage(s)); return }
     if (url.pathname === '/memory') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(await renderMemoryPage(s)); return }
