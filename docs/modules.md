@@ -357,13 +357,16 @@ FTS5 session search and a skill library with a 72-hour review interval.
 
 ## video-publisher
 
-**Status:** Optional
+**Status:** PLANNED -- not yet implemented
 
-Automated video production and YouTube publishing pipeline.
+Planned automated video-production-and-publishing pipeline. **Not shipped yet:**
+the module provisions credentials but ships no runtime, so it does not produce or
+publish video in this release. For shipped video capability today, use
+`media-production` (asset production) and `youtube-publishing` (upload + status).
 
-Combines script generation, voice synthesis (ElevenLabs), and video assembly (ffmpeg) to
-produce and publish videos automatically. Integrates with the `media-production` content queue for
-scheduling.
+Planned design: combine script generation, voice synthesis (ElevenLabs), and video
+assembly (ffmpeg) to produce and publish videos automatically, integrated with the
+`media-production` content queue for scheduling.
 
 **Prerequisites:**
 - `core`

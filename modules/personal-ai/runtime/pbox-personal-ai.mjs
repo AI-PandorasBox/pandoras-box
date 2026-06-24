@@ -547,28 +547,101 @@ async function _runSkill (skill_id, skill_input) {
       mcp: async (_t, name, args) => executeTool(name, args || {}),
       log: (m) => { try { console.log('[skill:' + skill_id + '] ' + m) } catch {} },
       paths: { skillDir: path.dirname(file), runsDir: path.join('/tmp', 'skill-runs', skill_id) },
-      available: Object.keys(TOOLS),
+      available: toolNames(),
     }
     return await mod.default(skill_input || {}, skctx)
   } catch (e) { return { error: 'skill ' + skill_id + ' failed: ' + (e.message || e) } }
 }
-const TOOLS = {
-  remember_fact: { schema: { name: 'remember_fact', description: 'Pin an important fact about the operator to long-term memory.', input_schema: { type: 'object', properties: { fact: { type: 'string' } }, required: ['fact'] } }, run: (i) => _addFact(i.fact) },
-  recall_memory: { schema: { name: 'recall_memory', description: 'Recall pinned facts + relevant memories for a query before answering.', input_schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } }, run: (i) => _recall(i.query) },
-  add_task: { schema: { name: 'add_task', description: "Add a task to the operator's task list.", input_schema: { type: 'object', properties: { title: { type: 'string' } }, required: ['title'] } }, run: (i) => _addTask(i.title) },
-  list_tasks: { schema: { name: 'list_tasks', description: "List the operator's current tasks.", input_schema: { type: 'object', properties: {} } }, run: () => _listTasks() },
-  add_contact: { schema: { name: 'add_contact', description: "Add a person to the operator's contacts.", input_schema: { type: 'object', properties: { name: { type: 'string' }, detail: { type: 'string' } }, required: ['name'] } }, run: (i) => _addContact(i.name, i.detail) },
-  list_contacts: { schema: { name: 'list_contacts', description: 'List saved contacts.', input_schema: { type: 'object', properties: {} } }, run: () => _listContacts() },
-  save_file: { schema: { name: 'save_file', description: "Save text content to a file in the operator's files area.", input_schema: { type: 'object', properties: { filename: { type: 'string' }, content: { type: 'string' } }, required: ['content'] } }, run: (i) => _saveFile(i.filename, i.content) },
-  save_note: { schema: { name: 'save_note', description: 'Save a quick note/snippet (appears in Notes).', input_schema: { type: 'object', properties: { note: { type: 'string' } }, required: ['note'] } }, run: (i) => _saveNote(i.note) },
-  run_skill: { schema: { name: 'run_skill', description: 'Run a packaged skill from the skill library by id (e.g. session-close-extract, morning-prep, weekly-cost-report).', input_schema: { type: 'object', properties: { skill_id: { type: 'string' }, skill_input: { type: 'object' } }, required: ['skill_id'] } }, run: (i) => _runSkill(i.skill_id, i.skill_input) },
+
+// ─── Tool wiring (_PUBLIC_TOOLS_V1) ──────────────────────────────────────────
+// The shipped catalogue (tool-catalogue.json) declares the assistant's full public
+// tool surface. Each catalogue entry is OFFERED to the model only if a working
+// executor exists for it (box-safe subset, from tool-executors.mjs) OR it is one of
+// the built-in runtime tools (run_skill). Catalogue entries with no executor are
+// deliberately NOT offered -- a tool with no executor would fail at call time and is
+// worse than absent. SHIPPED-TOOLS.md documents the include/exclude decisions.
+const CATALOGUE_PATH = path.join(__dirname, 'tool-catalogue.json')
+let _catalogue = []
+try {
+  const j = JSON.parse(fs.readFileSync(CATALOGUE_PATH, 'utf8'))
+  _catalogue = Array.isArray(j.tools) ? j.tools : []
+} catch (e) { console.log('[personal-ai] WARNING: tool-catalogue.json not loaded:', e.message) }
+
+// Built-in runtime tools (executor lives in THIS file, not in tool-executors.mjs).
+const BUILTIN_TOOLS = {
+  run_skill: { run: (i) => _runSkill(i.skill_id, i.skill_input) },
+}
+
+// Box-safe executors (frozen, self-contained). Receives this box's local DB + store.
+let _executors = { has: () => false, run: async () => ({ error: 'executors not loaded' }), names: () => [] }
+try {
+  const { createExecutors } = await import('./tool-executors.mjs')
+  _executors = createExecutors({ db, storeDir: STORE_DIR, env: process.env })
+} catch (e) { console.log('[personal-ai] WARNING: tool-executors not loaded:', e.message) }
+
+// Per-agent activation gating (single-user default = "muse"). The activation matrix
+// (agent-activation.json) lists tools_active; if present, only those tools are offered.
+// Absent / unreadable matrix => no gating (all executable tools offered). _ACTIVATION_GATE_V1
+const ACTIVATION_PATH = path.join(INSTALL_PATH, 'shared', 'agent-activation.json')
+const ACTIVATION_AGENT = process.env.PERSONAL_AI_AGENT_ID || 'muse'
+function activeToolSet () {
+  try {
+    const j = JSON.parse(fs.readFileSync(ACTIVATION_PATH, 'utf8'))
+    const agent = j[ACTIVATION_AGENT]
+    if (agent && Array.isArray(agent.tools_active)) return new Set(agent.tools_active)
+  } catch {}
+  return null   // no matrix => no gating
+}
+
+// Synthesize a permissive-but-valid input_schema from the executor's known args.
+// The Anthropic SDK requires input_schema with type:object; the catalogue ships only
+// name+description, so we attach object schemas (additionalProperties allowed) and mark
+// the obvious required field where known. _TOOL_SCHEMA_SYNTH_V1
+const REQUIRED_HINTS = {
+  save_memory: ['content'], recall_memory: ['query'], update_memory: ['id'], delete_memory: ['id'],
+  add_task: ['title'], update_task: ['id'],
+  add_contact: ['name'], update_contact: ['id'], delete_contact: ['id'], search_contacts: [],
+  important_list_add: ['item'], important_list_remove: ['index'],
+  commitment_add: ['description'], commitment_done: ['id'],
+  graph_upsert_entity: ['entity_type', 'name'], graph_upsert_relationship: ['from_id', 'to_id', 'rel_type'],
+  graph_find_entity: ['name'], graph_find_person: ['name'],
+  place_upsert: ['name', 'lat', 'lng'], place_delete: ['id'],
+  schedule_task: ['prompt', 'scheduled_for'],
+  vault_read: ['path'], vault_write: ['path', 'content'], vault_search: ['query'], vault_list: ['dir'],
+  save_file: ['content'], read_drop_file: ['filename'], delete_drop_file: ['filename'],
+  delete_drops_batch: ['filenames'], rename_drop_file: ['old_filename', 'new_filename'],
+  generate_pdf: [], generate_docx: ['filename'], generate_xlsx: ['filename'],
+  fetch_ical: [], ical_register_source: ['alias', 'url'],
+  brave_search: ['query'], grounded_search: ['query'], deep_research: ['query'],
+  get_stock_quote: ['symbol'], search_knowledge: ['query'],
+  run_skill: ['skill_id'],
+}
+function synthSchema (name) {
+  return { type: 'object', properties: {}, required: REQUIRED_HINTS[name] || [], additionalProperties: true }
+}
+
+// Returns true if a tool has a real executor (built-in or box-safe).
+function isExecutable (name) {
+  return !!BUILTIN_TOOLS[name] || _executors.has(name)
+}
+function toolNames () {
+  const gate = activeToolSet()
+  return _catalogue.map(t => t.name).filter(n => isExecutable(n) && (!gate || gate.has(n)))
 }
 async function executeTool (name, input) {
-  const t = TOOLS[name]
-  if (!t) return { error: 'unknown tool: ' + name }
-  try { return await t.run(input || {}) } catch (e) { return { error: String(e && e.message || e) } }
+  if (BUILTIN_TOOLS[name]) { try { return await BUILTIN_TOOLS[name].run(input || {}) } catch (e) { return { error: String(e && e.message || e) } } }
+  if (_executors.has(name)) return _executors.run(name, input || {})
+  return { error: 'unknown or non-executable tool: ' + name }
 }
-function toolSchemas () { return Object.values(TOOLS).map(t => t.schema) }
+function toolSchemas () {
+  const offered = new Set(toolNames())
+  const out = []
+  for (const t of _catalogue) {
+    if (!offered.has(t.name)) continue
+    out.push({ name: t.name, description: t.description || t.name, input_schema: synthSchema(t.name) })
+  }
+  return out
+}
 async function runAgentTurn ({ history, userContent, onToolEvent, chatSessionId }) {
   const apiKey = getApiKey()
   if (apiKey) return await runAgentTurnSDK({ apiKey, history, userContent, onToolEvent })

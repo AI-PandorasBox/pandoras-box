@@ -414,15 +414,19 @@ usage patterns -- without requiring manual prompt engineering.
 
 ### video-publisher
 
-**Status:** Optional
+**Status:** PLANNED -- not yet implemented
 
-Automated video production and YouTube publishing.
+Planned automated video-production-and-publishing module. The intended design
+combines script generation, voice synthesis (ElevenLabs), and video assembly
+(ffmpeg) to produce and publish videos automatically, integrated with the Media
+Production Pipeline content queue for scheduling.
 
-Combines script generation, voice synthesis (ElevenLabs), and video assembly (ffmpeg)
-to produce and publish videos automatically. Integrates with the the Media Production Pipeline content queue
-for scheduling.
+**Not shipped yet.** The module directory provisions credentials but ships no
+runtime; it does not produce or publish video in this release. For shipped video
+capability today, use `media-production` (asset production) and `youtube-publishing`
+(upload + status). This entry documents the planned module so the roadmap is clear.
 
-**Prerequisites:**
+**Prerequisites (when implemented):**
 - core
 - ElevenLabs API key
 - ffmpeg installed (`brew install ffmpeg`)

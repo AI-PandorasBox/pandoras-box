@@ -146,7 +146,8 @@
       "name": "video-publisher",
       "tier": "official",
       "kind": "config",
-      "purpose": "Video publishing pipeline."
+      "status": "planned",
+      "purpose": "PLANNED (not yet implemented): video production + publishing pipeline. Ships no runtime in this release; use media-production + youtube-publishing for shipped video capability."
     },
     {
       "name": "personal-sensor",

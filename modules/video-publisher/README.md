@@ -1,16 +1,20 @@
 # video-publisher
 
-> **Automated Video Production**
+> **Automated Video Production (PLANNED -- not yet implemented)**
 
-**Status:** Optional
+**Status:** PLANNED -- not yet implemented
 **Depends on:** core, personal-ai
 
 ## What It Does
 
-Automated video production and YouTube publishing. Generates scripts, synthesises voice
-(ElevenLabs), assembles video (ffmpeg), and publishes to YouTube.
+> **This module is not implemented yet.** The directory provisions credentials but
+> ships no runtime, so it does not produce or publish video in this release. The
+> description below is the planned design. For shipped video capability today, use
+> the `media-production` and `youtube-publishing` modules.
 
-All videos go through your approval queue before publishing.
+Planned: automated video production and YouTube publishing -- generate scripts,
+synthesise voice (ElevenLabs), assemble video (ffmpeg), and publish to YouTube,
+with every video routed through your approval queue before publishing.
 
 ## Monthly Cost
 

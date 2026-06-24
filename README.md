@@ -63,7 +63,7 @@ API-key (pay-per-token) Anthropic billing is not supported in this release; API 
 | **Per-company agents, compartmentalised** | Each company gets its own assistant -- mail, calendar, files, voice -- isolated at the operating-system level. Separate user accounts, separate credentials, separate job queues, no cross-tenant data path. |
 | **Security that acts, not just watches** | An independent oversight daemon approves every queued action before it runs. A local content-classifier sidecar scores outbound content. Failing agents are quarantined; a watchdog runs twice-daily integrity checks; dependencies are scanned weekly. Optional encrypted backups. |
 | **Memory built for continuity** | Three working layers -- rolling history, semantic vector recall, and structured knowledge (notes, important facts, drops). On top, a self-improvement pipeline produces a weekly digest of suggested prompt improvements. Nothing self-applies without your approval. |
-| **Specialised systems for real work** | Offline knowledge library (Wikipedia + reference packs). Media production pipeline (music + narration + image + video + YouTube). Trading research (paper). Asynchronous deep research. Local-model intent routing with frontier fallback. |
+| **Specialised systems for real work** | Offline knowledge library (Wikipedia + reference packs). Media production pipeline (music + narration + image + YouTube publishing; automated video assembly is planned). Trading research (paper). Asynchronous deep research. Local-model intent routing with frontier fallback. |
 
 Read the full feature deep-dive at [ai-pandorasbox.co.uk](https://ai-pandorasbox.co.uk).
 
@@ -188,7 +188,7 @@ A fifth component -- **the Personal AI** -- is the owner's personal AI interface
 | **media-production** | Content pipeline | Social media and content publishing automation | [catalog](docs/modules.md#media-production) · [module reference](manuals/07-module-reference.md#media-production) | Optional |
 | **offline-kb** | Knowledge base | Vector RAG store for document retrieval and Q&A | [catalog](docs/modules.md#offline-kb) · [module reference](manuals/07-module-reference.md#offline-kb) | Optional |
 | **self-improvement** | Self-improvement | Agent self-analysis and prompt optimisation pipeline | [catalog](docs/modules.md#self-improvement) · [module reference](manuals/07-module-reference.md#self-improvement) | Optional |
-| **video-publisher** | Video production | Automated video production and YouTube publishing | [catalog](docs/modules.md#video-publisher) · [module reference](manuals/07-module-reference.md#video-publisher) | Optional |
+| **video-publisher** | Video production | PLANNED -- not yet implemented (ships no runtime). For shipped video capability use media-production + youtube-publishing | [catalog](docs/modules.md#video-publisher) · [module reference](manuals/07-module-reference.md#video-publisher) | Planned |
 | **backups** | Encrypted offsite-ready backups | Daily age-encrypted tarball + Sunday freshness probe | [README](modules/backups/README.md) | Recommended |
 | **personal-sensor** | Personal intelligence layer | Ambient sensor daemon + Watch companion (Wear OS) | [README](modules/personal-sensor/README.md) | Optional |
 | **desktop-launchers** | Desktop shortcuts | .app / .desktop launchers for Dashboard / Terminal / Assistant | [README](modules/desktop-launchers/README.md) | Recommended |
