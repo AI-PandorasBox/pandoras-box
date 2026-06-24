@@ -276,12 +276,12 @@
     },
     {
       "name": "capture_artefact",
-      "description": "Render a document or image file into an array of PNG images (one per page/slide). PDF via pdfjs; PPTX per-slide (HQ-generated PNGs extracted directly, otherwise text-to-HTML render); DOCX via Chrome print-to-PDF then pdfjs; images passthrough. Returns {artefact_id, paths, page_count}. Call before vision_read. _QUALITY_CAPTURE_V1",
+      "description": "Load image files (PNG/JPG/GIF/WEBP screenshots, photos, or scans) from your sandbox (store/drops, store/generated, store/vault) into page images for visual reading. Returns {artefact_id, page_count}. Call before vision_read. Image files only on a stock box.",
       "has_schema": true
     },
     {
       "name": "vision_read",
-      "description": "Send an array of PNG page images through Gemini Vision and return structured per-page observations: {page_num, text_extracted, layout_summary, visible_errors[]}. Batches up to 16 images per Gemini call. Aggregate output: {artefact_id, pages, total_pages, total_tokens_used}. Use after capture_artefact. _QUALITY_VISION_V1",
+      "description": "Read page images with your connected multimodal model and return structured per-page observations: {page_num, text_extracted, layout_summary, visible_errors[]}. Pass an artefact_id from capture_artefact, or paths/images directly. Uses your connected model and may incur API cost.",
       "has_schema": true
     },
     {
@@ -291,22 +291,22 @@
     },
     {
       "name": "book_research",
-      "description": "Research a book topic for Amazon KDP: competitor titles, keyword opportunities, target reader, suggested outline. Returns immediately with a research_id; full results arrive as a follow-up message (~60-180s). Returns book_id for subsequent calls. _KDP_BOOKS_V1",
+      "description": "Research a book topic with your connected model: likely competitor titles, keyword/positioning opportunities, target reader, and a suggested outline. Returns a book_id for subsequent calls. Uses your connected model and may incur API cost.",
       "has_schema": true
     },
     {
       "name": "book_set_research",
-      "description": "Store async research results against a book record. Call after book_research delivers its follow-up message, passing the full research text. Prepares book for outline generation. _KDP_BOOKS_V1",
+      "description": "Store research text against a book record (use after gathering or editing research). Prepares the book for outline generation.",
       "has_schema": true
     },
     {
       "name": "book_outline",
-      "description": "Generate a structured chapter outline using Claude: title, subtitle, tagline, and per-chapter breakdown with word targets. Saves outline.json to disk. _KDP_BOOKS_V1",
+      "description": "Generate a structured chapter outline with your connected model: title, subtitle, tagline, and per-chapter breakdown with word targets. Pass book_id (from book_research) or a topic. Uses your connected model and may incur API cost.",
       "has_schema": true
     },
     {
       "name": "book_write_chapter",
-      "description": "Write a single chapter using Claude with style continuity from previous chapters. Call book_outline first. Call repeatedly with incrementing chapter_n to write the full book. _KDP_BOOKS_V1",
+      "description": "Write a single chapter with your connected model, with style continuity from the previous chapter. Call book_outline first, then call repeatedly with incrementing chapter_n. Uses your connected model and may incur API cost.",
       "has_schema": true
     },
     {
@@ -321,12 +321,12 @@
     },
     {
       "name": "book_assemble",
-      "description": "Assemble written chapters into EPUB3 (eBook) and/or DOCX (print-ready paperback). Requires book_outline and book_write_chapter calls first. _KDP_BOOKS_V1",
+      "description": "Assemble the written chapters into a print-ready DOCX manuscript saved to your sandbox. Requires book_outline and at least one book_write_chapter first.",
       "has_schema": true
     },
     {
       "name": "book_listing_generate",
-      "description": "Generate a complete Amazon KDP listing using Claude: title, subtitle, description (up to 4000 chars), 7 keywords, 2 categories, pricing. Saves listing.json. _KDP_BOOKS_V1",
+      "description": "Generate a complete marketplace listing with your connected model: title, subtitle, description (up to 4000 chars), keywords, categories, and a suggested price. Uses your connected model and may incur API cost.",
       "has_schema": true
     },
     {
@@ -336,12 +336,12 @@
     },
     {
       "name": "book_status",
-      "description": "Get status of a book: topic, title, chapters written, word count, whether cover/listing are done. _KDP_BOOKS_V1",
+      "description": "Get the status of a book: topic, title, chapters written, total word count, and whether the outline/listing are done.",
       "has_schema": true
     },
     {
       "name": "book_list",
-      "description": "List all books in the registry, optionally filtered by status. _KDP_BOOKS_V1",
+      "description": "List the books in your registry, optionally filtered by status.",
       "has_schema": true
     },
     {

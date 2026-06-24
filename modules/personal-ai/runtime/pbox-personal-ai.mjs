@@ -342,6 +342,69 @@ async function callClaude({ history, userContent, stream = false }) {
   return (resp.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
 }
 
+// ─── Model helper for tool executors (_PUBLIC_MODEL_TOOLS_V1) ─────────────────
+// Vision + book-writing tools generate content with the SAME connected model the
+// assistant uses (the user's own key, collected by the installer, or the
+// subscription CLI bridge). The helper exposes:
+//   hasKey()                       -> true if a direct API key is available
+//   complete({ system, user, max_tokens }) -> text generation (SDK or CLI bridge)
+//   vision({ system, user, images })       -> multimodal read (needs a direct key)
+// Tools that cannot proceed without the model return a friendly "connect your
+// model key" message rather than crashing or fabricating a result.
+const MODEL_NOT_CONNECTED_MSG =
+  'No model is connected. Add your Anthropic API key in the installer (the API-key ' +
+  'step) or sign in with your subscription, then retry. This tool uses your connected ' +
+  'model and may incur API cost.'
+const MODEL_VISION_NEEDS_KEY_MSG =
+  'Visual reading needs a direct Anthropic API key (the multimodal path). Add one in ' +
+  'the installer API-key step, then retry. This tool uses your connected model and may ' +
+  'incur API cost.'
+
+async function modelComplete ({ system, user, max_tokens = 4096 }) {
+  const apiKey = getApiKey()
+  if (apiKey) {
+    const Ctor = await getAnthropic()
+    const client = new Ctor({ apiKey })
+    const resp = await client.messages.create({
+      model: MODEL,
+      max_tokens,
+      system: system || 'You are a careful, capable writing assistant.',
+      messages: [{ role: 'user', content: String(user || '') }],
+    })
+    return (resp.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
+  }
+  // Subscription / CLI bridge fallback (text only).
+  return await callClaudeViaCLI({ history: [], userContent: String(user || '') })
+}
+
+async function modelVision ({ system, user, images }) {
+  // Multimodal needs a direct API key; the text-only CLI bridge cannot carry images.
+  const apiKey = getApiKey()
+  if (!apiKey) { const e = new Error(MODEL_VISION_NEEDS_KEY_MSG); e.code = 'NO_VISION_KEY'; throw e }
+  const Ctor = await getAnthropic()
+  const client = new Ctor({ apiKey })
+  const content = []
+  for (const img of (images || [])) {
+    if (!img || !img.data) continue
+    content.push({ type: 'image', source: { type: 'base64', media_type: img.media_type || 'image/png', data: img.data } })
+  }
+  content.push({ type: 'text', text: String(user || 'Describe and transcribe this image.') })
+  const resp = await client.messages.create({
+    model: MODEL,
+    max_tokens: 4096,
+    system: system || 'You read images and documents precisely.',
+    messages: [{ role: 'user', content }],
+  })
+  return (resp.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
+}
+
+const MODEL_HELPER = {
+  hasKey: () => !!getApiKey(),
+  notConnectedMessage: MODEL_NOT_CONNECTED_MSG,
+  complete: modelComplete,
+  vision: modelVision,
+}
+
 function send(res, code, body, headers = {}) {
   res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', ...headers })
   res.end(typeof body === 'string' ? body : JSON.stringify(body))
@@ -576,7 +639,7 @@ const BUILTIN_TOOLS = {
 let _executors = { has: () => false, run: async () => ({ error: 'executors not loaded' }), names: () => [] }
 try {
   const { createExecutors } = await import('./tool-executors.mjs')
-  _executors = createExecutors({ db, storeDir: STORE_DIR, env: process.env })
+  _executors = createExecutors({ db, storeDir: STORE_DIR, env: process.env, model: MODEL_HELPER })
 } catch (e) { console.log('[personal-ai] WARNING: tool-executors not loaded:', e.message) }
 
 // Per-agent activation gating (single-user default = "muse"). The activation matrix
@@ -615,6 +678,12 @@ const REQUIRED_HINTS = {
   brave_search: ['query'], grounded_search: ['query'], deep_research: ['query'],
   get_stock_quote: ['symbol'], search_knowledge: ['query'],
   run_skill: ['skill_id'],
+  // vision (uses the user's connected multimodal model)
+  capture_artefact: ['paths'], vision_read: [],
+  // book pipeline write tools (use the user's connected model)
+  book_research: ['topic'], book_set_research: ['book_id', 'research'], book_outline: [],
+  book_write_chapter: ['book_id', 'chapter_n'], book_listing_generate: ['book_id'],
+  book_assemble: ['book_id'], book_status: ['book_id'], book_list: [],
 }
 function synthSchema (name) {
   return { type: 'object', properties: {}, required: REQUIRED_HINTS[name] || [], additionalProperties: true }

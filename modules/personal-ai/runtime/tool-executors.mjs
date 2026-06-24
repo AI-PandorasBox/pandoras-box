@@ -171,7 +171,31 @@ function zipStore (files) {
 }
 
 // ── factory ─────────────────────────────────────────────────────────────────
-export function createExecutors ({ db, storeDir, env = {} }) {
+export function createExecutors ({ db, storeDir, env = {}, model = null }) {
+  // Optional model helper (injected by the runtime). Lets vision + book tools
+  // generate content with the user's OWN connected model. When absent or no key
+  // is connected, those tools return a friendly "connect your model key" message
+  // (never a crash, never a fabricated result). _PUBLIC_MODEL_TOOLS_V1
+  const MODEL_NOT_CONNECTED =
+    (model && model.notConnectedMessage) ||
+    'No model is connected. Add your Anthropic API key in the installer (the API-key ' +
+    'step) or sign in with your subscription, then retry. This tool uses your connected ' +
+    'model and may incur API cost.'
+  // Text generation works via a direct API key OR the subscription CLI bridge, so
+  // book tools only need the helper to be wired. Vision needs a direct key (the
+  // multimodal path), which the vision helper itself enforces.
+  function modelReady () { return !!(model && typeof model.complete === 'function') }
+  async function modelText (system, user, max_tokens) {
+    if (!modelReady()) return { __model_error: MODEL_NOT_CONNECTED }
+    try {
+      const text = await model.complete({ system, user, max_tokens })
+      if (!text || !String(text).trim()) return { __model_error: MODEL_NOT_CONNECTED }
+      return { text: String(text) }
+    } catch (e) {
+      // A connection / auth failure surfaces as the friendly connect-your-key note.
+      return { __model_error: MODEL_NOT_CONNECTED + ' (' + String(e && e.message || e).slice(0, 160) + ')' }
+    }
+  }
   // Local sandboxes (created lazily, never escape storeDir).
   const VAULT_ROOT = path.join(storeDir, 'vault')
   const DROPS_ROOT = path.join(storeDir, 'drops')
@@ -222,6 +246,16 @@ export function createExecutors ({ db, storeDir, env = {} }) {
     );
     CREATE TABLE IF NOT EXISTS pai_ical_sources (
       alias TEXT PRIMARY KEY, name TEXT, url TEXT NOT NULL, notes TEXT
+    );
+    CREATE TABLE IF NOT EXISTS pai_books (
+      id INTEGER PRIMARY KEY AUTOINCREMENT, topic TEXT NOT NULL, title TEXT, subtitle TEXT,
+      status TEXT DEFAULT 'drafting', research TEXT, outline TEXT, listing TEXT,
+      created_at INTEGER DEFAULT (unixepoch()), updated_at INTEGER DEFAULT (unixepoch())
+    );
+    CREATE TABLE IF NOT EXISTS pai_book_chapters (
+      book_id INTEGER NOT NULL, chapter_n INTEGER NOT NULL, title TEXT, content TEXT,
+      word_count INTEGER DEFAULT 0, updated_at INTEGER DEFAULT (unixepoch()),
+      PRIMARY KEY (book_id, chapter_n)
     );
   `)
   // FTS index for memory recall (graceful if unavailable).
@@ -578,9 +612,14 @@ export function createExecutors ({ db, storeDir, env = {} }) {
     db.prepare('INSERT OR REPLACE INTO pai_ical_sources (alias, name, url, notes) VALUES (?,?,?,?)').run(i.alias, i.name || i.alias, i.url, i.notes || null)
     return { ok: true, alias: i.alias }
   }
+  let _fetchIcalWarned = false
   async function fetchIcal (i) {
     let url = i.source || i.url
     if (!url) return { error: 'source (alias or https URL) required' }
+    // One-time per-session notice: this tool reaches out to a URL the caller supplies.
+    const FETCH_ICAL_WARNING = 'Heads up: fetch_ical retrieves an external calendar feed from a URL you provide. Only use calendar feeds you trust. Private/loopback addresses are refused.'
+    const isFirstUse = !_fetchIcalWarned
+    if (isFirstUse) { _fetchIcalWarned = true; try { console.log('[personal-ai] ' + FETCH_ICAL_WARNING) } catch {} }
     if (!/^https:\/\//i.test(url)) {
       const row = db.prepare('SELECT url FROM pai_ical_sources WHERE alias = ?').get(url)
       if (!row) return { error: 'unknown alias and not an https URL: ' + url }
@@ -603,7 +642,10 @@ export function createExecutors ({ db, storeDir, env = {} }) {
           if (m) cur[m[1].toLowerCase()] = m[2]
         }
       }
-      return { total_events: events.length, events: events.slice(0, i.limit || 100), next_offset: null }
+      const result = { total_events: events.length, events: events.slice(0, i.limit || 100), next_offset: null }
+      // Surface the warning once per session, alongside the first successful result.
+      if (isFirstUse) result.warning = FETCH_ICAL_WARNING
+      return result
     } catch (e) { return { error: 'fetch error: ' + e.message } }
   }
 
@@ -659,6 +701,159 @@ export function createExecutors ({ db, storeDir, env = {} }) {
     const url = env.OFFLINE_KB_URL || ''
     if (!url) return { hits: [], note: 'Offline knowledge library not configured (install/activate the offline-kb module and set OFFLINE_KB_URL).' }
     return { hits: [], note: 'offline-kb proxy not wired in this build; query=' + String(query).slice(0, 80) }
+  }
+
+  // ── VISION (read images/documents with the user's OWN connected model) ──
+  // capture_artefact: load image files from the sandbox into base64 PNG/JPEG pages.
+  // vision_read: send those pages to the connected multimodal model and return
+  // structured per-page observations. Both gate on the model key being connected.
+  const VISION_MEDIA = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' }
+  const _artefacts = new Map() // artefact_id -> [{ media_type, data }]
+  function captureArtefact (i) {
+    // Box-safe scope: read image files already in the drops/generated/vault sandbox.
+    // (Full PDF/PPTX rasterisation needs host tooling not assumed on a public box;
+    // image files pass through directly, which covers screenshots/photos/scans.)
+    const rels = Array.isArray(i.paths) ? i.paths : (i.path ? [i.path] : (i.filename ? [i.filename] : []))
+    if (!rels.length) return { error: 'paths (array of image filenames under store/drops, store/generated, or store/vault) required' }
+    const roots = [DROPS_ROOT, GEN_ROOT, VAULT_ROOT]
+    const pages = []
+    for (const rel of rels) {
+      let found = null
+      for (const root of roots) { const f = safeJoin(root, rel); if (f && fs.existsSync(f)) { found = f; break } }
+      if (!found) return { error: 'file not found in sandbox: ' + rel }
+      const ext = path.extname(found).toLowerCase()
+      const mt = VISION_MEDIA[ext]
+      if (!mt) return { error: 'unsupported file type for visual read (image files only): ' + rel }
+      pages.push({ media_type: mt, data: fs.readFileSync(found).toString('base64') })
+    }
+    const artefact_id = 'a-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7)
+    _artefacts.set(artefact_id, pages)
+    return { artefact_id, page_count: pages.length, note: 'Loaded ' + pages.length + ' page image(s). Call vision_read with this artefact_id.' }
+  }
+  async function visionRead (i) {
+    if (!modelReady()) return { error: MODEL_NOT_CONNECTED }
+    let pages = null
+    if (i.artefact_id && _artefacts.has(i.artefact_id)) pages = _artefacts.get(i.artefact_id)
+    else if (Array.isArray(i.images)) pages = i.images.map(x => ({ media_type: x.media_type || 'image/png', data: x.data })).filter(p => p.data)
+    else { const cap = captureArtefact(i); if (cap.error) return cap; pages = _artefacts.get(cap.artefact_id) }
+    if (!pages || !pages.length) return { error: 'no page images to read (provide artefact_id from capture_artefact, or paths)' }
+    const out = []
+    const batch = pages.slice(0, 16)
+    for (let n = 0; n < batch.length; n++) {
+      try {
+        const text = await model.vision({
+          system: 'You read a single document/image page. Reply ONLY with compact JSON: {"text_extracted": "<verbatim text>", "layout_summary": "<short>", "visible_errors": ["<any>"]}',
+          user: 'Read page ' + (n + 1) + '. Extract all text, summarise layout, list any visible errors. JSON only.',
+          images: [batch[n]],
+        })
+        let parsed = null
+        try { parsed = JSON.parse(String(text).replace(/^```(json)?/i, '').replace(/```$/, '').trim()) } catch {}
+        out.push({ page_num: n + 1, text_extracted: parsed?.text_extracted ?? String(text), layout_summary: parsed?.layout_summary ?? '', visible_errors: parsed?.visible_errors ?? [] })
+      } catch (e) {
+        if (e && e.code === 'NO_VISION_KEY') return { error: e.message }
+        out.push({ page_num: n + 1, text_extracted: '', layout_summary: '', visible_errors: ['read failed: ' + String(e && e.message || e).slice(0, 120)] })
+      }
+    }
+    return { artefact_id: i.artefact_id || null, pages: out, total_pages: out.length, note: 'Read with your connected model (may incur API cost).' }
+  }
+
+  // ── BOOK pipeline WRITE tools (generated with the user's OWN connected model) ──
+  function bookRow (id) { return db.prepare('SELECT * FROM pai_books WHERE id = ?').get(id) }
+  function bookTouch (id) { db.prepare('UPDATE pai_books SET updated_at = unixepoch() WHERE id = ?').run(id) }
+  async function bookResearch (i) {
+    const topic = String(i.topic || '').trim()
+    if (!topic) return { error: 'topic required' }
+    const r = db.prepare('INSERT INTO pai_books (topic, status) VALUES (?, ?)').run(topic, 'researching')
+    const book_id = Number(r.lastInsertRowid)
+    const res = await modelText(
+      'You are a non-fiction book strategist. Output a concise research brief.',
+      'Research this book topic for self-publishing: "' + topic + '". Cover: likely competitor titles, keyword/positioning opportunities, the target reader, and a suggested chapter outline. Be specific and practical.',
+      3000)
+    if (res.__model_error) { db.prepare('UPDATE pai_books SET status = ? WHERE id = ?').run('drafting', book_id); return { book_id, status: 'needs_model', message: res.__model_error } }
+    db.prepare('UPDATE pai_books SET research = ?, status = ?, updated_at = unixepoch() WHERE id = ?').run(res.text, 'researched', book_id)
+    return { book_id, status: 'complete', research: res.text, note: 'Generated with your connected model (may incur API cost).' }
+  }
+  function bookSetResearch (i) {
+    const id = i.book_id; if (!id || !bookRow(id)) return { error: 'unknown book_id' }
+    if (!i.research) return { error: 'research text required' }
+    db.prepare('UPDATE pai_books SET research = ?, status = ?, updated_at = unixepoch() WHERE id = ?').run(String(i.research), 'researched', id)
+    return { book_id: id, ok: true }
+  }
+  async function bookOutline (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row && !i.topic) return { error: 'book_id (from book_research) or topic required' }
+    const topic = row ? row.topic : String(i.topic)
+    const research = row?.research || i.research || ''
+    const res = await modelText(
+      'You are a book editor. Reply ONLY with JSON: {"title","subtitle","tagline","chapters":[{"n","title","word_target","summary"}]}.',
+      'Create a chapter outline for a book on "' + topic + '".' + (research ? '\n\nResearch:\n' + research.slice(0, 4000) : '') + '\n\nJSON only.',
+      3000)
+    if (res.__model_error) return { status: 'needs_model', message: res.__model_error }
+    let parsed = null
+    try { parsed = JSON.parse(String(res.text).replace(/^```(json)?/i, '').replace(/```$/, '').trim()) } catch {}
+    const bid = id || Number(db.prepare('INSERT INTO pai_books (topic, status) VALUES (?, ?)').run(topic, 'outlined').lastInsertRowid)
+    db.prepare('UPDATE pai_books SET title = ?, subtitle = ?, outline = ?, status = ?, updated_at = unixepoch() WHERE id = ?')
+      .run(parsed?.title || null, parsed?.subtitle || null, res.text, 'outlined', bid)
+    return { book_id: bid, status: 'complete', outline: parsed || res.text, note: 'Generated with your connected model (may incur API cost).' }
+  }
+  async function bookWriteChapter (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row) return { error: 'unknown book_id (call book_outline first)' }
+    const chapter_n = parseInt(i.chapter_n, 10)
+    if (!Number.isFinite(chapter_n) || chapter_n < 1) return { error: 'chapter_n (>=1) required' }
+    const prev = db.prepare('SELECT chapter_n, content FROM pai_book_chapters WHERE book_id = ? AND chapter_n < ? ORDER BY chapter_n DESC LIMIT 1').get(id, chapter_n)
+    const styleHint = prev ? '\n\nFor style continuity, here is the end of the previous chapter:\n' + String(prev.content).slice(-1200) : ''
+    const res = await modelText(
+      'You are a professional non-fiction author. Write clean, publishable prose. No meta commentary.',
+      'Book: "' + (row.title || row.topic) + '".\nOutline:\n' + String(row.outline || '').slice(0, 3000) + '\n\nWrite chapter ' + chapter_n + (i.title ? ' titled "' + i.title + '"' : '') + ' in full.' + styleHint,
+      6000)
+    if (res.__model_error) return { status: 'needs_model', message: res.__model_error }
+    const wc = String(res.text).split(/\s+/).filter(Boolean).length
+    db.prepare('INSERT OR REPLACE INTO pai_book_chapters (book_id, chapter_n, title, content, word_count, updated_at) VALUES (?,?,?,?,?,unixepoch())')
+      .run(id, chapter_n, i.title || ('Chapter ' + chapter_n), res.text, wc)
+    db.prepare('UPDATE pai_books SET status = ?, updated_at = unixepoch() WHERE id = ?').run('writing', id)
+    return { book_id: id, chapter_n, word_count: wc, content: res.text, note: 'Generated with your connected model (may incur API cost).' }
+  }
+  async function bookListingGenerate (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row) return { error: 'unknown book_id' }
+    const res = await modelText(
+      'You write sales listings for self-published books. Reply ONLY with JSON: {"title","subtitle","description","keywords":[7],"categories":[2],"suggested_price"}.',
+      'Write a marketplace listing for "' + (row.title || row.topic) + '".\nOutline:\n' + String(row.outline || '').slice(0, 2500) + '\n\nDescription up to 4000 chars. JSON only.',
+      3000)
+    if (res.__model_error) return { status: 'needs_model', message: res.__model_error }
+    db.prepare('UPDATE pai_books SET listing = ?, updated_at = unixepoch() WHERE id = ?').run(res.text, id)
+    let parsed = null; try { parsed = JSON.parse(String(res.text).replace(/^```(json)?/i, '').replace(/```$/, '').trim()) } catch {}
+    return { book_id: id, listing: parsed || res.text, note: 'Generated with your connected model (may incur API cost).' }
+  }
+  function bookAssemble (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row) return { error: 'unknown book_id' }
+    const chapters = db.prepare('SELECT chapter_n, title, content FROM pai_book_chapters WHERE book_id = ? ORDER BY chapter_n').all(id)
+    if (!chapters.length) return { error: 'no chapters written yet (call book_write_chapter first)' }
+    const paras = []
+    if (row.title) paras.push(row.title)
+    if (row.subtitle) paras.push(row.subtitle)
+    for (const c of chapters) {
+      paras.push(c.title || ('Chapter ' + c.chapter_n))
+      for (const p of String(c.content).split(/\n+/)) if (p.trim()) paras.push(p.trim())
+    }
+    const base = (String(row.title || row.topic).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 40) || 'book')
+    const docxName = base + '.docx'
+    fs.writeFileSync(path.join(GEN_ROOT, docxName), buildDocx(paras))
+    db.prepare('UPDATE pai_books SET status = ?, updated_at = unixepoch() WHERE id = ?').run('assembled', id)
+    return { book_id: id, files: [{ kind: 'docx', filename: docxName, path: path.join(GEN_ROOT, docxName) }], chapters: chapters.length, note: 'Print-ready manuscript assembled (DOCX). EPUB export not generated on a stock box.' }
+  }
+  function bookStatus (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row) return { error: 'unknown book_id' }
+    const chapters = db.prepare('SELECT chapter_n, title, word_count FROM pai_book_chapters WHERE book_id = ? ORDER BY chapter_n').all(id)
+    const words = chapters.reduce((s, c) => s + (c.word_count || 0), 0)
+    return { book_id: id, topic: row.topic, title: row.title, subtitle: row.subtitle, status: row.status, chapters_written: chapters.length, total_words: words, has_outline: !!row.outline, has_listing: !!row.listing }
+  }
+  function bookList (i) {
+    const rows = i.status ? db.prepare('SELECT id, topic, title, status FROM pai_books WHERE status = ? ORDER BY id DESC').all(i.status) : db.prepare('SELECT id, topic, title, status FROM pai_books ORDER BY id DESC').all()
+    return { books: rows }
   }
 
   // ── registry: name -> executor. ONLY box-safe tools appear here. ──
@@ -723,6 +918,18 @@ export function createExecutors ({ db, storeDir, env = {} }) {
     deep_research: (i) => deepResearch(i.query),
     get_stock_quote: (i) => getStockQuote(i.symbol),
     search_knowledge: (i) => searchKnowledge(i.query),
+    // vision (uses the user's connected multimodal model; may incur API cost)
+    capture_artefact: (i) => captureArtefact(i),
+    vision_read: (i) => visionRead(i),
+    // book pipeline WRITE tools (use the user's connected model; may incur API cost)
+    book_research: (i) => bookResearch(i),
+    book_set_research: (i) => bookSetResearch(i),
+    book_outline: (i) => bookOutline(i),
+    book_write_chapter: (i) => bookWriteChapter(i),
+    book_listing_generate: (i) => bookListingGenerate(i),
+    book_assemble: (i) => bookAssemble(i),
+    book_status: (i) => bookStatus(i),
+    book_list: (i) => bookList(i),
   }
 
   return {
