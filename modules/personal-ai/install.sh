@@ -93,8 +93,26 @@ if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" != "1" && -t 0 && -t 1 ]]; then
   fi
 fi
 
+# Optional outbound-tool keys collected by lib/setup-api-keys.sh (collect_search_keys).
+# These enable the assistant's web/grounded search + stock-quote tools. Each is
+# optional; absent => that tool stays unavailable (the executor returns a clear
+# "configure key" message). _PUBLIC_SEARCH_KEYS_V1
+pa_persist_search_keys() {
+  local target="$1"
+  for kv in BRAVE_API_KEY GEMINI_API_KEY ALPHAVANTAGE_API_KEY; do
+    local val="${!kv:-}"
+    [[ -z "$val" ]] && continue
+    if sudo grep -q "^${kv}=" "$target" 2>/dev/null; then
+      sudo sed -i.bak "s|^${kv}=.*|${kv}=${val}|" "$target" && sudo rm -f "${target}.bak"
+    else
+      echo "${kv}=${val}" | sudo tee -a "$target" >/dev/null
+    fi
+  done
+}
+
 if [[ -f "$PA_ENV" ]]; then
   ok ".env preserved (delete to regenerate passphrase)"
+  pa_persist_search_keys "$PA_ENV"
 else
   if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" ]]; then
     PASS="dryrun-placeholder"
@@ -125,6 +143,8 @@ PERSONAL_AI_PASSPHRASE_HASH=$SALT:$HASH
 INSTALL_PATH=$INSTALL_PATH
 NODE_ENV=production
 ENVEOF
+  sudo chmod 600 "$PA_ENV"
+  pa_persist_search_keys "$PA_ENV"
   sudo chmod 600 "$PA_ENV"
   ok "Wrote $PA_ENV (PBKDF2 200k iterations, sha256, 16-byte salt)"
 fi

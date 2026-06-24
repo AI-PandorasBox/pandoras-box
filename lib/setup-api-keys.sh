@@ -18,11 +18,13 @@ run_api_key_collection() {
       success_msg "Claude is authenticated via your subscription -- no API key required."
       info_msg "Agents reason through the Claude CLI; there is no per-token bill to cap."
       echo ""
+      collect_search_keys
       return 0 ;;
     api-key)
       section_header "API keys"
       check_pass "Anthropic API key already collected in the Claude step."
       run_spend_limits_walkthrough
+      collect_search_keys
       return 0 ;;
   esac
 
@@ -34,6 +36,66 @@ run_api_key_collection() {
 
   collect_anthropic_key
   run_spend_limits_walkthrough
+  collect_search_keys
+}
+
+# -----------------------------------------------------------------------------
+# Optional search / market-data keys for the Personal Assistant's outbound tools.
+# All three are OPTIONAL and skippable -- press Enter to leave a tool off. The
+# matching tools (web search, grounded search, stock quotes) simply stay
+# unavailable until a key is provided; nothing breaks when they are skipped.
+# Keys are exported here and persisted into the personal-ai runtime .env by the
+# personal-ai module installer, which reads these same variable names.
+# -----------------------------------------------------------------------------
+collect_search_keys() {
+  if [[ "${PBOX_DRY_RUN_ACTIVE:-0}" == "1" || "${PBOX_UNATTENDED_ACTIVE:-0}" == "1" ]]; then
+    info_msg "[DRY-RUN] $FUNCNAME skipped (interactive prompts)"
+    return 0
+  fi
+  section_header "Optional search keys (skip to leave those tools off)"
+  echo "  These keys enable the assistant's web/grounded search + stock-quote tools."
+  echo "  All are optional. Press Enter at any prompt to skip -- the matching tool"
+  echo "  just stays unavailable. Keys are stored only on this machine."
+  echo ""
+
+  _collect_optional_key \
+    "BRAVE_API_KEY" \
+    "Brave Search" \
+    "enables live web search. Get a free key at https://api.search.brave.com/app/dashboard"
+
+  _collect_optional_key \
+    "GEMINI_API_KEY" \
+    "Google Gemini (grounded search)" \
+    "enables grounded/deep search. Get a key at https://aistudio.google.com/app/apikey"
+
+  _collect_optional_key \
+    "ALPHAVANTAGE_API_KEY" \
+    "Alpha Vantage (stock quotes)" \
+    "enables live stock quotes. Get a free key at https://www.alphavantage.co/support/#api-key"
+
+  echo ""
+}
+
+# _collect_optional_key VAR_NAME "Friendly name" "what it enables + where to get it"
+# Skips cleanly if the variable is already set (e.g. by an earlier richer setup step).
+_collect_optional_key() {
+  local var_name="$1" friendly="$2" blurb="$3"
+  if [[ -n "${!var_name:-}" ]]; then
+    info_msg "$friendly key already provided earlier -- keeping it."
+    return 0
+  fi
+  echo "  --- $friendly (optional) ---"
+  echo "  $blurb"
+  local key=""
+  read -rsp "  Paste your $friendly key (or press Enter to skip): " key
+  echo ""
+  if [[ -z "$key" ]]; then
+    info_msg "Skipped $friendly. That tool will stay off until you add a key."
+    export "$var_name"=""
+    return 0
+  fi
+  export "$var_name"="$key"
+  success_msg "$friendly key set."
 }
 
 collect_anthropic_key() {
