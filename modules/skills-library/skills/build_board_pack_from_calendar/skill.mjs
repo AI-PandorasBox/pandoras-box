@@ -13,9 +13,15 @@ import { randomBytes } from 'node:crypto'
 import { spawnSync } from 'node:child_process'
 import { createRequire } from 'node:module'
 
-// Resolve exceljs from personal-ai's node_modules (skill runs inside personal-ai process)
-const _require = createRequire((process.env.PBOX_NODE_BASE || '/opt/pandoras-box/personal-ai/runtime') + '/package.json')
-const ExcelJS = _require('exceljs')
+// Resolve exceljs lazily from personal-ai's node_modules (skill runs inside the
+// personal-ai process). Loading it at module top crashed the import on any box where
+// exceljs is absent, masking the real (honest) "needs MS365 calendar + exceljs + Chrome"
+// outcome with an opaque module-load error. Defer to call time. _PUBLIC_SKILL_LAZYDEP_V1
+const _require = createRequire((process.env.PBOX_NODE_BASE || import.meta.url) + (process.env.PBOX_NODE_BASE ? '/package.json' : ''))
+function loadExcelJS () {
+  try { return _require('exceljs') }
+  catch (e) { throw new Error('build_board_pack_from_calendar needs the optional dependency "exceljs" (npm i exceljs in the personal-ai runtime) -- not installed: ' + e.message) }
+}
 
 const SKILL_DIR = dirname(fileURLToPath(import.meta.url))
 const RUNS_DIR  = join(SKILL_DIR, 'runs')
@@ -400,6 +406,7 @@ export async function buildBoardPack (input, context) {
   const xlsxPath = join(runDir, 'board-pack-' + label + '-' + period + '.xlsx')
 
   try {
+    const ExcelJS = loadExcelJS()
     const wb = new ExcelJS.Workbook()
     wb.creator  = 'Pandoras Box'
     wb.created  = new Date()
@@ -583,4 +590,24 @@ export async function buildBoardPack (input, context) {
     post_process:       state.post_process || null,                  // _SKILL_POST_PROCESS_V1
     post_process_error: state.post_process_error || null,            // _SKILL_POST_PROCESS_V1
   }
+}
+
+// run_skill entry point. This skill is MS365-calendar-coupled (Stage 1 uses
+// getTenant + get-calendar-view, which are EXCLUDED multi-tenant tools on a public
+// box) and needs exceljs + Chrome. The default export adapts the run_skill ctx and
+// fails honestly at the tenant gate rather than being silently un-invokable. The
+// board-pack skill is therefore a "requires MS365 + exceljs + Chrome" skill, NOT a
+// box-safe one -- noted in SHIPPED-TOOLS.md. _PUBLIC_SKILL_ENTRY_V1
+export default async function (input = {}, ctx = {}) {
+  const getTenant = (key) => {
+    // Adapt the box-safe ctx.tool surface to the legacy client.callTool interface.
+    // On a public box there is no MS365 tenant, so calls route to executeTool which
+    // returns "unknown or non-executable tool" for get-calendar-view -- honest, not faked.
+    return { callTool: async (name, args) => {
+      const r = await ctx.tool(name, args || {})
+      if (r && r.error) throw new Error(r.error)
+      return r
+    } }
+  }
+  return buildBoardPack(input, { ...ctx, getTenant })
 }
