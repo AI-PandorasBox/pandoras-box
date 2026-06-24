@@ -6,7 +6,7 @@
 //   This module supplies WORKING executors for the BOX-SAFE subset only:
 //   personal-data + local-content + search. Each executor runs against THIS box's own
 //   local SQLite (memory.db) and a sandboxed filesystem under the module store. There
-//   is NO coupling to the master (mnemosyne) DB, no shared schema, no secrets, no
+//   is NO coupling to any external/master DB, no shared schema, no secrets, no
 //   multi-tenant access, no network-write, no shell-out to operator strings.
 //
 //   Tool CONTRACTS (names, inputs, return shapes) mirror the live master so packaged
@@ -16,7 +16,7 @@
 // SAFETY BOUNDARY (what this module deliberately does NOT do)
 //   - No ms365_* / gmail (multi-tenant -- a public user wires their own single account).
 //   - No web_action_* / drive-mode / run_script / ftp / network-write.
-//   - No admin / zeus / conductor / clio / calliope / nemesis / melete / aetheria / crm.
+//   - No admin / orchestration / internal-agent / business-system tools.
 //   - Search tools (brave/grounded/deep_research/stock) ONLY make outbound READ calls and
 //     ONLY when the user has configured the relevant API key; with no key they return a
 //     clear "configure key" error -- never a fabricated result.

@@ -100,7 +100,7 @@ which this module must never ship an executor for:
 - **web_action_\*** (drive-mode browser automation).
 - **ms365_\*** multi-tenant mail/calendar (a public user wires their own single account;
   left as the existing scaffold modules — not faked here).
-- **admin / zeus / conductor / clio / calliope / nemesis / melete / aetheria / levels_crm**
+- **admin / orchestration / trading / media / security / sensor / project-specific / business-CRM tools**
   and all operator/agent-internal tools.
 - **ftp / any network-write**.
 

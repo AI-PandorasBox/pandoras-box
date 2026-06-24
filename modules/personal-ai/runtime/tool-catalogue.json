@@ -1,7 +1,7 @@
 {
   "_note": "Pandora's Box public tool catalogue — allow-listed + sanitised + leak-scanned (schemas only, no code, no secrets). _PUBLIC_TOOLS_V1: + 4 local-content tools (save_file, generate_pdf/docx/xlsx) re-added with clean descriptions so the shipped local executors are actually offered.",
   "generated_at": "2026-06-24T00:00:00.000Z",
-  "source": "mnemosyne.mjs TOOL_DEFS + tool-privacy-audit.json (allow-list) + local-content additions",
+  "source": "Pandora's Box curated tool catalogue (privacy-screened allow-list + local-content tools)",
   "counts": {
     "shipped": 69,
     "excluded_master_only": 130,

@@ -9,7 +9,7 @@
 #   bash os-path-lint.sh [ROOT]      # default ROOT=. (run from repo root)
 #
 # Finding classes:
-#   HARD  — will break a cross-OS install (zsh shebang on Linux; /Users/qwerty
+#   HARD  — will break a cross-OS install (zsh shebang on Linux; hardcoded /Users/<name>
 #           hardcode; /usr/local/bin/node literal as the ONLY node path; a bare
 #           launchctl outside a Darwin guard).
 #   SOFT  — Apple-Silicon vs Intel brew assumptions, unsubstituted __PLACEHOLDER__,
@@ -31,8 +31,8 @@ for f in "${FILES[@]}"; do
   if head -1 "$f" 2>/dev/null | grep -qE '^#!/bin/zsh'; then red "  $f"; HARD=$((HARD+1)); fi
 done
 
-hdr "HARD: /Users/qwerty hardcode (authoring-box path; absent on any real install)"
-if grep -rIn '/Users/qwerty' "${FILES[@]}" 2>/dev/null; then HARD=$((HARD+1)); fi
+hdr "HARD: /Users/<name> hardcode (authoring-box path; absent on any real install)"
+if grep -rInE '/Users/[a-z][a-z0-9_-]+' "${FILES[@]}" 2>/dev/null; then HARD=$((HARD+1)); fi
 
 hdr "HARD: /usr/local/bin/node as the ONLY node path (breaks Apple Silicon + Linux)"
 # Flag a literal /usr/local/bin/node that is NOT behind a ${PBOX_NODE_BIN:-...}
