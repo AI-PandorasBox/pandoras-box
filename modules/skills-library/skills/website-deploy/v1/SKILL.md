@@ -1,7 +1,7 @@
 ---
 name: website-deploy
 description: >
-  Push a static / hybrid website build to its configured deploy target. Handles per-target adapter dispatch (FTP / SFTP / WebDAV / CDN), sitemap regen, cache bust. Returns a deploy receipt with rollback handle. Currently exercised by mediapipeline (frequency-music site) and Iris (exampleco website); T7a manifest extraction makes the Skill consumable by future producers (Cassandra web service, Autonomy persona blog).
+  Push a static / hybrid website build to its configured deploy target. Handles per-target adapter dispatch (FTP / SFTP / WebDAV / CDN), sitemap regen, cache bust. Returns a deploy receipt with rollback handle. Reusable across producers that need to publish a built site.
 tools:
   - (none declared)
 modules:
@@ -17,7 +17,7 @@ guard: _SKILL_PROMOTED_V1
 
 # website-deploy
 
-Push a static / hybrid website build to its configured deploy target. Handles per-target adapter dispatch (FTP / SFTP / WebDAV / CDN), sitemap regen, cache bust. Returns a deploy receipt with rollback handle. Currently exercised by mediapipeline (frequency-music site) and Iris (exampleco website); T7a manifest extraction makes the Skill consumable by future producers (Cassandra web service, Autonomy persona blog).
+Push a static / hybrid website build to its configured deploy target. Handles per-target adapter dispatch (FTP / SFTP / WebDAV / CDN), sitemap regen, cache bust. Returns a deploy receipt with rollback handle. Reusable across producers that need to publish a built site.
 
 ## When to use
 

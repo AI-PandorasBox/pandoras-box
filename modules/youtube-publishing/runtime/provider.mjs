@@ -1,17 +1,11 @@
 // ${MODULE_HOME}/provider.mjs
 //
-// Pbox v2 T7-4 Stage 1 -- runtime extraction of mediapipeline's YouTube upload pipeline
-// into a shared module provider. Other producers (Autonomy persona, assistant personal
-// channel, future tenants) consume by importing from here.
+// Shared YouTube-publishing provider: upload a video file to YouTube and manage
+// its OAuth tokens. Caller passes a context object with storeDir + log + env so
+// this module is not coupled to any one producer's globals. Any agent that
+// activates the youtube-publishing manifest can import from here.
 //
-// Behaviour identical to the mediapipeline.mjs functions it replaces. Caller passes a
-// context object with storeDir + log + env so this module is not coupled to
-// mediapipeline's globals.
-//
-// Stage 1 deploy: this provider is ADDED; mediapipeline.mjs imports + delegates.
-// Stage 2 (canary, future session): per-tenant module-cred-scope keychain pointer reads
-//                                   replace the env vars (YOUTUBE_CLIENT_ID/SECRET).
-// Stage 3 (fan-out): other agents activate the youtube-publishing manifest and consume.
+// Credentials are read from the env vars YOUTUBE_CLIENT_ID / YOUTUBE_CLIENT_SECRET.
 
 import { existsSync, readFileSync, writeFileSync, statSync } from 'node:fs'
 import { execFileSync } from 'node:child_process'
@@ -29,7 +23,7 @@ export const YT_SCOPES = [
  */
 export function loadYouTubeTokens (ctx) {
   const tokenPath = join(ctx.storeDir, 'youtube-tokens.json')
-  if (!existsSync(tokenPath)) throw new Error('YouTube tokens not found at ' + tokenPath + '. Run mediapipeline-auth.mjs first.')
+  if (!existsSync(tokenPath)) throw new Error('YouTube tokens not found at ' + tokenPath + '. Run the YouTube OAuth setup first.')
   return JSON.parse(readFileSync(tokenPath, 'utf8'))
 }
 
@@ -89,7 +83,7 @@ export async function getValidAccessToken (ctx) {
   if (Date.now() >= expiresAt - 60_000) {
     log('info', 'Refreshing YouTube access token...')
     const refreshed = await refreshAccessToken(ctx, tokens)
-    if (refreshed.refresh_token) tokens.refresh_token = refreshed.refresh_token // _mediapipeline_RT_ROTATE_V1
+    if (refreshed.refresh_token) tokens.refresh_token = refreshed.refresh_token // rotate refresh token if Google issues a new one
     tokens.access_token = refreshed.access_token
     tokens.expires_at   = Date.now() + (refreshed.expires_in * 1000)
     saveYouTubeTokens(ctx, tokens)
@@ -100,8 +94,8 @@ export async function getValidAccessToken (ctx) {
 
 /**
  * Build YouTube video metadata payload (snippet + status).
- * mediapipeline-specific format: 8-hour ambient music; 30-min chapter markers; PPL/PRS-free framing.
- * Future producers may want a different metadata builder -- they pass their own and skip this one.
+ * Example format below: long-form ambient music with 30-min chapter markers.
+ * Producers may want a different metadata builder -- they pass their own and skip this one.
  *
  * @param {string} themeId
  * @param {object} promptsData  themeId -> { name, ... }

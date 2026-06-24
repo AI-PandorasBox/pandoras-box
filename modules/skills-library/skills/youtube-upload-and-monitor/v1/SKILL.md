@@ -1,7 +1,7 @@
 ---
 name: youtube-upload-and-monitor
 description: >
-  Drives a single YouTube upload from local video file -> scheduled publish -> live -> metrics polling. Encapsulates the full lifecycle so consumers (mediapipeline today, Autonomy persona future) can dispatch as one Skill rather than orchestrating individual tool calls.
+  Drives a single YouTube upload from local video file -> scheduled publish -> live -> metrics polling. Encapsulates the full lifecycle so a consumer can dispatch it as one Skill rather than orchestrating individual tool calls.
 tools:
   - (none declared)
 modules:
@@ -17,7 +17,7 @@ guard: _SKILL_PROMOTED_V1
 
 # youtube-upload-and-monitor
 
-Drives a single YouTube upload from local video file -> scheduled publish -> live -> metrics polling. Encapsulates the full lifecycle so consumers (mediapipeline today, Autonomy persona future) can dispatch as one Skill rather than orchestrating individual tool calls.
+Drives a single YouTube upload from local video file -> scheduled publish -> live -> metrics polling. Encapsulates the full lifecycle so a consumer can dispatch it as one Skill rather than orchestrating individual tool calls.
 
 ## When to use
 
