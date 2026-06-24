@@ -48,7 +48,7 @@ API-key (pay-per-token) Anthropic billing is not supported in this release; API 
 |------:|------|
 | **40** | installable modules (core + official tiers) |
 | **15** | packaged skills (SKILL.md + code): 2 hand-built + 13 promoted from recipe specs via the skill promoter |
-| **{{TOOL_COUNT}}** | tools (LLM-callable functions) in the shipped catalogue available to the assistant -- many require you to connect your own accounts/keys before they do anything |
+| **48** | tools the assistant can use out of the box (memory, tasks, contacts, notes/files, calendar, search, document generation). More are catalogued but need you to connect your own accounts/keys first. |
 | **12** | Personal AI capability surfaces (chat, summary, tasks, create, research, files, knowledge, contacts, calendar, email, call, camera) |
 | **8** | connectors: Gmail, Microsoft 365, calendar, files, plus Telegram / Slack / Discord / WhatsApp relays |
 | **3** | independent agent tiers (admin, oversight, per-company conductor + task agents) |

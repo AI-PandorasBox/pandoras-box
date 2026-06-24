@@ -82,7 +82,7 @@ _(A grading layer that scores candidate skill versions on a Pareto frontier, and
 
 ### Modular system — module catalogue and skill library
 
-The module catalogue at `shared/catalogue/modules/` is a YAML registry of pluggable capability packs. Each module declares its name, status (live / beta / planned), dependencies, and the agents that can consume it. Operators enable capabilities per agent from the per-agent card in the dashboard, which toggles entries in the activation matrix (`agent-activation.json`). <!-- {{VERIFY-ACTIVATION}}: confirm the per-agent card UI is the shipped enable/disable surface before release. -->
+The module catalogue at `shared/catalogue/modules/` is a YAML registry of pluggable capability packs. Each module declares its name, status (live / beta / planned), dependencies, and the agents that can consume it. Operators enable capabilities per agent from the per-agent card in the dashboard, which toggles entries in the activation matrix (`agent-activation.json`).
 
 The skill library at `shared/skills/library/` is a versioned canonical store of reusable skills (in Anthropic's SKILL.md format). Each skill is hash-verified at agent session start. The first migrated skill is `build_board_pack_from_calendar` — generates a board-pack PDF from a calendar week of events plus attached materials.
 
