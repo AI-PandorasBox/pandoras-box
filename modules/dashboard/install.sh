@@ -36,6 +36,25 @@ sudo cp "$MODULE_SRC_DIR/$RUNTIME_SCRIPT" "$TARGET_DIR/"
 sudo chmod 755 "$TARGET_DIR/$RUNTIME_SCRIPT"
 ok "Runtime staged: $TARGET_DIR/$RUNTIME_SCRIPT"
 
+# Seed the per-agent activation matrix into shared/ (read+written by the Activation
+# page; read by the personal-ai runtime to gate tools). Preserve operator toggles if
+# a matrix already exists. _PUBLIC_ACTIVATION_V1
+SHARED_DIR="$INSTALL_PATH/shared"
+ACT_SEED="$INSTALL_PATH/modules/$MODULE_NAME/agent-activation.json"
+ACT_TARGET="$SHARED_DIR/agent-activation.json"
+sudo mkdir -p "$SHARED_DIR"
+if [[ -f "$ACT_TARGET" ]]; then
+  ok "agent-activation.json already present -- preserving operator toggles"
+elif [[ -f "$ACT_SEED" ]]; then
+  sudo cp "$ACT_SEED" "$ACT_TARGET"
+  # Group-readable so a separately-running dashboard/runtime user can read it
+  # (matches the live-system perms lesson: 0 modules/tools if it is not readable).
+  sudo chmod 644 "$ACT_TARGET"
+  ok "Seeded activation matrix: $ACT_TARGET"
+else
+  echo "[$MODULE_NAME] WARN: activation seed not found at $ACT_SEED"
+fi
+
 # ----------------------------------------------------------------------------
 step 3 "Writing .env"
 DASH_PORT="${DASHBOARD_PORT:-8181}"

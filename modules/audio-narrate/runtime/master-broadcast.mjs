@@ -5,7 +5,7 @@
 // No dynamic range compression — YouTube re-masters anyway.
 // Peak normalise only: limit to −3 dBFS to leave headroom for video mixer.
 
-import { execFile }     from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { writeFileSync, unlinkSync, statSync } from 'node:fs'
 import { promisify }    from 'node:util'
 import { tmpdir }       from 'node:os'
@@ -13,7 +13,15 @@ import { join }         from 'node:path'
 import { randomUUID }   from 'node:crypto'
 
 const execFileAsync = promisify(execFile)
-const FFMPEG = '/opt/homebrew/bin/ffmpeg'
+// Resolve ffmpeg at runtime so this works on macOS (Homebrew) and Linux.
+function resolveBin (name, fallback) {
+  try {
+    return execFileSync('command', ['-v', name], { shell: true }).toString().trim() || fallback
+  } catch {
+    return fallback
+  }
+}
+const FFMPEG = process.env.PBOX_FFMPEG_BIN || resolveBin('ffmpeg', 'ffmpeg')
 
 /**
  * masterBroadcastWav — transcode ElevenLabs MP3 to 48 kHz 24-bit WAV.

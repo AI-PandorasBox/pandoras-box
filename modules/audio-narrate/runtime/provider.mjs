@@ -5,7 +5,7 @@
 // mux_pcm is the streaming path: no encoding, just resample via ffmpeg to
 // 24 kHz / 16-bit / mono PCM to match the streamElevenLabsTTS pipeline.
 
-import { execFile }     from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { writeFileSync, unlinkSync, statSync } from 'node:fs'
 import { promisify }    from 'node:util'
 import { tmpdir }       from 'node:os'
@@ -13,7 +13,15 @@ import { join }         from 'node:path'
 import { randomUUID }   from 'node:crypto'
 
 const execFileAsync = promisify(execFile)
-const FFMPEG = '/opt/homebrew/bin/ffmpeg'
+// Resolve ffmpeg at runtime so this works on macOS (Homebrew) and Linux.
+function resolveBin (name, fallback) {
+  try {
+    return execFileSync('command', ['-v', name], { shell: true }).toString().trim() || fallback
+  } catch {
+    return fallback
+  }
+}
+const FFMPEG = process.env.PBOX_FFMPEG_BIN || resolveBin('ffmpeg', 'ffmpeg')
 
 /**
  * masterMuxPcm — convert raw ElevenLabs MP3 buffer to 24 kHz 16-bit mono PCM.

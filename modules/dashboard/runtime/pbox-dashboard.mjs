@@ -267,6 +267,72 @@ async function loadAdminMemory() {
   return res
 }
 
+// --- activation matrix (per-agent capability toggles) --------------------- // _PUBLIC_ACTIVATION_V1
+// The Activation page is the public port of the live per-agent card system: a
+// per-agent card whose tools/skills/modules tiers can be TOGGLED, backed by a
+// catalogue data layer, persisted to agent-activation.json, and read by the
+// personal-ai runtime to gate which tools the assistant is offered.
+//
+// Single-user model: toggles write the activation file DIRECTLY (no Zeus deploy
+// queue, no R8 signing -- that machinery is master-only). Localhost-bound like the
+// rest of the dashboard. The default agent id is "muse" (the assistant).
+const ACTIVATION_PATH = path.join(INSTALL_PATH, 'shared', 'agent-activation.json')
+const TOOL_CATALOGUE_PATH = path.join(INSTALL_PATH, 'personal-ai', 'runtime', 'tool-catalogue.json')
+const VALID_TIERS = new Set(['tools', 'skills', 'modules'])
+const TIER_FIELD = { tools: 'tools_active', skills: 'skills_active', modules: 'modules_active' }
+
+function readActivation() {
+  try { return JSON.parse(fs.readFileSync(ACTIVATION_PATH, 'utf8')) } catch { return {} }
+}
+function writeActivation(obj) {
+  obj._updated_at = new Date().toISOString()
+  const tmp = ACTIVATION_PATH + '.tmp'
+  fs.writeFileSync(tmp, JSON.stringify(obj, null, 2) + '\n')
+  fs.renameSync(tmp, ACTIVATION_PATH)   // atomic replace
+}
+// Catalogue data layer: the full tool surface (from the personal-ai catalogue),
+// installed skills, and installed modules. Mirrors listCatalogue() in the live
+// card routes, sourced from the public artefacts that actually ship.
+function loadToolCatalogue() {
+  try { const j = JSON.parse(fs.readFileSync(TOOL_CATALOGUE_PATH, 'utf8')); return Array.isArray(j.tools) ? j.tools : [] }
+  catch { return [] }
+}
+function activationData(agentId) {
+  const act = readActivation()
+  const agent = act[agentId] || {}
+  const tools = loadToolCatalogue().map(t => t.name)
+  const skills = loadSkills().map(k => k.id)
+  const modules = loadRegistry().map(m => m.name)
+  const setOf = (field) => new Set(Array.isArray(agent[field]) ? agent[field] : [])
+  return {
+    agent_id: agentId,
+    display_name: agent.display_name || THEME.assistant || 'Assistant',
+    principal_type: agent.principal_type || 'personal-assistant',
+    catalogue: { tools, skills, modules },
+    active: {
+      tools: Array.from(setOf('tools_active')),
+      skills: Array.from(setOf('skills_active')),
+      modules: Array.from(setOf('modules_active')),
+    },
+  }
+}
+function toggleActivation(agentId, tier, itemName, action) {
+  if (!VALID_TIERS.has(tier)) return { error: 'invalid tier' }
+  if (!['activate', 'deactivate'].includes(action)) return { error: 'invalid action' }
+  if (!itemName || !/^[a-zA-Z0-9_.-]+$/.test(itemName)) return { error: 'invalid item' }
+  // Validate the item exists in the catalogue tier (no arbitrary writes).
+  const cat = activationData(agentId).catalogue[tier] || []
+  if (!cat.includes(itemName)) return { error: `unknown ${tier} item: ${itemName}` }
+  const act = readActivation()
+  if (!act[agentId]) act[agentId] = { display_name: THEME.assistant || 'Assistant', principal_type: 'personal-assistant' }
+  const field = TIER_FIELD[tier]
+  const set = new Set(Array.isArray(act[agentId][field]) ? act[agentId][field] : [])
+  if (action === 'activate') set.add(itemName); else set.delete(itemName)
+  act[agentId][field] = Array.from(set).sort()
+  writeActivation(act)
+  return { ok: true, agent_id: agentId, tier, item: itemName, action, active_count: set.size }
+}
+
 async function gatherStatus() {
   const services = serviceList()
   const modules = discoverModules()
@@ -404,6 +470,7 @@ ${SHARED_CSS()}
     <a href="/projects"${on('/projects')}><svg class="ic"><use href="#i-projects"/></svg>Projects</a>
     <a href="/skills"${on('/skills')}><svg class="ic"><use href="#i-projects"/></svg>Skills</a>
     <a href="/subsystems"${on('/subsystems')}><svg class="ic"><use href="#i-shield"/></svg>Subsystems</a>
+    <a href="/activation"${on('/activation')}><svg class="ic"><use href="#i-blocks"/></svg>Activation</a>
     <a href="#" data-port="${esc(String(docsPort))}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-book"/></svg>Guide</a>
     <a href="/memory"${on('/memory')}><svg class="ic"><use href="#i-agents"/></svg>Memory</a>
     <a href="#" data-port="${esc(String(termPort))}" target="_blank" rel="noopener"><svg class="ic"><use href="#i-term"/></svg>Terminal</a>
@@ -751,6 +818,82 @@ ${sections || '<div class="placeholder">Module registry not found.</div>'}`
   return pageShell(s, { title: 'Subsystems', currentPath: '/subsystems' }, body)
 }
 
+// /activation -- the public per-agent activation card. Toggle tools / skills /
+// modules on or off for the assistant; each toggle persists to agent-activation.json
+// and the personal-ai runtime honours tools_active on the next turn. _PUBLIC_ACTIVATION_V1
+function renderActivationPage(s) {
+  const agentId = 'muse'
+  const d = activationData(agentId)
+  const tierBlock = (tier, label, note) => {
+    const items = d.catalogue[tier]
+    const active = new Set(d.active[tier])
+    if (!items.length) {
+      return `<div class="lbl"><h2>${esc(label)}</h2><div class="ln"></div><span class="ct">${esc(note)} · 0</span></div>
+<section><div class="placeholder">None available in this build.</div></section>`
+    }
+    const pills = items.map(name => {
+      const on = active.has(name)
+      return `<button class="apill ${on ? 'on' : 'off'}" data-tier="${esc(tier)}" data-item="${esc(name)}" data-on="${on ? '1' : '0'}">
+  <span class="adot"></span><span class="alabel">${esc(name)}</span><span class="astate">${on ? 'ON' : 'OFF'}</span>
+</button>`
+    }).join('')
+    return `<div class="lbl"><h2>${esc(label)}</h2><div class="ln"></div><span class="ct">${esc(note)} · ${active.size}/${items.length} on</span></div>
+<section class="apills">${pills}</section>`
+  }
+  const body = `
+<section class="welcome">
+  <h1>Activation</h1>
+  <p>Turn capabilities on or off for <b>${esc(d.display_name)}</b>. Each toggle persists immediately and the assistant honours it on its next turn. This is your per-agent capability knob.</p>
+</section>
+<div class="acard">
+  <div class="ahead"><span class="dot on"></span><div><div class="aname">${esc(d.display_name)}</div><div class="aprincipal">${esc(d.principal_type)}</div></div></div>
+</div>
+${tierBlock('tools', 'Tools', 'assistant-callable functions')}
+${tierBlock('skills', 'Skills', 'packaged skills')}
+${tierBlock('modules', 'Modules', 'installed capability modules')}
+<style>
+.acard{background:var(--elev);border:1px solid var(--rule);border-radius:14px;padding:18px 20px;margin-bottom:8px}
+.ahead{display:flex;align-items:center;gap:14px}
+.aname{font-weight:600;font-size:17px}.aprincipal{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.apills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:34px}
+.apill{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:11.5px;padding:7px 12px;border-radius:8px;border:1px solid var(--rule);background:var(--surface);color:var(--fg-soft);cursor:pointer;transition:.15s}
+.apill:hover{border-color:var(--accent)}
+.apill .adot{width:8px;height:8px;border-radius:50%;background:var(--muted)}
+.apill.on{border-color:rgba(0,255,136,.4);color:var(--fg)}
+.apill.on .adot{background:var(--green);box-shadow:0 0 6px var(--green)}
+.apill .astate{font-size:9.5px;letter-spacing:1px;color:var(--muted)}
+.apill.on .astate{color:var(--green)}
+.apill.busy{opacity:.5;pointer-events:none}
+.atoast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--rule);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:12px;color:var(--fg);z-index:50;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.atoast.err{border-color:rgba(255,92,92,.5);color:var(--red)}
+</style>
+<script>
+(function(){
+  var AGENT='${esc(agentId)}';
+  function toast(msg, err){var t=document.createElement('div');t.className='atoast'+(err?' err':'');t.textContent=msg;document.body.appendChild(t);setTimeout(function(){t.remove()},2600);}
+  document.querySelectorAll('.apill').forEach(function(b){
+    b.addEventListener('click', function(){
+      var tier=b.dataset.tier, item=b.dataset.item, on=b.dataset.on==='1';
+      var action=on?'deactivate':'activate';
+      b.classList.add('busy');
+      fetch('/api/activation/'+AGENT+'/toggle',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({tier:tier,item:item,action:action})})
+        .then(function(r){return r.json()})
+        .then(function(j){
+          b.classList.remove('busy');
+          if(j.error){toast(j.error,true);return;}
+          on=!on; b.dataset.on=on?'1':'0';
+          b.classList.toggle('on',on); b.classList.toggle('off',!on);
+          b.querySelector('.astate').textContent=on?'ON':'OFF';
+          toast(item+' '+(on?'enabled':'disabled'));
+        })
+        .catch(function(e){b.classList.remove('busy');toast(String(e),true);});
+    });
+  });
+})();
+</script>`
+  return pageShell(s, { title: 'Activation', currentPath: '/activation' }, body)
+}
+
 // /memory -- admin view of what the assistant remembers (facts, drops, tasks).
 // Read-only. Reads the live memory.db; if absent or empty, says so plainly.
 async function renderMemoryPage(s) {
@@ -799,6 +942,18 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === '/skills') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderSkillsPage(s)); return }
     if (url.pathname === '/subsystems') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderSubsystemsPage(s)); return }
     if (url.pathname === '/memory') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(await renderMemoryPage(s)); return }
+    if (url.pathname === '/activation') { const s = await gatherStatus(); res.writeHead(200, {'content-type':'text/html; charset=utf-8'}); res.end(renderActivationPage(s)); return }
+    // Activation API (catalogue data layer + per-agent toggle that persists + gates)
+    const actGet = url.pathname.match(/^\/api\/activation\/([a-z0-9_-]+)$/)
+    if (actGet && req.method === 'GET') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(activationData(actGet[1]), null, 2)); return }
+    const actTog = url.pathname.match(/^\/api\/activation\/([a-z0-9_-]+)\/toggle$/)
+    if (actTog && req.method === 'POST') {
+      let raw = ''
+      for await (const c of req) raw += c
+      let body; try { body = JSON.parse(raw || '{}') } catch { res.writeHead(400, {'content-type':'application/json'}); res.end(JSON.stringify({ error: 'invalid json' })); return }
+      const r = toggleActivation(actTog[1], body.tier, body.item, body.action)
+      res.writeHead(r.error ? 400 : 200, {'content-type':'application/json'}); res.end(JSON.stringify(r)); return
+    }
     if (url.pathname === '/api/skills') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(loadSkills(), null, 2)); return }
     if (url.pathname === '/api/subsystems') { res.writeHead(200, {'content-type':'application/json'}); res.end(JSON.stringify(loadRegistry(), null, 2)); return }
     res.writeHead(404, {'content-type':'text/plain'}); res.end('not found')

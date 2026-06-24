@@ -6,7 +6,7 @@
 // ACX requirements: −23 to −18 LUFS integrated, max −3 dBTP, noise floor < −60 dBFS.
 // loudnorm I=−20 targets the middle of the ACX window with headroom.
 
-import { execFile }     from 'node:child_process'
+import { execFile, execFileSync } from 'node:child_process'
 import { writeFileSync, unlinkSync, statSync } from 'node:fs'
 import { promisify }    from 'node:util'
 import { tmpdir }       from 'node:os'
@@ -14,7 +14,15 @@ import { join }         from 'node:path'
 import { randomUUID }   from 'node:crypto'
 
 const execFileAsync = promisify(execFile)
-const FFMPEG = '/opt/homebrew/bin/ffmpeg'
+// Resolve ffmpeg at runtime so this works on macOS (Homebrew) and Linux.
+function resolveBin (name, fallback) {
+  try {
+    return execFileSync('command', ['-v', name], { shell: true }).toString().trim() || fallback
+  } catch {
+    return fallback
+  }
+}
+const FFMPEG = process.env.PBOX_FFMPEG_BIN || resolveBin('ffmpeg', 'ffmpeg')
 
 // 0.5 s of -70 dBFS white noise as room tone tail (avoids hard cut-off)
 // Generated inline as a short PCM sine at near-silence level

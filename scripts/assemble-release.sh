@@ -47,6 +47,22 @@ echo " Output  : $TARBALL_NAME"
 echo "--------------------------------------------"
 echo ""
 
+# --- Pre-package gate: OS-path lint -----------------------------------------
+# Catches the recurring Mac-path bug class (hardcoded /opt/homebrew, /usr/local/bin/node,
+# /Users/... , zsh shebangs) before anything is packaged for release. HARD findings
+# abort assembly; SOFT findings are advisory.
+if [[ -x "$SCRIPT_DIR/os-path-lint.sh" ]]; then
+  echo "Running OS-path lint (pre-package gate)..."
+  if ! bash "$SCRIPT_DIR/os-path-lint.sh" "$REPO_ROOT"; then
+    echo ""
+    echo "ABORT: os-path-lint reported HARD findings. Fix them before assembling a release." >&2
+    exit 1
+  fi
+  echo ""
+else
+  echo "WARNING: scripts/os-path-lint.sh not found -- skipping the OS-path gate." >&2
+fi
+
 mkdir -p "$INNER_DIR"
 
 # Helper: copy if source exists
