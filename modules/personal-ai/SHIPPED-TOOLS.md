@@ -5,7 +5,7 @@ gets, split into three buckets: **shipped WITH a working executor**, **schema-on
 (catalogue-listed but NOT offered to the model)**, and **excluded entirely**. It exists
 so Ian can apply box-safety judgement before any public push.
 
-- Full catalogue: `runtime/tool-catalogue.json` (65 vetted, sanitised, leak-scanned schemas).
+- Full catalogue: `runtime/tool-catalogue.json` (69 schemas: 65 vetted/sanitised/leak-scanned + 4 local-content re-adds).
 - Executors: `runtime/tool-executors.mjs` (frozen, self-contained; local SQLite + sandbox only).
 - Wiring: `runtime/pbox-personal-ai.mjs` (`_PUBLIC_TOOLS_V1`).
 
@@ -14,14 +14,14 @@ so Ian can apply box-safety judgement before any public push.
 A catalogue tool is **offered to the model only if a working executor exists for it.**
 A tool with a schema but no executor is **never offered** — it would fail at call time,
 which is worse than being absent. This closes the audit's headline gap ("9 tools, no
-upgrade path, README claims 181") honestly: the public box now offers the **44 tools it
+upgrade path, README claims 181") honestly: the public box now offers the **48 tools it
 can actually run**, not a list of names that error.
 
-Counts: catalogue **65** → offered with executors **44** → schema-only/withheld **21**.
+Counts: catalogue **69** -> offered with executors **48** -> schema-only/withheld **21**.
 
 ---
 
-## 1. SHIPPED WITH EXECUTOR (44) — these run on a stock box
+## 1. SHIPPED WITH EXECUTOR (48) — these run on a stock box
 
 All run against this box's own `personal-ai/store/memory.db` + a sandboxed filesystem
 (`store/vault`, `store/drops`, `store/generated`). No master DB, no shared schema, no
@@ -66,7 +66,7 @@ secrets, no multi-tenant access.
 ### Built-in
 | Tool | Notes |
 |---|---|
-| run_skill | runs a packaged skill from `shared/skills/library/<id>/v1/skill.mjs`; skill tool calls resolve against the 44 executors above |
+| run_skill | runs a packaged skill from `shared/skills/library/<id>/v1/skill.mjs`; skill tool calls resolve against the 48 executors above |
 
 ---
 
@@ -90,7 +90,8 @@ once their box-safety is judged.
 
 ## 3. EXCLUDED ENTIRELY — not even in the public catalogue
 
-The vetted catalogue (`catalogue-vetted.json`, 65 tools) already excludes the master-only
+The vetted catalogue (`catalogue-vetted.json`, 65 tools; shipped as 69 with the 4
+local-content re-adds) already excludes the master-only
 130 tools at generation time (allow-list + sanitiser + leak-scan in
 `generate-tool-catalogue.mjs`). For the record, the categories deliberately kept out and
 which this module must never ship an executor for:
@@ -109,7 +110,7 @@ which this module must never ship an executor for:
 
 The runtime reads `shared/agent-activation.json` (single-user default agent id `muse`).
 If that file lists `tools_active`, **only those tools are offered** (intersected with the
-44 executable tools). Absent/unreadable matrix ⇒ no gating ⇒ all 44 offered. The public
+48 executable tools). Absent/unreadable matrix => no gating => all 48 offered. The public
 dashboard's Activation page (see `modules/dashboard`) toggles `tools_active` and the
 runtime honours it on the next turn. This is the operator's per-agent on/off knob.
 

@@ -1,9 +1,9 @@
 {
-  "_note": "Pandora's Box public tool catalogue — allow-listed + sanitised + leak-scanned (schemas only, no code, no secrets).",
-  "generated_at": "2026-06-23T22:48:03.172Z",
-  "source": "mnemosyne.mjs TOOL_DEFS + tool-privacy-audit.json (allow-list)",
+  "_note": "Pandora's Box public tool catalogue — allow-listed + sanitised + leak-scanned (schemas only, no code, no secrets). _PUBLIC_TOOLS_V1: + 4 local-content tools (save_file, generate_pdf/docx/xlsx) re-added with clean descriptions so the shipped local executors are actually offered.",
+  "generated_at": "2026-06-24T00:00:00.000Z",
+  "source": "mnemosyne.mjs TOOL_DEFS + tool-privacy-audit.json (allow-list) + local-content additions",
   "counts": {
-    "shipped": 65,
+    "shipped": 69,
     "excluded_master_only": 130,
     "excluded_leak": 0,
     "not_in_audit": 0
@@ -12,6 +12,26 @@
     {
       "name": "run_skill",
       "description": "Run a packaged skill by id.",
+      "has_schema": true
+    },
+    {
+      "name": "save_file",
+      "description": "Save text or base64 content to a file in your local files area (drops). Optional company/category organise it into a subfolder. Use for drafts, exports, and any document you want to keep on this machine.",
+      "has_schema": true
+    },
+    {
+      "name": "generate_pdf",
+      "description": "Generate a PDF document from text or simple HTML content, saved to your local generated-files area. Local and dependency-free; produces a valid PDF you can open in any reader.",
+      "has_schema": true
+    },
+    {
+      "name": "generate_docx",
+      "description": "Generate a Word (.docx) document from text content, saved to your local generated-files area. Local and dependency-free; produces a valid OOXML document.",
+      "has_schema": true
+    },
+    {
+      "name": "generate_xlsx",
+      "description": "Generate an Excel (.xlsx) workbook from sheet/row data, saved to your local generated-files area. Local and dependency-free; produces a valid OOXML spreadsheet.",
       "has_schema": true
     },
     {

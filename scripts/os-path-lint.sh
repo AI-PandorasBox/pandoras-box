@@ -41,8 +41,11 @@ for f in "${FILES[@]}"; do
   while IFS= read -r line; do
     case "$line" in
       *'/usr/local/bin/node'*)
+        # skip comment lines (prose / e.g. references are not code)
+        if echo "$line" | grep -qE '^[0-9]+:\s*(#|//|\*)'; then
+          :
         # acceptable patterns: a for-loop candidate list, or command -v fallback
-        if echo "$line" | grep -qE 'for .*candidate|command -v|/opt/homebrew/bin/node.*\|\||\|\|.*\/usr\/local\/bin\/node'; then
+        elif echo "$line" | grep -qE 'for .*candidate|command -v|/opt/homebrew/bin/node.*\|\||\|\|.*\/usr\/local\/bin\/node'; then
           : # multi-candidate — soft at most
         elif echo "$line" | grep -qE '\$\{PBOX_NODE_BIN:-/usr/local/bin/node\}'; then
           ylw "  SOFT (PBOX_NODE_BIN fallback — only fires when standalone; prefer command -v): $f: $line"; SOFT=$((SOFT+1))
@@ -80,8 +83,9 @@ for f in "${FILES[@]}"; do
   while IFS= read -r line; do
     case "$line" in
       *'/opt/homebrew/'*)
-        # skip comments, PATH-list strings, multi-candidate, and command -v fallbacks
-        if echo "$line" | grep -qE '^\s*(//|#|\*)|e\.g\.|for .*candidate|command -v|\|\||/usr/local/bin:.*/opt/homebrew|PATH'; then
+        # skip comments (note: line has a 'N:' grep -n prefix), PATH-list strings,
+        # multi-candidate, and command -v fallbacks
+        if echo "$line" | grep -qE '^[0-9]+:\s*(//|#|\*)|e\.g\.|for .*candidate|command -v|\|\||/usr/local/bin:.*/opt/homebrew|PATH'; then
           : # acceptable pattern
         else
           red "  $f: $line"; HARD=$((HARD+1))
