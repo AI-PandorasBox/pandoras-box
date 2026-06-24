@@ -185,6 +185,51 @@ export function createExecutors ({ db, storeDir, env = {}, model = null }) {
   // book tools only need the helper to be wired. Vision needs a direct key (the
   // multimodal path), which the vision helper itself enforces.
   function modelReady () { return !!(model && typeof model.complete === 'function') }
+  // Image generation readiness: the helper must expose image() AND an image key must be
+  // present (the user's GEMINI_API_KEY / IMAGE_API_KEY). When not ready the image tools
+  // return a friendly "set GEMINI_API_KEY" message rather than crashing or fabricating an
+  // image. _PUBLIC_IMAGE_TOOLS_V1
+  const IMAGE_NOT_CONNECTED =
+    (model && model.imageNotConnectedMessage) ||
+    'Image generation needs an image model -- set GEMINI_API_KEY (or IMAGE_API_KEY) in ' +
+    'the installer/config to enable this. This tool uses your connected image model and ' +
+    'may incur API cost.'
+  function imageReady () {
+    return !!(model && typeof model.image === 'function' &&
+      (typeof model.hasImageKey !== 'function' || model.hasImageKey()))
+  }
+  // Generate one image and save the bytes into the sandbox (default store/generated, or a
+  // caller-supplied subdir under the sandbox). Returns { filename, path, media_type } on
+  // success, or { __image_error } when no image model is connected / the call fails.
+  const IMAGE_EXT = { 'image/png': '.png', 'image/jpeg': '.jpg', 'image/webp': '.webp', 'image/gif': '.gif' }
+  async function modelImageToFile (prompt, opts = {}) {
+    if (!imageReady()) return { __image_error: IMAGE_NOT_CONNECTED }
+    const p = String(prompt || '').trim()
+    if (!p) return { error: 'prompt required' }
+    let outDir = GEN_ROOT
+    if (opts.subdir) {
+      const safe = safeJoin(GEN_ROOT, String(opts.subdir))
+      if (!safe) return { error: 'invalid subdir' }
+      outDir = safe
+      fs.mkdirSync(outDir, { recursive: true })
+    }
+    try {
+      const img = await model.image({ prompt: p, opts: opts.modelOpts || {} })
+      if (!img || !img.data) return { __image_error: IMAGE_NOT_CONNECTED }
+      const ext = IMAGE_EXT[img.media_type] || '.png'
+      const base = String(opts.basename || 'image').replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 60) || 'image'
+      const filename = base + '-' + Date.now() + '-' + Math.random().toString(36).slice(2, 6) + ext
+      const full = path.join(outDir, filename)
+      fs.writeFileSync(full, Buffer.from(img.data, 'base64'))
+      const rel = path.relative(GEN_ROOT, full)
+      return { filename, rel, path: full, media_type: img.media_type }
+    } catch (e) {
+      if (e && (e.code === 'NO_IMAGE_KEY')) return { __image_error: e.message || IMAGE_NOT_CONNECTED }
+      // Auth / network / quota failures surface as the friendly connect-your-key note
+      // (with a short cause) so the assistant never crashes or pretends an image exists.
+      return { __image_error: IMAGE_NOT_CONNECTED + ' (' + String(e && e.message || e).slice(0, 160) + ')' }
+    }
+  }
   async function modelText (system, user, max_tokens) {
     if (!modelReady()) return { __model_error: MODEL_NOT_CONNECTED }
     try {
@@ -856,6 +901,74 @@ export function createExecutors ({ db, storeDir, env = {}, model = null }) {
     return { books: rows }
   }
 
+  // ── IMAGE generation tools (use the user's OWN connected image model -- Gemini) ──
+  // All save real image bytes into the sandbox (store/generated, or a per-book subdir).
+  // When no image model is connected they return a friendly "set GEMINI_API_KEY" message
+  // (status needs_image_model) -- never a crash, never a fabricated image.
+  async function generateImage (i) {
+    const prompt = String(i.prompt || '').trim()
+    if (!prompt) return { error: 'prompt required (describe the image to generate)' }
+    const res = await modelImageToFile(prompt, { basename: i.name || 'image' })
+    if (res.__image_error) return { status: 'needs_image_model', message: res.__image_error }
+    if (res.error) return res
+    return { status: 'complete', filename: res.filename, path: res.rel, media_type: res.media_type, note: 'Generated with your connected image model (Gemini); may incur API cost.' }
+  }
+  async function generateDesign (i) {
+    // Image-producing design tool (logos, social graphics, simple layouts). Same backend
+    // as generate_image; the prompt is shaped toward a clean, flat, print/screen-safe design.
+    const brief = String(i.prompt || i.brief || '').trim()
+    if (!brief) return { error: 'prompt/brief required (describe the design to generate)' }
+    const kind = String(i.kind || 'design').replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 24) || 'design'
+    const styled = 'Design a clean, professional ' + kind + ': ' + brief +
+      '. Flat, uncluttered, high-contrast, suitable for screen and print. No watermark, no placeholder text.'
+    const res = await modelImageToFile(styled, { basename: kind })
+    if (res.__image_error) return { status: 'needs_image_model', message: res.__image_error }
+    if (res.error) return res
+    return { status: 'complete', kind, filename: res.filename, path: res.rel, media_type: res.media_type, note: 'Generated with your connected image model (Gemini); may incur API cost.' }
+  }
+  async function bookCoverGenerate (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row) return { error: 'unknown book_id (call book_outline first)' }
+    if (!imageReady()) return { status: 'needs_image_model', message: IMAGE_NOT_CONNECTED }
+    const title = row.title || row.topic
+    const subtitle = row.subtitle || ''
+    const variants = Math.min(Math.max(parseInt(i.variants, 10) || 3, 1), 3)
+    const subdir = 'books/book-' + id + '/covers'
+    const guidance = String(i.style || '').trim()
+    const files = []
+    for (let n = 0; n < variants; n++) {
+      const prompt = 'Design a professional, market-ready book cover for the book titled "' + title + '"' +
+        (subtitle ? ' with the subtitle "' + subtitle + '"' : '') + '. Topic: ' + row.topic + '. ' +
+        (guidance ? 'Style: ' + guidance + '. ' : '') +
+        'Portrait orientation, strong title typography, eye-catching but tasteful, suitable for a self-published listing thumbnail. Variant ' + (n + 1) + '.'
+      const res = await modelImageToFile(prompt, { subdir, basename: 'cover-v' + (n + 1) })
+      if (res.__image_error) {
+        // No image model: report cleanly. If some variants already saved, return those.
+        if (!files.length) return { status: 'needs_image_model', message: res.__image_error }
+        break
+      }
+      if (res.error) { if (!files.length) return res; break }
+      files.push({ variant: n + 1, filename: res.filename, path: res.rel, media_type: res.media_type })
+    }
+    if (!files.length) return { status: 'needs_image_model', message: IMAGE_NOT_CONNECTED }
+    return { book_id: id, status: 'complete', covers: files, count: files.length, note: 'Cover variants saved to your sandbox (' + subdir + '). Review and pick one. Uses your connected image model (Gemini); may incur API cost.' }
+  }
+  async function bookInteriorGraphics (i) {
+    const id = i.book_id; const row = id ? bookRow(id) : null
+    if (!row) return { error: 'unknown book_id' }
+    const brief = String(i.prompt || i.description || '').trim()
+    if (!brief) return { error: 'prompt/description required (what diagram or illustration to generate)' }
+    if (!imageReady()) return { status: 'needs_image_model', message: IMAGE_NOT_CONNECTED }
+    const subdir = 'books/book-' + id + '/interior'
+    const chapterTag = i.chapter_n != null ? ('ch' + parseInt(i.chapter_n, 10)) : 'fig'
+    const prompt = 'Create a print-safe interior illustration or diagram for a book: ' + brief +
+      '. Clean black-and-white or minimal colour, high contrast, no photographic noise, suitable for print interior pages.'
+    const res = await modelImageToFile(prompt, { subdir, basename: chapterTag })
+    if (res.__image_error) return { status: 'needs_image_model', message: res.__image_error }
+    if (res.error) return res
+    return { book_id: id, status: 'complete', graphic: { filename: res.filename, path: res.rel, media_type: res.media_type }, note: 'Interior graphic saved to your sandbox (' + subdir + '). Uses your connected image model (Gemini); may incur API cost.' }
+  }
+
   // ── registry: name -> executor. ONLY box-safe tools appear here. ──
   const EXECUTORS = {
     // memory
@@ -930,6 +1043,11 @@ export function createExecutors ({ db, storeDir, env = {}, model = null }) {
     book_assemble: (i) => bookAssemble(i),
     book_status: (i) => bookStatus(i),
     book_list: (i) => bookList(i),
+    // image generation (use the user's connected image model -- Gemini; may incur API cost)
+    generate_image: (i) => generateImage(i),
+    generate_design: (i) => generateDesign(i),
+    book_cover_generate: (i) => bookCoverGenerate(i),
+    book_interior_graphics: (i) => bookInteriorGraphics(i),
   }
 
   return {

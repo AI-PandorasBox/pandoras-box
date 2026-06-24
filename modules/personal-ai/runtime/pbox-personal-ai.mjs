@@ -359,6 +359,10 @@ const MODEL_VISION_NEEDS_KEY_MSG =
   'Visual reading needs a direct Anthropic API key (the multimodal path). Add one in ' +
   'the installer API-key step, then retry. This tool uses your connected model and may ' +
   'incur API cost.'
+const MODEL_IMAGE_NEEDS_KEY_MSG =
+  'Image generation needs an image model -- set GEMINI_API_KEY (or IMAGE_API_KEY) in the ' +
+  'installer/config to enable this. This tool uses your connected image model and may ' +
+  'incur API cost.'
 
 async function modelComplete ({ system, user, max_tokens = 4096 }) {
   const apiKey = getApiKey()
@@ -398,11 +402,58 @@ async function modelVision ({ system, user, images }) {
   return (resp.content || []).filter(b => b.type === 'text').map(b => b.text).join('')
 }
 
+// Image generation backend. Default = the user's own Gemini key (the installer already
+// collects GEMINI_API_KEY); lightly provider-pluggable via an optional IMAGE_API_KEY /
+// IMAGE_MODEL override. Returns the raw image bytes + media type; the caller (a tool
+// executor) saves them into its own sandbox. If no image key is present the helper throws
+// a NO_IMAGE_KEY error carrying the friendly "set GEMINI_API_KEY" message so the tool can
+// return it gracefully instead of crashing or fabricating an image. _PUBLIC_IMAGE_TOOLS_V1
+function imageKey () { return process.env.IMAGE_API_KEY || process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '' }
+async function modelImage ({ prompt, opts = {} } = {}) {
+  const key = imageKey()
+  if (!key) { const e = new Error(MODEL_IMAGE_NEEDS_KEY_MSG); e.code = 'NO_IMAGE_KEY'; throw e }
+  const text = String(prompt || '').trim()
+  if (!text) { const e = new Error('image prompt required'); e.code = 'NO_PROMPT'; throw e }
+  // Gemini image generation (the default backend; same provider as grounded_search).
+  // responseModalities must include IMAGE; the image returns as an inlineData base64 part.
+  const imgModel = opts.model || process.env.IMAGE_MODEL || 'gemini-2.0-flash-preview-image-generation'
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(imgModel)}:generateContent?key=${key}`
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ parts: [{ text }] }],
+      generationConfig: { responseModalities: ['TEXT', 'IMAGE'] },
+    }),
+    signal: AbortSignal.timeout(opts.timeout_ms || 60000),
+  })
+  if (!r.ok) {
+    const detail = (await r.text().catch(() => '')).slice(0, 200)
+    const e = new Error(`image model error ${r.status}${detail ? ': ' + detail : ''}`)
+    e.code = 'IMAGE_API_ERROR'
+    throw e
+  }
+  const d = await r.json()
+  const parts = d?.candidates?.[0]?.content?.parts || []
+  for (const p of parts) {
+    const inline = p.inlineData || p.inline_data
+    if (inline && inline.data) {
+      return { data: inline.data, media_type: inline.mimeType || inline.mime_type || 'image/png' }
+    }
+  }
+  const e = new Error('image model returned no image data')
+  e.code = 'NO_IMAGE_DATA'
+  throw e
+}
+
 const MODEL_HELPER = {
   hasKey: () => !!getApiKey(),
+  hasImageKey: () => !!imageKey(),
   notConnectedMessage: MODEL_NOT_CONNECTED_MSG,
+  imageNotConnectedMessage: MODEL_IMAGE_NEEDS_KEY_MSG,
   complete: modelComplete,
   vision: modelVision,
+  image: modelImage,
 }
 
 function send(res, code, body, headers = {}) {
@@ -684,6 +735,9 @@ const REQUIRED_HINTS = {
   book_research: ['topic'], book_set_research: ['book_id', 'research'], book_outline: [],
   book_write_chapter: ['book_id', 'chapter_n'], book_listing_generate: ['book_id'],
   book_assemble: ['book_id'], book_status: ['book_id'], book_list: [],
+  // image generation (uses the user's connected image model -- Gemini)
+  generate_image: ['prompt'], generate_design: ['prompt'],
+  book_cover_generate: ['book_id'], book_interior_graphics: ['book_id', 'prompt'],
 }
 function synthSchema (name) {
   return { type: 'object', properties: {}, required: REQUIRED_HINTS[name] || [], additionalProperties: true }

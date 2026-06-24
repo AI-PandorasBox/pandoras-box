@@ -1,9 +1,9 @@
 {
-  "_note": "Pandora's Box public tool catalogue — allow-listed + sanitised + leak-scanned (schemas only, no code, no secrets). _PUBLIC_TOOLS_V1: + 4 local-content tools (save_file, generate_pdf/docx/xlsx) re-added with clean descriptions so the shipped local executors are actually offered.",
+  "_note": "Pandora's Box public tool catalogue — allow-listed + sanitised + leak-scanned (schemas only, no code, no secrets). _PUBLIC_TOOLS_V1: + 4 local-content tools (save_file, generate_pdf/docx/xlsx) re-added with clean descriptions so the shipped local executors are actually offered. _PUBLIC_IMAGE_TOOLS_V1: + generate_image / generate_design (image-producing) added; book_cover_generate / book_interior_graphics promoted to offered (image executors that save real bytes into the sandbox using the user's connected image model).",
   "generated_at": "2026-06-24T00:00:00.000Z",
   "source": "Pandora's Box curated tool catalogue (privacy-screened allow-list + local-content tools)",
   "counts": {
-    "shipped": 69,
+    "shipped": 71,
     "excluded_master_only": 130,
     "excluded_leak": 0,
     "not_in_audit": 0
@@ -285,6 +285,16 @@
       "has_schema": true
     },
     {
+      "name": "generate_image",
+      "description": "Generate an image from a text prompt and save it into your sandbox (store/generated). Returns {filename, path, media_type}. Uses your connected image model (Gemini); may incur API cost. If no image model is connected it returns a clear 'set GEMINI_API_KEY' message.",
+      "has_schema": true
+    },
+    {
+      "name": "generate_design",
+      "description": "Generate a design image (logo, social graphic, simple layout) from a brief and save it into your sandbox (store/generated). Returns {filename, path, media_type}. Uses your connected image model (Gemini); may incur API cost. If no image model is connected it returns a clear 'set GEMINI_API_KEY' message.",
+      "has_schema": true
+    },
+    {
       "name": "app_research",
       "description": "Research Play Store gaps in a given category (e.g. timers, alarms, clocks, pomodoro). Scrapes competitor data, scores opportunities by proven demand vs low review density, then synthesises a ranked list of app specs for you to choose from. Use this before app_create to pick the best market gap.",
       "has_schema": true
@@ -311,12 +321,12 @@
     },
     {
       "name": "book_cover_generate",
-      "description": "Generate up to 3 book cover image variants using Gemini image generation. Covers saved to covers/ dir. Review and select before publishing. _KDP_BOOKS_V1",
+      "description": "Generate up to 3 book cover image variants for a book_id and save them into the book's sandbox (store/generated/books/.../covers). Review and pick one before publishing. Uses your connected image model (Gemini); may incur API cost.",
       "has_schema": true
     },
     {
       "name": "book_interior_graphics",
-      "description": "Generate a diagram or illustration for book interior using Gemini. Print-safe black/white or minimal colour. _KDP_BOOKS_V1",
+      "description": "Generate a print-safe interior diagram or illustration for a book_id from a prompt and save it into the book's sandbox (store/generated/books/.../interior). Black/white or minimal colour, high contrast. Uses your connected image model (Gemini); may incur API cost.",
       "has_schema": true
     },
     {

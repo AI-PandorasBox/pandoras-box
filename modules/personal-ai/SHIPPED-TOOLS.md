@@ -5,7 +5,7 @@ gets, split into three buckets: **shipped WITH a working executor**, **schema-on
 (catalogue-listed but NOT offered to the model)**, and **excluded entirely**. It exists
 so Ian can apply box-safety judgement before any public push.
 
-- Full catalogue: `runtime/tool-catalogue.json` (69 schemas: 65 vetted/sanitised/leak-scanned + 4 local-content re-adds).
+- Full catalogue: `runtime/tool-catalogue.json` (71 schemas: 65 vetted/sanitised/leak-scanned + 4 local-content re-adds + 2 image-producing tools).
 - Executors: `runtime/tool-executors.mjs` (frozen, self-contained; local SQLite + sandbox only).
 - Wiring: `runtime/pbox-personal-ai.mjs` (`_PUBLIC_TOOLS_V1`).
 
@@ -14,14 +14,14 @@ so Ian can apply box-safety judgement before any public push.
 A catalogue tool is **offered to the model only if a working executor exists for it.**
 A tool with a schema but no executor is **never offered** — it would fail at call time,
 which is worse than being absent. This closes the audit's headline gap ("9 tools, no
-upgrade path, README claims 181") honestly: the public box now offers the **58 tools it
+upgrade path, README claims 181") honestly: the public box now offers the **62 tools it
 can actually run**, not a list of names that error.
 
-Counts: catalogue **69** -> offered with executors **58** -> schema-only/withheld **11**.
+Counts: catalogue **71** -> offered with executors **62** -> schema-only/withheld **9**.
 
 ---
 
-## 1. SHIPPED WITH EXECUTOR (58) — these run on a stock box
+## 1. SHIPPED WITH EXECUTOR (62) — these run on a stock box
 
 All run against this box's own `personal-ai/store/memory.db` + a sandboxed filesystem
 (`store/vault`, `store/drops`, `store/generated`). No master DB, no shared schema, no
@@ -87,8 +87,25 @@ through directly, which covers the common case.
 
 If no model is connected, the model-backed book tools return a clear "connect your
 model key" message (status `needs_model`) — never a crash, never a fabricated result.
-Cover/interior-graphics and KDP browser publishing remain withheld (see section 2):
-image generation and drive-mode automation are not box-safe on a stock public box.
+KDP browser publishing remains withheld (see section 2): drive-mode automation is not
+box-safe on a stock public box.
+
+### Image generation (uses YOUR connected image model — Gemini; may incur API cost)
+| Tool | Requires | No-key behaviour |
+|---|---|---|
+| generate_image | `GEMINI_API_KEY` (or `IMAGE_API_KEY`) | returns a clear "set GEMINI_API_KEY" message (status `needs_image_model`); never crashes, never fabricates |
+| generate_design | `GEMINI_API_KEY` (or `IMAGE_API_KEY`) | same — design-shaped prompt (logo/social/layout) |
+| book_cover_generate | `GEMINI_API_KEY` (or `IMAGE_API_KEY`) | same — saves up to 3 cover variants into the book's sandbox |
+| book_interior_graphics | `GEMINI_API_KEY` (or `IMAGE_API_KEY`) | same — saves a print-safe interior graphic into the book's sandbox |
+
+These generate **real image bytes** with the user's OWN image model and save them into the
+sandbox (`store/generated`, or `store/generated/books/book-<id>/{covers,interior}` for the
+book tools). The backend defaults to the installer-collected `GEMINI_API_KEY` (Gemini image
+generation) and is lightly provider-pluggable via optional `IMAGE_API_KEY` / `IMAGE_MODEL`
+overrides. With no image key these tools return a friendly "set GEMINI_API_KEY" message
+(status `needs_image_model`) — they never crash and never fabricate an image. The book
+cover/interior tools complete the book pipeline: outline → chapters → assemble → cover +
+interior graphics.
 
 ### Built-in
 | Tool | Notes |
@@ -97,7 +114,7 @@ image generation and drive-mode automation are not box-safe on a stock public bo
 
 ---
 
-## 2. SCHEMA-ONLY — in the catalogue, **NOT offered** to the model (11)
+## 2. SCHEMA-ONLY — in the catalogue, **NOT offered** to the model (9)
 
 These have a vetted schema but **no box-safe executor**, so the runtime withholds them.
 Each needs an external service, paid API, or browser/host capability that a public box
@@ -107,18 +124,30 @@ once their box-safety is judged.
 | Tool | Why withheld (needs Ian's judgement to promote) |
 |---|---|
 | session_close_extract | needs server-side session-history extraction (the **session-close-extract _skill_** still works via save_memory + vault_write) |
-| book_cover_generate, book_interior_graphics | image generation; the connected text model cannot produce images, so these stay off until an image-generation key path is judged box-safe |
 | book_publish_kdp | returns a **web_action plan** = drive-mode browser automation; excluded |
 | book_analytics, book_review_drafts | Phase-3 stubs that return `not_available`; no value offering them yet |
 | app_research | Play Store scraping; promote candidate (read-only) but unproven box-safety |
 | zimit_scrape | requires Docker on the host; promote candidate where Docker present |
 | lyria_generate, veo_generate, fal_generate_video | paid generative-media APIs, per-second/per-clip billing; deliberately off for cost-safety |
 
-**Promoted in this revision** (now in section 1, shipped WITH executor): `capture_artefact`,
-`vision_read`, and the `book_*` write subset (`book_research`, `book_set_research`,
-`book_outline`, `book_write_chapter`, `book_listing_generate`, `book_assemble`,
-`book_status`, `book_list`). They use the user's own connected model and may incur API
-cost; without a connected model they return a clear "connect your key" message.
+**Promoted in the previous revision** (now in section 1, shipped WITH executor):
+`capture_artefact`, `vision_read`, and the `book_*` write subset (`book_research`,
+`book_set_research`, `book_outline`, `book_write_chapter`, `book_listing_generate`,
+`book_assemble`, `book_status`, `book_list`). They use the user's own connected model and
+may incur API cost; without a connected model they return a clear "connect your key"
+message.
+
+**Promoted in this revision** (now in section 1, shipped WITH executor): the image-producing
+tools `generate_image`, `generate_design`, `book_cover_generate`, `book_interior_graphics`.
+They use the user's own connected image model (default `GEMINI_API_KEY`, collected by the
+installer; optional `IMAGE_API_KEY` / `IMAGE_MODEL` override) and save real image bytes into
+the sandbox. Without an image key they return a clear "set GEMINI_API_KEY" message (status
+`needs_image_model`) — never a crash, never a fabricated image. They may incur API cost. The
+two book image tools complete the book pipeline (cover + interior graphics).
+
+> Note: `capture_artefact` still loads only image files (PNG/JPG/GIF/WEBP) on a stock box.
+> Full PDF/PPTX **rasterisation** needs host tooling (a renderer), not an image model, so it
+> stays out of scope — an image-generation key does not enable it.
 
 ---
 
@@ -152,11 +181,14 @@ per-agent on/off knob.
 ## What needs further box-safety judgement
 
 1. ~~Promote `capture_artefact` + `vision_read` and the `book_*` write subset~~ —
-   **done.** The model-key path is wired: these tools now use the user's own connected
-   model (collected by the installer) and return a friendly "connect your key" message
-   when no model is available. Still withheld: `book_cover_generate` /
-   `book_interior_graphics` (image generation, not a text-model capability) and
-   `book_publish_kdp` (drive-mode browser automation).
+   **done.** ~~Promote the image tools (`generate_image`, `generate_design`,
+   `book_cover_generate`, `book_interior_graphics`)~~ — **done.** The image-model path is
+   wired: these use the user's own connected image model (default `GEMINI_API_KEY`,
+   collected by the installer; optional `IMAGE_API_KEY` / `IMAGE_MODEL` override), save
+   real bytes into the sandbox, and return a friendly "set GEMINI_API_KEY" message
+   (status `needs_image_model`) when no image key is present. Still withheld:
+   `book_publish_kdp` (drive-mode browser automation) and PDF/PPTX rasterisation inside
+   `capture_artefact` (needs host rendering tooling, not an image model).
 2. `fetch_ical` now ships **with a user-facing warning** (description + one-time runtime
    notice + a `warning` field on first successful fetch) while keeping the SSRF guard
    (refuses `127.*/10.*/192.168.*/169.254.*/loopback`). Confirm the guard is sufficient
