@@ -176,7 +176,8 @@ from a phone or tablet.
 **Status:** Optional
 
 Local service status Dashboard. A web page on your local network showing all running
-services, recent job activity, and system health.
+services and system health. Read-only -- it displays status, it does not run jobs or
+issue controls.
 
 **What breaks if not installed:** No visual service overview. You can still check
 status via the terminal.
@@ -590,12 +591,11 @@ The Dashboard is a web panel accessible on your local network.
 
 Example caption: Example: Greek mythology theme shown.
 
-**What it looks like:** A dark dashboard with service tiles, a recent jobs feed, and a
-system health summary.
+**What it looks like:** A dark dashboard with service tiles and a system health summary.
 
 **What you can do:**
 - Quick service status overview
-- See recent job activity across all companies
+- See module, project, and memory views
 - No controls -- read-only view
 
 ---

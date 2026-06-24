@@ -8,7 +8,7 @@
       "name": "dashboard",
       "tier": "core",
       "kind": "service",
-      "purpose": "Localhost status + control dashboard."
+      "purpose": "Localhost read-only status dashboard (service health, modules, projects, memory)."
     },
     {
       "name": "docs-server",

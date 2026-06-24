@@ -1,0 +1,338 @@
+{
+  "_note": "Pandora's Box public tool catalogue — allow-listed + sanitised + leak-scanned (schemas only, no code, no secrets).",
+  "generated_at": "2026-06-23T22:48:03.172Z",
+  "source": "mnemosyne.mjs TOOL_DEFS + tool-privacy-audit.json (allow-list)",
+  "counts": {
+    "shipped": 65,
+    "excluded_master_only": 130,
+    "excluded_leak": 0,
+    "not_in_audit": 0
+  },
+  "tools": [
+    {
+      "name": "run_skill",
+      "description": "Run a packaged skill by id.",
+      "has_schema": true
+    },
+    {
+      "name": "brave_search",
+      "description": "Search the web for current information, news, research topics, or anything requiring up-to-date knowledge. Returns ranked result snippets with source URLs -- treat these as leads to verify and cite, not authoritative quotes. Do NOT use this for stock/market prices (use get_stock_quote) or to read your emails, tasks, contacts, or saved memories or vault notes (use the dedicated memory/vault tools, never web search).",
+      "has_schema": true
+    },
+    {
+      "name": "get_stock_quote",
+      "description": "Get the most recently completed trading day's closing price, volume, open, high, low, and basic market data for a ticker symbol. Returns end-of-day historical data only -- never real-time, intraday, pre-market, or after-hours prices. On weekends and holidays this returns the last trading day's data (e.g. Friday's close). During market hours the returned data is from the prior session, not today; explicitly state the as-of date when surfacing the data and decline time-sensitive trading questions. Ticker must be a valid exchange symbol (e.g. 'AAPL', 'MSFT'); does not accept company names. Equities only -- not crypto, indices, forex, or futures; decline or redirect non-equity symbols rather than guessing.",
+      "has_schema": true
+    },
+    {
+      "name": "get_tasks",
+      "description": "Get your task list. Optional `status` parameter accepts exactly one of: 'pending' (not started), 'in_progress' (active), or 'done' (completed). Values are case-sensitive and any other value will error. Omit `status` to get all non-done tasks (pending + in_progress merged). When `status` IS supplied, the same sort order applies within that single status. Default sort for all responses: due_date ascending with nulls last, ties broken by priority high->medium->low, then by id ascending. To retrieve every task including completed ones, make two calls: one omitting status and one with status='done' (results are not deduplicated -- the caller must merge by id). Returns each task's id (string, opaque -- do not parse or construct), title, notes, due_date (ISO 8601 date or datetime, or null), priority ('low'|'medium'|'high'), company, and status. Always pass the returned `id` verbatim to update_task -- never invent, guess, or reuse an id from memory; if the task is not in the most recent returned list, call get_tasks again (including status='done' if it may be completed) to obtain a fresh id. Do not use search_contacts or recall_memory to find task ids -- those tools do not return task ids. _GEPA_TASK_TOOLS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "add_task",
+      "description": "Add a new task to your task list. This is the ONLY user-visible store for things to track, watch, or follow up on -- never record trackable items in a separate file, JSON, or hidden list you cannot see in the Tasks tab; if it matters enough to remember, it is an add_task call. Required: `title` (non-empty string, <=200 chars, written as an imperative action e.g. 'Email the system about the system whitelist', not a status like 'the system whitelist pending'). Optional: `notes` (string, for context that does not belong in the title), `due_date` (ISO 8601 date 'YYYY-MM-DD' or datetime with timezone offset; relative phrases like 'tomorrow', 'end of week', 'next Monday' MUST be resolved against the currentDate in the system context before calling -- never pass the raw phrase, and never default to today's date when no due date was specified, leave it omitted instead), `priority` (exactly one of 'low'|'medium'|'high', case-sensitive; defaults to 'medium' if omitted -- only set 'high' when you signals urgency explicitly), and `company` (string; first call search_contacts or get_tasks to find the canonical spelling rather than inventing a new one like 'Zues' vs 'the system'). Returns the created task's `id` -- capture it if a follow-up update_task may be needed. Do not call this tool to 'edit' an existing task; use update_task instead. _GEPA_TASK_TOOLS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "update_task",
+      "description": "Update an existing task by ID. Required: `id` (string, must come verbatim from a prior get_tasks or add_task response -- never guess). Optional updatable fields: title, notes, due_date (ISO 8601 or null to clear), priority ('low'|'medium'|'high', case-sensitive), company, status ('pending'|'in_progress'|'done', case-sensitive). To mark a task complete, pass status='done' (do not delete the task) -- proactively set status='done' for any task you have evidence you already handled manually, rather than letting open items accumulate, since you want the list actively swept rather than growing. Only include fields you intend to change; omitted fields are left unchanged. If the id is unknown or stale, call get_tasks first rather than guessing. _GEPA_TASK_TOOLS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "search_contacts",
+      "description": "Search the contacts database for existing contacts. Substring match across name, company, email, job_title. Returns up to 10 matches ranked by relevance (exact name > exact company > substring name > substring company > substring email). Returns array of { id (opaque numeric, stable across calls), name, company, email, phone, job_title, role, org_type, industry, notes }. Empty array means no match -- the contact does NOT exist. ALWAYS call this BEFORE add_contact so you do not create duplicates. The id is opaque -- do not invent or guess ids; only use ids returned by this tool or add_contact. _GEPA_2026_05_21_TOOLS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "add_contact",
+      "description": "Add a NEW contact. MUST call search_contacts first with at least the name (and separately the email if known) to check for duplicates. Treat as a duplicate and SKIP add_contact if any of: (a) same email (case-insensitive) exists, (b) same normalised full name + same company exists, or (c) same normalised full name exists and no company is known on either side. In duplicate cases, do not call add_contact at all -- if fields need updating, surface the existing id to the caller (a future update_contact tool will handle edits; for now, note the discrepancy in `notes` via a follow-up save_memory rather than inserting a second row). Required: `name` (full name, properly capitalised). Optional: `company` (use the canonical spelling already in search_contacts results -- never introduce a variant like 'Acme Inc' if 'Acme' is in use), `email`, `phone` (E.164 preferred), `job_title`, `role`, `org_type`, `industry`, `notes`. Returns { id, created: true } on insert or { id, created: false, reason } if the server detected a duplicate. Common failure when scanning email threads: creating duplicate Gemmas/Roberts from name variants ('Gem' vs 'Gemma'); mitigate by searching both the short and full form before inserting.",
+      "has_schema": true
+    },
+    {
+      "name": "save_memory",
+      "description": "Save a durable fact, preference, decision, or standing rule to long-term memory (SQLite + vector index) for retrieval via recall_memory. Required: `content` (natural-language statement written in third person referencing 'you', e.g. 'you require explicit per-job go-ahead before any Veo render'). Optional: `category` (short tag like 'preferences', 'projects', 'rules', 'people'; reuse existing categories visible via recall_memory rather than inventing new ones). Before saving, recall_memory first to avoid storing a duplicate or near-duplicate fact -- if one already exists, refine its intent rather than appending a second copy. Use for stable context that should outlive the session (preferences, naming conventions, ongoing project state, explicit rules you has stated). Do NOT use for: one-off task items (use add_task), contact details (use add_contact), or repeatable operational techniques (use save_skill). Returns the saved memory id. Prefer updating phrasing of an existing memory (re-save with clearer wording) over creating near-duplicate entries.",
+      "has_schema": true
+    },
+    {
+      "name": "recall_memory",
+      "description": "Search long-term memories (SQLite + vector index over saved memories only). Does NOT search contacts (use search_contacts), emails (delegate to mail agent), tasks (use get_tasks), web (use brave_search), or vault notes (use vault_search). Query shape: natural-language phrase describing what you want to remember (e.g. \"you preferred meeting times\", \"brand voice rule for technical content\"). Returns up to 10 memories ranked by relevance, with timestamps and categories. Empty result is normal for novel topics. If you need pinned operational context (style, preferences, ongoing projects), recall_memory is the right tool -- do not ask you to re-state it.",
+      "has_schema": true
+    },
+    {
+      "name": "update_contact",
+      "description": "Update an existing contact by ID. Only provide the fields you want to change. Use search_contacts to find the ID first.",
+      "has_schema": true
+    },
+    {
+      "name": "delete_contact",
+      "description": "Permanently delete a contact by ID. Irreversible — confirm with you before calling. Use search_contacts to find the ID first.",
+      "has_schema": true
+    },
+    {
+      "name": "delete_memory",
+      "description": "Permanently delete a long-term memory entry by ID. Use recall_memory to find the ID first. Irreversible.",
+      "has_schema": true
+    },
+    {
+      "name": "update_memory",
+      "description": "Correct or update an existing memory entry by ID. Use recall_memory to find the ID first.",
+      "has_schema": true
+    },
+    {
+      "name": "read_drop_file",
+      "description": "Read a file from the the assistant drops folder. Use when you say 'read X', 'review the document I uploaded', or after finding a file with list_drops. Supports txt, md, csv, json (paginated by element of top-level array or largest array property), docx, pdf, xlsx/xls (compact CSV-style content, paginated), and pptx (per-slide text + speaker notes). For xlsx/csv/json, use offset + max_rows to chunk through large files: first call uses offset=0, footer tells you the next offset to use. Searches all company/category subdirectories -- no need to know the exact folder. For unknown filenames, call list_drops first.",
+      "has_schema": true
+    },
+    {
+      "name": "list_drops",
+      "description": "List or search files in the the assistant drops folder. Use when you ask what files are available, wants to find a file by partial name, or says 'what did you save' / 'what files do I have'. Pass a partial query to filter (e.g. 'rough' matches 'Rough Report Draft.docx'). Returns filename, company, category, size, and modified date for each match. After finding a file, use read_drop_file to read its contents.",
+      "has_schema": true
+    },
+    {
+      "name": "delete_drop_file",
+      "description": "Delete a single file from the the assistant drops folder. Searches all company/category subdirs (same as read_drop_file). Returns ok + path deleted, or error if not found. Mutation is logged to drops-mutations.log with sha256 of the deleted file. Use when you ask to delete an old draft/version, or after a successful rebuild has produced a replacement.",
+      "has_schema": true
+    },
+    {
+      "name": "delete_drops_batch",
+      "description": "Delete multiple drops files in one call. Returns per-file results array (each with filename, status, error if any). Use when you ask for a 'clean slate' or after a rebuild that obsoletes several previous outputs. Same audit logging as delete_drop_file.",
+      "has_schema": true
+    },
+    {
+      "name": "rename_drop_file",
+      "description": "Rename a file within drops (same subdir). Use to fix typos or version-stamp filenames without recreating the document. Both old and new filenames must match the standard filename pattern (alphanumeric, underscore, dash, dot, space).",
+      "has_schema": true
+    },
+    {
+      "name": "search_knowledge",
+      "description": "Search the the system offline knowledge library. Returns article excerpts from Wikipedia, Stack Overflow, iFixit, Khan Academy, Gutenberg, and other sources. Use for factual lookups, technical documentation, repair guides, educational content, or any topic where an offline encyclopaedic source is useful. Prefer this over brave_search for stable reference content. // _ATHENA_SEARCH_KNOWLEDGE_TOOLDEF_V1",
+      "has_schema": true
+    },
+    {
+      "name": "zimit_scrape",
+      "description": "Scrape a website to create a ZIM file for offline the system knowledge access using Zimit (Docker). Use for adding trading sites (Investopedia, Babypips, IG Academy, CFI), documentation, or any site you want available offline. Requires Docker Desktop to be installed. Scrape runs in background -- check /tmp/zimit-{name}.status for progress.",
+      "has_schema": true
+    },
+    {
+      "name": "vault_read",
+      "description": "Read a note from the Obsidian knowledge vault. Use before discussing a person, thread, or business topic to load richer context. Path is relative to vault root (e.g. \"a file\", \"a file\").",
+      "has_schema": true
+    },
+    {
+      "name": "vault_write",
+      "description": "Write or update a note in the Obsidian vault. Use after learning something new about a contact, decision, or ongoing thread. Creates the note if it does not exist. Content is Markdown.",
+      "has_schema": true
+    },
+    {
+      "name": "vault_search",
+      "description": "Full-text search the Obsidian vault. Returns matching note paths and excerpts. Use when you ask about people, past decisions, or history and you want to check the vault first.",
+      "has_schema": true
+    },
+    {
+      "name": "vault_list",
+      "description": "List notes in a vault directory (e.g. People/, Threads/). Returns filenames.",
+      "has_schema": true
+    },
+    {
+      "name": "session_close_extract",
+      "description": "Extract commitments, decisions, people discussed, and open threads from this session and write them to the vault. Call this at the end of every session before you say goodbye. No input needed -- it reads the current session history automatically.",
+      "has_schema": true
+    },
+    {
+      "name": "important_list_read",
+      "description": "Read the Important List -- the curated short list of things that matter most right now. Call at session start to orient yourself.",
+      "has_schema": true
+    },
+    {
+      "name": "important_list_add",
+      "description": "Add an item to the Important List. Use when something is time-sensitive, you has flagged it, or a high-stakes situation is active.",
+      "has_schema": true
+    },
+    {
+      "name": "important_list_remove",
+      "description": "Remove a resolved item from the Important List by index (from important_list_read output).",
+      "has_schema": true
+    },
+    {
+      "name": "schedule_task",
+      "description": "Schedule a task for the assistant to execute autonomously at a future time, without you being present. Use when you say 'remind me', 'check on this later', 'do this at X', or when the assistant should proactively follow up on a commitment. The prompt is executed as a full the assistant session -- the assistant can use all her tools. Result delivered via Telegram.",
+      "has_schema": true
+    },
+    {
+      "name": "schedule_list",
+      "description": "List your pending scheduled tasks. Use when you ask what the assistant has scheduled, or to check if a reminder is set.",
+      "has_schema": true
+    },
+    {
+      "name": "graph_upsert_entity",
+      "description": "Add or update a person, company, or place in your knowledge graph. Call whenever you learn something new about someone you interacts with. entity_type: 'person' | 'company' | 'place'. canonical = lowercase unique key (e.g. 'julie adamson'). metadata: any extra details as a JSON object.",
+      "has_schema": true
+    },
+    {
+      "name": "graph_upsert_relationship",
+      "description": "Record or strengthen a relationship between two graph entities (by ID). Call after learning about a connection between people, companies, or places. rel_type examples: 'colleague', 'client', 'supplier', 'works_at', 'based_in', 'met_at'.",
+      "has_schema": true
+    },
+    {
+      "name": "graph_find_entity",
+      "description": "Look up a person, company, or place in your knowledge graph by name. Returns the entity record including metadata and ID (for use in graph_upsert_relationship). Use before saying you don't recognise someone.",
+      "has_schema": true
+    },
+    {
+      "name": "graph_find_person",
+      "description": "Find a person in your knowledge graph and return their full connection network: who they work with, what companies they're linked to, recent interactions. Use when you ask 'who does X work with?' or 'tell me about Y'.",
+      "has_schema": true
+    },
+    {
+      "name": "commitment_add",
+      "description": "Record a new commitment -- something you promised to do, or something someone promised you. Track passively from conversation: when you say 'I'll send that over', 'I need to chase X', 'they said they'd get back to me by Friday', etc.",
+      "has_schema": true
+    },
+    {
+      "name": "commitment_list",
+      "description": "List your tracked commitments. Use when you ask 'what do I owe?', 'what's outstanding?', 'what are people waiting on from me?', or 'what am I waiting on from others?'.",
+      "has_schema": true
+    },
+    {
+      "name": "commitment_done",
+      "description": "Mark a commitment as complete. Use when you say 'I sent that', 'that's done', 'they came back to me', or confirms a commitment is resolved. Get the ID from commitment_list first.",
+      "has_schema": true
+    },
+    {
+      "name": "place_upsert",
+      "description": "Add or update a named place in your GPS registry. Use when you say 'save this location as X' or 'add a place called Y at these coordinates'. canonical = lowercase key (e.g. ' hq'). radius_m = match radius in metres (default 150).",
+      "has_schema": true
+    },
+    {
+      "name": "place_list",
+      "description": "List all named places in your GPS registry. Use when you ask 'what locations do you know?' or wants to review your saved places.",
+      "has_schema": true
+    },
+    {
+      "name": "place_delete",
+      "description": "Delete a named place from your GPS registry by ID. Get the ID from place_list.",
+      "has_schema": true
+    },
+    {
+      "name": "grounded_search",
+      "description": "Search the web using Google Search grounding via Gemini. Returns a synthesised answer with live source citations. Prefer over brave_search for current events, news, or factual queries.",
+      "has_schema": true
+    },
+    {
+      "name": "deep_research",
+      "description": "Queue a deep autonomous research job using Gemini Pro with Google Search grounding. Returns immediately with {research_id, status:queued, message}. The full result arrives as a separate follow-up message in this chat (~60-180 seconds). Tell the user briefly what you are researching, then continue normally. Do NOT wait for the result. _DEEP_RESEARCH_ASYNC_V1",
+      "has_schema": true
+    },
+    {
+      "name": "lyria_generate",
+      "description": "Generate music or audio using Google Lyria. Returns a path to a WAV file. Use for ad-hoc music generation or audio experiments.",
+      "has_schema": true
+    },
+    {
+      "name": "fetch_ical",
+      "description": "Fetch events from an iCal/ICS calendar feed. Pass a registered alias (e.g. \"-office\") or a full HTTPS URL. Filters to the requested date window; expands RRULE recurring events by default. Paginated: default 100 events per call, max 500. Use offset to walk past the cap. Returns total_events + next_offset; loop while next_offset != null. Use for board packs, office calendar lookups, or any.ics feed not in MS365.",
+      "has_schema": true
+    },
+    {
+      "name": "ical_list_sources",
+      "description": "List all registered iCal/ICS feed aliases (alias, name, URL, notes). Use to check which feeds are available before calling fetch_ical.",
+      "has_schema": true
+    },
+    {
+      "name": "ical_register_source",
+      "description": "Register a new iCal/ICS feed alias so you can use a short name instead of the full URL in future fetch_ical calls. HTTPS-only, SSRF-guarded. Persists to ical-sources.json.",
+      "has_schema": true
+    },
+    {
+      "name": "veo_generate",
+      "description": "[DISABLED for cost control -- Veo bills PER SECOND of output; set VEO_TOOLS_ENABLED=true to re-enable with a budget.] Generate a video clip using Google Veo. Returns immediately { video_id, status:queued }; the clip path arrives as a follow-up message in this chat (~1-4 min). Do NOT wait. Each render is a paid Veo call subject to a daily budget. Use for short video clip generation.",
+      "has_schema": true
+    },
+    {
+      "name": "fal_generate_video",
+      "description": "Generate a short video clip via Fal.ai hosted models (Hunyuan or Wan 2.2) -- the cheaper alternative to Veo. Returns immediately { video_id, status:queued }; the clip path arrives as a follow-up message in this chat (~2-5 min). Do NOT wait. Each render is a paid Fal call (Hunyuan ~$0.40/clip). model: \"hunyuan-video\" (default, cinematic) or \"wan-2.2\" (natural motion).",
+      "has_schema": true
+    },
+    {
+      "name": "capture_artefact",
+      "description": "Render a document or image file into an array of PNG images (one per page/slide). PDF via pdfjs; PPTX per-slide (HQ-generated PNGs extracted directly, otherwise text-to-HTML render); DOCX via Chrome print-to-PDF then pdfjs; images passthrough. Returns {artefact_id, paths, page_count}. Call before vision_read. _QUALITY_CAPTURE_V1",
+      "has_schema": true
+    },
+    {
+      "name": "vision_read",
+      "description": "Send an array of PNG page images through Gemini Vision and return structured per-page observations: {page_num, text_extracted, layout_summary, visible_errors[]}. Batches up to 16 images per Gemini call. Aggregate output: {artefact_id, pages, total_pages, total_tokens_used}. Use after capture_artefact. _QUALITY_VISION_V1",
+      "has_schema": true
+    },
+    {
+      "name": "app_research",
+      "description": "Research Play Store gaps in a given category (e.g. timers, alarms, clocks, pomodoro). Scrapes competitor data, scores opportunities by proven demand vs low review density, then synthesises a ranked list of app specs for you to choose from. Use this before app_create to pick the best market gap.",
+      "has_schema": true
+    },
+    {
+      "name": "book_research",
+      "description": "Research a book topic for Amazon KDP: competitor titles, keyword opportunities, target reader, suggested outline. Returns immediately with a research_id; full results arrive as a follow-up message (~60-180s). Returns book_id for subsequent calls. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_set_research",
+      "description": "Store async research results against a book record. Call after book_research delivers its follow-up message, passing the full research text. Prepares book for outline generation. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_outline",
+      "description": "Generate a structured chapter outline using Claude: title, subtitle, tagline, and per-chapter breakdown with word targets. Saves outline.json to disk. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_write_chapter",
+      "description": "Write a single chapter using Claude with style continuity from previous chapters. Call book_outline first. Call repeatedly with incrementing chapter_n to write the full book. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_cover_generate",
+      "description": "Generate up to 3 book cover image variants using Gemini image generation. Covers saved to covers/ dir. Review and select before publishing. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_interior_graphics",
+      "description": "Generate a diagram or illustration for book interior using Gemini. Print-safe black/white or minimal colour. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_assemble",
+      "description": "Assemble written chapters into EPUB3 (eBook) and/or DOCX (print-ready paperback). Requires book_outline and book_write_chapter calls first. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_listing_generate",
+      "description": "Generate a complete Amazon KDP listing using Claude: title, subtitle, description (up to 4000 chars), 7 keywords, 2 categories, pricing. Saves listing.json. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_publish_kdp",
+      "description": "Prepare a KDP upload plan for a fully assembled book. Returns file paths, listing summary, and a web_action plan for browser-automated upload. Requires book_assemble and book_listing_generate first. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_status",
+      "description": "Get status of a book: topic, title, chapters written, word count, whether cover/listing are done. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_list",
+      "description": "List all books in the registry, optionally filtered by status. _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_analytics",
+      "description": "KDP sales analytics stub (Phase 3 -- returns not_available in Phase 1). _KDP_BOOKS_V1",
+      "has_schema": true
+    },
+    {
+      "name": "book_review_drafts",
+      "description": "Generate reply drafts for low-star Amazon reviews (Phase 3 stub -- returns not_available in Phase 1). _KDP_BOOKS_V1",
+      "has_schema": true
+    }
+  ]
+}

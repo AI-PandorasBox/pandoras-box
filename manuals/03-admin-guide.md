@@ -29,8 +29,8 @@ To open it: click the Admin Shell icon in your Applications folder or Dock.
 
 ### Dashboard
 
-The Dashboard is a web page accessible on your local network. It shows service status,
-recent job activity, and system health at a glance.
+The Dashboard is a web page accessible on your local network. It shows service status
+and system health at a glance. It is read-only -- a status view, not a control surface.
 
 Access: `http://[your-mac-hostname].local:8181` or `http://[your-local-IP]:8181`
 

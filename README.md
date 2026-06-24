@@ -38,7 +38,7 @@ Claude reasoning runs on your **Claude Pro or Max subscription** -- a flat month
 - **Claude (Pro or Max subscription):** flat monthly plan fee, regardless of how hard your agents work.
 - **Optional add-ons** (Google AI, ElevenLabs, etc.): pay the provider directly for usage. A heavy daily-narration operator can hit $200+/month on ElevenLabs alone.
 
-API-key (pay-per-token) Anthropic billing is not supported in this release; API support is planned for a future version. A built-in cost gate (`MAX_BUDGET_USD` per job, configurable) bounds add-on service spend, and the dashboard module shows day-by-day usage.
+API-key (pay-per-token) Anthropic billing is not supported in this release; API support is planned for a future version. A built-in cost gate (`MAX_BUDGET_USD` per job, configurable) bounds add-on service spend.
 
 ---
 
@@ -48,8 +48,7 @@ API-key (pay-per-token) Anthropic billing is not supported in this release; API 
 |------:|------|
 | **40** | installable modules (core + official tiers) |
 | **15** | packaged skills (SKILL.md + code): 2 hand-built + 13 promoted from recipe specs via the skill promoter |
-| **1** | recipe spec remaining in the catalogue -- promote with the skill promoter, or add your own |
-| **181** | tools (LLM-callable functions) available to the assistant |
+| **{{TOOL_COUNT}}** | tools (LLM-callable functions) in the shipped catalogue available to the assistant -- many require you to connect your own accounts/keys before they do anything |
 | **12** | Personal AI capability surfaces (chat, summary, tasks, create, research, files, knowledge, contacts, calendar, email, call, camera) |
 | **8** | connectors: Gmail, Microsoft 365, calendar, files, plus Telegram / Slack / Discord / WhatsApp relays |
 | **3** | independent agent tiers (admin, oversight, per-company conductor + task agents) |

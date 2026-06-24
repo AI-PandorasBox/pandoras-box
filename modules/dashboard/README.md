@@ -7,8 +7,8 @@
 
 ## What It Does
 
-A local service status dashboard. Shows all running services, recent job activity,
-and system health on your local network.
+A local service status dashboard. Shows all running services and system health on
+your local network, plus read-only module, project, and memory views.
 
 ## How to Access
 

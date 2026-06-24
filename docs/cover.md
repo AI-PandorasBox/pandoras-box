@@ -5,20 +5,20 @@
 
 ![Pandora's Box hero](../assets/hero.png)
 
-**Open-source multi-agent AI infrastructure for macOS.** This document is the long-form companion to the [README](../README.md). It explains what the system is, why each part exists, and what running it actually looks like.
+**Open-source multi-agent AI infrastructure for the machine you own.** Linux (Debian 13 / Ubuntu 24.04+) is the verified install path; macOS (14+, Apple Silicon) ships as beta. This document is the long-form companion to the [README](../README.md). It explains what the system is, why each part exists, and what running it actually looks like.
 
 ---
 
 ## What it is
 
-Pandora's Box runs multiple AI assistants simultaneously on a single Mac, with strict OS-level isolation between them, an independent oversight daemon that approves every action, and a browser-first personal AI interface for the operator. It is built for people who want production-grade AI assistants on hardware they own, not cloud services they depend on.
+Pandora's Box runs multiple AI assistants simultaneously on a single box (a Linux mini-PC or a Mac mini), with strict OS-level isolation between them, an independent oversight daemon that approves every action, and a browser-first personal AI interface for the operator. It is built for people who want production-grade AI assistants on hardware they own, not cloud services they depend on.
 
 The system is designed to handle real operations: mail, calendar, documents, voice, and content production for multiple separate contexts (e.g. several small businesses, plus personal life) from one machine, without cross-context data exposure.
 
 ## Why use it
 
 - **One subscription, many agents.** Every Claude call routes through a per-session bridge that uses your Claude Pro or Max subscription. No per-call API charges. No surprise bills. One subscription powers your admin agent, your personal AI, and every business agent.
-- **Hardware you own.** The system runs on a Mac mini in your office. Nothing leaves the machine except calls to the LLM providers you have explicitly configured. Your memory, your files, your customer data — local.
+- **Hardware you own.** The system runs on a mini-PC in your office (Linux or Mac). Nothing leaves the machine except calls to the LLM providers you have explicitly configured. Your memory, your files, your customer data — local.
 - **OS-level isolation between tenants.** Each business context runs under its own macOS service account with its own keychain, its own credentials, its own filesystem permissions. The hospitality agent cannot see the IT agent's customer database, even when both are running on the same Mac.
 - **Independent oversight.** An oversight daemon called Argus approves every queued job before it executes. A content classifier called the Content Classifier screens outbound content. Both run independently of the agents they watch.
 - **Self-improving.** A scheduled self-improvement pipeline (the Self-Improvement Pipeline) reviews agent traces weekly and proposes targeted improvements. Operator approves before any proposal lands.
@@ -82,7 +82,7 @@ _(A grading layer that scores candidate skill versions on a Pareto frontier, and
 
 ### Modular system — module catalogue and skill library
 
-The module catalogue at `shared/catalogue/modules/` is a YAML registry of pluggable capability packs. Each module declares its name, status (live / beta / planned), dependencies, and the agents that can consume it. Operators enable modules per tenant via `agent-activation.json`.
+The module catalogue at `shared/catalogue/modules/` is a YAML registry of pluggable capability packs. Each module declares its name, status (live / beta / planned), dependencies, and the agents that can consume it. Operators enable capabilities per agent from the per-agent card in the dashboard, which toggles entries in the activation matrix (`agent-activation.json`). <!-- {{VERIFY-ACTIVATION}}: confirm the per-agent card UI is the shipped enable/disable surface before release. -->
 
 The skill library at `shared/skills/library/` is a versioned canonical store of reusable skills (in Anthropic's SKILL.md format). Each skill is hash-verified at agent session start. The first migrated skill is `build_board_pack_from_calendar` — generates a board-pack PDF from a calendar week of events plus attached materials.
 

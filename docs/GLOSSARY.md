@@ -36,4 +36,4 @@ Claude's own terms rather than inventing new ones.
 
 ## Counts (this release)
 
-40 modules · 181 tools · 15 packaged skills (2 hand-built + 13 promoted) · 1 recipe spec · 12 Personal AI surfaces · 8 connectors · 3 agent tiers · 4 platform layers. (Capability terms per CLASS-001.)
+40 modules · {{TOOL_COUNT}} tools (the tools listed in the shipped catalogue; many require you to connect your own accounts/keys) · 15 packaged skills (2 hand-built + 13 promoted) · 12 Personal AI surfaces · 8 connectors · 3 agent tiers · 4 platform layers. (Capability terms per CLASS-001.)

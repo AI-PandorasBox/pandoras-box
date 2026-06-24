@@ -24,13 +24,13 @@ Each agent entry declares which of these are active:
 
 Dependencies are expressed with `requires` maps: a module or subsystem can declare
 that it needs a surface, another module, or a `principal_type` to be present. The
-dashboard greys out an "Activate" control when a requirement is unmet.
+per-agent card in the dashboard renders one toggle per capability and disables the
+Activate toggle for a capability whose requirements are not yet met. <!-- {{VERIFY-ACTIVATION}}: confirm copy matches the shipped per-agent card UI (toggle-per-agent, disabled-when-requirement-unmet) before release -->
 
 **Rules of the matrix:**
 
-- It is written by the admin deploy flow **only**. Runtime UI clicks queue a
-  request; they never write the matrix directly. The conductor validates the
-  schema (atomic write) on read.
+- A capability toggled in the per-agent card UI is recorded against that agent in
+  the activation matrix; the conductor validates the schema (atomic write) on read. <!-- {{VERIFY-ACTIVATION}}: confirm whether a toggle writes the matrix directly or is queued for a local admin apply step, and word this line to match the shipped behaviour. -->
 - A new capability is invisible to the operator and to the dashboard until it has
   a matrix entry. Shipping a capability and its matrix entry in the same change is
   mandatory.
