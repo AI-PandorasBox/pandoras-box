@@ -2,10 +2,10 @@
 
 > **Discord Relay**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials wire here; relay goes live in v0.5.x)
+> **Status:** Roadmap · Not yet available. The Discord relay driver is not implemented in this release; the default conductor relay is the built-in browser/localhost-HTTP relay.
 > **Depends on:** `core` (mutually exclusive with `relay-slack` / `relay-whatsapp` per company — one relay per tenant)
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer writes `DISCORD_TOKEN` + `DISCORD_CHANNEL_ID` + `RELAY_TYPE=discord` into your company `.env`. The Discord driver that consumes these and connects to the bot ships with the v0.5.x conductor. See CHANGELOG for release status.
+> ⚠️  **ROADMAP -- not yet available.** This installer writes `DISCORD_TOKEN` + `DISCORD_CHANNEL_ID` + `RELAY_TYPE=discord` into your company `.env`, but the Discord driver that would consume them is not implemented yet, so saving the credentials does not enable a Discord relay. Use the default built-in browser/localhost relay today. See CHANGELOG for release status.
 
 ## What It Does
 
@@ -39,9 +39,9 @@ You will be prompted for:
 
 ## After Installation
 
-The installer writes `DISCORD_TOKEN`, `DISCORD_CHANNEL_ID`, and `RELAY_TYPE=discord` to `$INSTALL_PATH/<company-slug>/.env`. When the v0.5.x conductor starts, it loads the Discord driver, authenticates as the bot, and starts listening to the configured channel.
+The installer writes `DISCORD_TOKEN`, `DISCORD_CHANNEL_ID`, and `RELAY_TYPE=discord` to `$INSTALL_PATH/<company-slug>/.env`. These are stored for when the Discord driver ships. The Discord relay driver is not implemented in this release, so the conductor will not connect to Discord even after the credentials are saved.
 
-Test (after v0.5.x): send a message to the Discord channel. You should receive a reply from the bot within a few seconds.
+Test: not available yet -- the Discord relay is roadmap. Use the default built-in browser/localhost relay today.
 
 ## Uninstall
 
@@ -53,6 +53,6 @@ Or manually: remove `DISCORD_TOKEN`, `DISCORD_CHANNEL_ID`, and `RELAY_TYPE` line
 
 ## Notes
 
-- Only ONE relay per company is supported by the v0.5.x conductor (RELAY_TYPE is a single string). Installing relay-slack or relay-whatsapp on the same company overwrites RELAY_TYPE.
+- Only ONE relay per company is supported by the conductor (RELAY_TYPE is a single string). Installing relay-slack or relay-whatsapp on the same company overwrites RELAY_TYPE.
 - The bot needs the Message Content Intent enabled in the Discord Developer Portal, OR the bot must be @-mentioned in messages it should process.
 - Per-tenant isolation: each company's conductor connects to its own Discord bot. Company A's bot cannot see Company B's channel.

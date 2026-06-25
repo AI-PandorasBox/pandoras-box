@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # install.sh -- relay-slack module installer
-# Wires Slack bot + app credentials into the company .env. The v0.5.x conductor
-# runtime loads the Slack driver and connects via socket mode when it starts.
-# v0.4 ships this as a SCAFFOLDED module -- credentials get saved, but the
-# relay surface goes live when v0.5.x is installed.
+# ROADMAP: the Slack relay driver is not implemented in this release. This
+# wires Slack bot + app credentials into the company .env for when the driver
+# ships, but the conductor will not connect to Slack yet. The default relay is
+# the built-in browser/localhost-HTTP relay.
 set -euo pipefail
 
 MODULE_NAME="relay-slack"
@@ -21,7 +21,15 @@ step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
 fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
 
-stub_scaffolded_warning "$MODULE_NAME"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────────┐"
+echo "  │  ROADMAP: $MODULE_NAME is NOT available in this release."
+echo "  │"
+echo "  │  This saves your Slack credentials, but the Slack relay driver is"
+echo "  │  not implemented yet, so no Slack relay runs. The default is the"
+echo "  │  built-in browser/localhost relay."
+echo "  └─────────────────────────────────────────────────────────────────┘"
+echo ""
 
 step 1 "Collecting Slack credentials"
 stub_check_node || fail "Node.js prerequisite missing"
@@ -66,14 +74,12 @@ ok "Slack credentials written (chmod 600)"
 step 3 "Restarting conductor (if installed)"
 if stub_check_conductor "$COMPANY_SLUG"; then
   pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
-  ok "Conductor restarted; Slack relay active for $COMPANY_SLUG"
+  ok "Conductor restarted. The Slack driver is not implemented yet, so no Slack relay runs."
 else
-  ok "Credentials saved. Conductor not yet installed (v0.5.x). Relay goes live when v0.5.x ships."
+  ok "Credentials saved for a future Slack driver. Use the built-in browser/localhost relay today."
 fi
 
-stub_scaffolded_warning "$MODULE_NAME"
-
 echo ""
-echo "[$MODULE_NAME] PASS"
-echo "  Slack relay configured for '$COMPANY_SLUG'."
-echo "  After v0.5.x: direct-message the bot in Slack to test."
+echo "[$MODULE_NAME] PASS (roadmap -- credentials saved)"
+echo "  Slack credentials saved for '$COMPANY_SLUG'."
+echo "  The Slack relay is not functional in this release; use the built-in browser/localhost relay."

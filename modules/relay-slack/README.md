@@ -2,10 +2,10 @@
 
 > **Slack Relay**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials wire here; relay goes live in v0.5.x)
+> **Status:** Roadmap · Not yet available. The Slack relay driver is not implemented in this release; the default conductor relay is the built-in browser/localhost-HTTP relay.
 > **Depends on:** `core` (mutually exclusive with `relay-discord` / `relay-whatsapp` per company — one relay per tenant)
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer writes `SLACK_BOT_TOKEN` + `SLACK_APP_TOKEN` + `RELAY_TYPE=slack` into your company `.env`. The Slack driver that consumes these and connects via socket mode ships with the v0.5.x conductor. See CHANGELOG for release status.
+> ⚠️  **ROADMAP -- not yet available.** This installer writes `SLACK_BOT_TOKEN` + `SLACK_APP_TOKEN` + `RELAY_TYPE=slack` into your company `.env`, but the Slack socket-mode driver that would consume them is not implemented yet, so saving the credentials does not enable a Slack relay. Use the default built-in browser/localhost relay today. See CHANGELOG for release status.
 
 ## What It Does
 
@@ -43,9 +43,9 @@ You will be prompted for:
 
 ## After Installation
 
-The installer writes `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, and `RELAY_TYPE=slack` to `$INSTALL_PATH/<company-slug>/.env`. When the v0.5.x conductor starts, it loads the Slack driver, opens a socket-mode connection, and starts listening to DMs + channel messages where the bot is mentioned.
+The installer writes `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, and `RELAY_TYPE=slack` to `$INSTALL_PATH/<company-slug>/.env`. These are stored for when the Slack driver ships. The Slack relay driver is not implemented in this release, so the conductor will not connect to Slack even after the credentials are saved.
 
-Test (after v0.5.x): direct-message the bot in Slack.
+Test: not available yet -- the Slack relay is roadmap. Use the default built-in browser/localhost relay today.
 
 ## Uninstall
 
@@ -57,6 +57,6 @@ Or manually: remove `SLACK_BOT_TOKEN`, `SLACK_APP_TOKEN`, and the `RELAY_TYPE=sl
 
 ## Notes
 
-- Only ONE relay per company is supported by the v0.5.x conductor. Installing relay-discord or relay-whatsapp on the same company overwrites RELAY_TYPE.
+- Only ONE relay per company is supported by the conductor. Installing relay-discord or relay-whatsapp on the same company overwrites RELAY_TYPE.
 - Socket Mode does NOT require your Mac to be publicly reachable — Slack connects outbound from your conductor.
 - Per-tenant isolation: each company's conductor uses its own bot token. Company A's bot cannot read Company B's Slack workspace.

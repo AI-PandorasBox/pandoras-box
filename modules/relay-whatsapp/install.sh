@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # install.sh -- relay-whatsapp module installer
-# Wires WhatsApp bridge config into the company .env + bootstraps the
-# whatsapp-web.js dependency tree PER-TENANT (NOT global). The v0.5.x
-# conductor runtime loads the WhatsApp driver and connects to the bridge
-# when it starts. v0.4 ships this as a SCAFFOLDED module -- credentials
-# get saved, but the relay surface goes live when v0.5.x is installed.
+# ROADMAP: the WhatsApp relay driver is not implemented in this release. This
+# wires WhatsApp bridge config into the company .env + bootstraps the
+# whatsapp-web.js dependency tree PER-TENANT (NOT global) for when the driver
+# ships, but the conductor will not connect to the bridge yet. The default
+# relay is the built-in browser/localhost-HTTP relay.
 set -euo pipefail
 
 MODULE_NAME="relay-whatsapp"
@@ -26,7 +26,15 @@ step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
 fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
 
-stub_scaffolded_warning "$MODULE_NAME"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────────┐"
+echo "  │  ROADMAP: $MODULE_NAME is NOT available in this release."
+echo "  │"
+echo "  │  This saves your WhatsApp bridge config, but the WhatsApp relay"
+echo "  │  driver is not implemented yet, so no WhatsApp relay runs. The"
+echo "  │  default is the built-in browser/localhost relay."
+echo "  └─────────────────────────────────────────────────────────────────┘"
+echo ""
 
 echo ""
 echo "  ┌─────────────────────────────────────────────────────────────────┐"
@@ -91,16 +99,15 @@ stub_env_set "$BASE_ENV" "RELAY_TYPE" "whatsapp"
 
 if stub_check_conductor "$COMPANY_SLUG"; then
   pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
-  ok "Conductor restarted; WhatsApp relay starting for $COMPANY_SLUG"
+  ok "Conductor restarted. The WhatsApp driver is not implemented yet, so no WhatsApp relay runs."
 else
-  ok "Config saved. Conductor not yet installed (v0.5.x). Relay goes live when v0.5.x ships."
+  ok "Config saved for a future WhatsApp driver. Use the built-in browser/localhost relay today."
 fi
 
-stub_scaffolded_warning "$MODULE_NAME"
-
 echo ""
-echo "[$MODULE_NAME] PASS"
-echo "  WhatsApp relay configured for '$COMPANY_SLUG' (per-tenant bridge dir: $BRIDGE_DIR)."
-echo "  On first run (after v0.5.x), scan the QR code in the conductor log:"
+echo "[$MODULE_NAME] PASS (roadmap -- config saved)"
+echo "  WhatsApp bridge config saved for '$COMPANY_SLUG' (per-tenant bridge dir: $BRIDGE_DIR)."
+echo "  The WhatsApp relay is not functional in this release. Once the driver ships, you will"
+echo "  scan a QR code from the conductor log:"
 echo "    tail -f /tmp/${LOG_PREFIX}-${COMPANY_SLUG}-conductor.log"
 echo "  WARNING: Keep your WhatsApp account within WhatsApp's usage policies."

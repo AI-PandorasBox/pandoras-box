@@ -1,10 +1,10 @@
 # voice-agent
 
-Per-tenant voice (TTS / STT) task agent for Pandora's Box v0.5.x.
+Per-tenant voice (TTS / STT) task agent for Pandora's Box.
 
 ## Status
 
-Real -- ships full runtime, plist template, install path via `lib/setup-tenant-runtimes.sh`.
+**Preview -- unverified in this release.** Ships a full runtime, plist template, and install path via `lib/setup-tenant-runtimes.sh`, but has not been verified end-to-end for this release, so treat it as a preview rather than a certified capability.
 
 ## What it does
 

@@ -7,6 +7,14 @@ machine, with full isolation between them. Each company gets its own OS service 
 directory tree, credential files, and set of LaunchDaemons. No data, credentials, or process
 memory is shared between companies.
 
+**Status:** Multi-tenant with Microsoft 365 mail / calendar / files is available now. The
+per-tenant conductor and mail/calendar/files agents ship and are wired by setup. Google
+(Gmail / Calendar / Drive) is a preview and is not yet functional — no Google MCP server ships
+in this release, so Microsoft 365 is the supported provider today. The default conductor relay
+is the built-in browser/localhost-HTTP relay (works out of the box, binds to `127.0.0.1` only);
+the Discord / Slack / WhatsApp relays are roadmap and not yet available. The voice and
+voice-call modules are a preview in this release.
+
 ## What One Tenant Looks Like
 
 A single tenant consists of:
@@ -75,7 +83,7 @@ The installer wizard (`sudo bash /opt/pandoras-box/scripts/install.sh`) prompts 
 1. Number of companies to set up
 2. Slug for each company (e.g. `company-a`) -- used in directory names and labels
 3. Display name for each company (used in logs and briefings)
-4. Mail integration type per company: MS365 or Google
+4. Mail integration type per company: MS365 (supported today) or Google (preview, not yet functional)
 5. Optional modules to enable (calendar, files, voice, relay, etc.)
 
 For each company, the installer then:

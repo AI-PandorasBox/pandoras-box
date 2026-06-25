@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # install.sh -- mail-google module installer
-# Wires Google OAuth credentials into the company .env. The v0.5.x conductor
-# runtime spawns the mail task agent and runs the actual OAuth flow on first
-# start. v0.4 ships this as a SCAFFOLDED module -- credentials get saved,
-# but the agent surface goes live when v0.5.x is installed.
+# PREVIEW: Gmail is not functional in this release. This wires Google OAuth
+# credentials into the company .env for when the Gmail provider ships, but no
+# Gmail MCP server is included yet (the mail agent expects mcp__gmail__* tools
+# that are not provided). Use mail-ms365 for working mail today.
 set -euo pipefail
 
 MODULE_NAME="mail-google"
@@ -21,7 +21,15 @@ step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
 fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
 
-stub_scaffolded_warning "$MODULE_NAME"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────────┐"
+echo "  │  PREVIEW: $MODULE_NAME (Gmail) is NOT functional in this release."
+echo "  │"
+echo "  │  This installer saves your Google OAuth credentials, but no Gmail"
+echo "  │  MCP server ships yet, so the mail agent cannot read Gmail. For"
+echo "  │  working mail today, use mail-ms365 (Microsoft 365)."
+echo "  └─────────────────────────────────────────────────────────────────┘"
+echo ""
 
 step 1 "Checking prerequisites"
 stub_check_node || fail "Node.js prerequisite missing"
@@ -52,17 +60,15 @@ stub_env_set "$BASE_ENV" "GOOGLE_CLIENT_ID" "$GOOGLE_CLIENT_ID"
 stub_env_set "$BASE_ENV" "GOOGLE_CLIENT_SECRET" "$GOOGLE_CLIENT_SECRET"
 ok "Credentials saved (chmod 600)"
 
-step 4 "Restarting conductor (if installed) -- OAuth flow runs on first start"
+step 4 "Saving credentials (Gmail provider is a preview -- nothing to activate yet)"
 if stub_check_conductor "$COMPANY_SLUG"; then
   pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
-  ok "Conductor restarted. It will open a browser to authorise Google on first need."
+  ok "Conductor restarted. Gmail remains a preview; no Gmail tools are available yet."
 else
-  ok "Credentials saved. Conductor not yet installed (v0.5.x). OAuth flow runs after v0.5.x ships."
+  ok "Credentials saved for a future Gmail provider. Use mail-ms365 for working mail today."
 fi
 
-stub_scaffolded_warning "$MODULE_NAME"
-
 echo ""
-echo "[$MODULE_NAME] PASS"
-echo "  Mail agent for '$COMPANY_SLUG' is configured for Google Workspace."
-echo "  After v0.5.x: ask your company agent 'What emails arrived today?'"
+echo "[$MODULE_NAME] PASS (preview)"
+echo "  Google OAuth credentials for '$COMPANY_SLUG' are saved."
+echo "  Gmail is not functional in this release. Use mail-ms365 for working mail today."

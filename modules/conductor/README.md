@@ -1,12 +1,12 @@
 # conductor
 
-> **Per-tenant orchestration daemon (v0.5.x)**
+> **Per-tenant orchestration daemon**
 >
-> **Status:** Auto-installed per-tenant by `setup-company.sh`. NOT operator-selectable in the main module menu.
+> **Status:** Available now. Auto-installed per-tenant by `setup-company.sh`. NOT operator-selectable in the main module menu.
 
-The conductor is the per-tenant orchestration daemon. One conductor runs per company. It:
+The conductor is the per-tenant orchestration daemon, and it ships and runs in this release. One conductor runs per company. It:
 
-- Loads the relay driver (Discord / Slack / WhatsApp / browser) per the company's `RELAY_TYPE` env
+- Loads the relay driver per the company's `RELAY_TYPE` env. The default is the built-in browser/localhost-HTTP relay, which works out of the box and binds to `127.0.0.1` only. The Discord / Slack / WhatsApp relay drivers are roadmap and not yet available.
 - Receives incoming messages, classifies them by `task_type`, inserts jobs into the per-tenant `<slug>/store/jobs.db` queue
 - Polls for COMPLETED jobs and routes results back via the relay driver
 - Maintains conversation memory in `<slug>/store/conversations.db`

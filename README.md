@@ -50,7 +50,7 @@ API-key (pay-per-token) Anthropic billing is not supported in this release; API 
 | **15** | packaged skills (SKILL.md + code): 2 hand-built + 13 promoted from recipe specs via the skill promoter |
 | **48** | tools the assistant can use out of the box (memory, tasks, contacts, notes/files, calendar, search, document generation). More are catalogued but need you to connect your own accounts/keys first. |
 | **12** | Personal AI capability surfaces (chat, summary, tasks, create, research, files, knowledge, contacts, calendar, email, call, camera) |
-| **8** | connectors: Gmail, Microsoft 365, calendar, files, plus Telegram / Slack / Discord / WhatsApp relays |
+| **8** | connectors: Microsoft 365 mail / calendar / files (supported today), Gmail (preview), plus the built-in browser/localhost relay (default) with Slack / Discord / WhatsApp relays on the roadmap |
 | **3** | independent agent tiers (admin, oversight, per-company conductor + task agents) |
 | **4** | platform layers shipped: security (oversight + content classifier), memory (history + recall + knowledge), self-improvement (weekly pipeline), and per-agent operating guides |
 
@@ -169,19 +169,19 @@ A fifth component -- **the Personal AI** -- is the owner's personal AI interface
 | **core** | Base system | admin agent, oversight, job queue, conductors, base task agents | [catalog](docs/modules.md#core) · [admin guide](manuals/03-admin-guide.md) · [architecture](docs/architecture.md) | Required |
 | **personal-ai** | Personal AI assistant | Browser UI with unified inbox, calendar, briefing, and research | [catalog](docs/modules.md#personal-ai) · [user manual](manuals/05-personal-assistant-user-manual.md) | Recommended |
 | **mail-ms365** | Microsoft email | Outlook/Exchange integration via Microsoft Graph API | [catalog](docs/modules.md#mail-ms365) · [agents guide](manuals/06-company-agents.md) | Optional |
-| **mail-google** | Gmail | Gmail integration via Google OAuth | [catalog](docs/modules.md#mail-google) · [agents guide](manuals/06-company-agents.md) | Optional |
-| **calendar** | Calendar sync | Calendar integration (auto-detects MS365 or Google) | [catalog](docs/modules.md#calendar) · [agents guide](manuals/06-company-agents.md) | Optional |
-| **files** | Document access | SharePoint or Google Drive document retrieval | [catalog](docs/modules.md#files) · [agents guide](manuals/06-company-agents.md) | Optional |
-| **voice-agent** | TTS + STT task agent | Per-tenant narration / transcription via ElevenLabs + Groq Whisper. Same canUseTool security envelope as mail/calendar/files. | [README](modules/voice-agent/README.md) | Optional |
-| **voice-call** | Real-time voice call | Browser-default loopback HTTP+WSS daemon bridging mic audio to Gemini Live. Per-tenant voice + system prompt config. Conversation-only in v0.5.x. | [README](modules/voice-call/README.md) | Optional |
+| **mail-google** | Gmail | Gmail integration via Google OAuth (no Gmail MCP server ships yet -- not functional) | [catalog](docs/modules.md#mail-google) · [agents guide](manuals/06-company-agents.md) | Preview |
+| **calendar** | Calendar sync | Calendar integration. Microsoft 365 supported today; Google Calendar is a preview | [catalog](docs/modules.md#calendar) · [agents guide](manuals/06-company-agents.md) | Optional |
+| **files** | Document access | SharePoint document retrieval (Microsoft 365). Google Drive is a preview | [catalog](docs/modules.md#files) · [agents guide](manuals/06-company-agents.md) | Optional |
+| **voice-agent** | TTS + STT task agent | Per-tenant narration / transcription via ElevenLabs + Groq Whisper. Same canUseTool security envelope as mail/calendar/files. Preview -- unverified in this release. | [README](modules/voice-agent/README.md) | Preview |
+| **voice-call** | Real-time voice call | Browser-default loopback HTTP+WSS daemon bridging mic audio to Gemini Live. Per-tenant voice + system prompt config. Conversation-only. Preview -- unverified in this release. | [README](modules/voice-call/README.md) | Preview |
 | **admin-lite** | Mobile admin | Mobile-friendly admin panel (Tailscale-accessible) | [catalog](docs/modules.md#admin-lite) · [admin guide](manuals/03-admin-guide.md) | Optional |
 | **dashboard** | System monitor | Local service status and health dashboard | [catalog](docs/modules.md#dashboard) · [admin guide](manuals/03-admin-guide.md) | Optional |
 | **terminal** | Web terminal | Browser-based terminal with authentication | [catalog](docs/modules.md#terminal) · [admin guide](manuals/03-admin-guide.md) | Optional |
 | **docs-server** | Local docs | Local documentation server | [catalog](docs/modules.md#docs-server) · [admin guide](manuals/03-admin-guide.md) | Optional |
 | **ollama** | Local LLM | On-device LLM for classification (recommended: gemma3:12b, 16GB RAM) | [catalog](docs/modules.md#ollama) · [module reference](manuals/07-module-reference.md#ollama) | Optional |
-| **relay-discord** | Discord relay | Receive and reply to messages via Discord | [catalog](docs/modules.md#relay-discord) · [module reference](manuals/07-module-reference.md#relay-discord) | Optional |
-| **relay-slack** | Slack relay | Receive and reply to messages via Slack | [catalog](docs/modules.md#relay-slack) · [module reference](manuals/07-module-reference.md#relay-slack) | Optional |
-| **relay-whatsapp** | WhatsApp relay | WhatsApp relay (unofficial bridge -- see module README) | [catalog](docs/modules.md#relay-whatsapp) · [module reference](manuals/07-module-reference.md#relay-whatsapp) | Optional |
+| **relay-discord** | Discord relay | Receive and reply to messages via Discord (roadmap -- not yet available; default relay is the built-in browser/localhost relay) | [catalog](docs/modules.md#relay-discord) · [module reference](manuals/07-module-reference.md#relay-discord) | Roadmap |
+| **relay-slack** | Slack relay | Receive and reply to messages via Slack (roadmap -- not yet available; default relay is the built-in browser/localhost relay) | [catalog](docs/modules.md#relay-slack) · [module reference](manuals/07-module-reference.md#relay-slack) | Roadmap |
+| **relay-whatsapp** | WhatsApp relay | WhatsApp relay, unofficial bridge (roadmap -- not yet available; default relay is the built-in browser/localhost relay) | [catalog](docs/modules.md#relay-whatsapp) · [module reference](manuals/07-module-reference.md#relay-whatsapp) | Roadmap |
 | **content-classifier** | Content classifier | Local 0.3B-parameter outbound-content safety scorer (shadow mode by default) | [README](modules/content-classifier/README.md) | Recommended |
 | **admin-shell** | Chrome desktop admin app | Standalone Chrome window for the admin shell (alternative UX to admin-lite) | [README](modules/admin-shell/README.md) | Optional |
 | **trading-research** | Trading bot | Autonomous trading signals (requires brokerage API credentials) | [catalog](docs/modules.md#trading-research) · [module reference](manuals/07-module-reference.md#trading-research) | Optional |

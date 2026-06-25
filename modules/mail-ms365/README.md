@@ -2,10 +2,10 @@
 
 > **Microsoft Email Integration**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials wire here; agent surface ships in v0.5.x)
+> **Status:** Available now · Microsoft 365 is the supported mail provider today.
 > **Depends on:** `core` (this module is an alternative to `mail-google` for the same per-tenant mail agent)
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer writes `MS365_CLIENT_ID` + `MS365_TENANT_ID` + `MS365_CLIENT_SECRET` into your company `.env`. The OAuth flow itself runs when the v0.5.x conductor first needs to read mail. The conductor runtime is not in v0.4 -- the agent surface goes live when you install v0.5.x. See CHANGELOG for release status.
+> This installer writes `MS365_CLIENT_ID` + `MS365_TENANT_ID` + `MS365_CLIENT_SECRET` into your company `.env`, then wires the per-tenant mail agent against `@softeria/ms-365-mcp-server`. The OAuth `--login` step runs at setup; once you complete sign-in, the agent can read, search, and send mail. The per-tenant conductor and mail/calendar/files agents ship and are wired by the setup process.
 
 ## What It Does
 
@@ -41,11 +41,9 @@ You will be prompted for:
 
 ## After Installation
 
-The installer writes the three MS365 env keys to `$INSTALL_PATH/<company-slug>/.env` and pre-creates the token-cache dir at `$INSTALL_PATH/<company-slug>/store/ms365-auth/`. When the v0.5.x conductor restarts and first needs to read mail for this company, it runs the OAuth flow via `@softeria/ms-365-mcp-server` (a dependency the v0.5.x conductor ships with its `package.json`).
+The installer writes the three MS365 env keys to `$INSTALL_PATH/<company-slug>/.env` and pre-creates the token-cache dir at `$INSTALL_PATH/<company-slug>/store/ms365-auth/`. Setup wires the per-tenant `.claude/settings.json` against `@softeria/ms-365-mcp-server` (`--preset mail,calendar,files --org-mode`) and runs the `--login` OAuth step. Complete the sign-in when prompted; tokens are cached under `store/ms365-auth/` and refreshed automatically.
 
-Token refresh is handled daily by the v0.5.x conductor.
-
-Test (after v0.5.x): ask your company agent *"What emails arrived today?"*
+Test: ask your company agent *"What emails arrived today?"*
 
 ## Uninstall
 

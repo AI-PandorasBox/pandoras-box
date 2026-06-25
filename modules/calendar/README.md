@@ -2,16 +2,16 @@
 
 > **Calendar Sync**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials wire here; agent surface ships in v0.5.x)
-> **Depends on:** `mail-ms365` or `mail-google` (provides the OAuth tokens this module reuses)
+> **Status:** Available now with Microsoft 365. Google Calendar is a preview (not yet functional).
+> **Depends on:** `mail-ms365` (functional) or `mail-google` (preview) — provides the OAuth tokens this module reuses
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer writes `CALENDAR_ENABLED=true` into your company `.env` so the v0.5.x conductor will spawn the calendar agent when it starts. The conductor runtime itself is not in v0.4 -- expect the agent surface to go live when you install v0.5.x. See CHANGELOG for release status.
+> This installer writes `CALENDAR_ENABLED=true` into your company `.env` so the conductor spawns the calendar agent. The conductor + calendar agent ship and run in this release.
 
 ## What It Does
 
 Enables the Calendar Agent for a company to read and write calendar events. Uses the same authentication as the mail module (no additional login required).
 
-Supports Microsoft Outlook Calendar (via the MS365 OAuth tokens) and Google Calendar (via the Google OAuth tokens).
+Microsoft Outlook Calendar (via the MS365 OAuth tokens) is supported today. Google Calendar is a preview: no Google MCP server ships yet, so it is not yet functional.
 
 ## Requirements
 
@@ -38,9 +38,9 @@ You will be prompted for:
 
 ## After Installation
 
-The installer writes `CALENDAR_ENABLED=true` to `$INSTALL_PATH/<company-slug>/.env`. When the v0.5.x conductor restarts, it picks up the flag and spawns the calendar task agent under the company's service account.
+The installer writes `CALENDAR_ENABLED=true` to `$INSTALL_PATH/<company-slug>/.env`. When the conductor restarts, it picks up the flag and spawns the calendar task agent under the company's service account.
 
-Test (after v0.5.x): ask your company agent *"What meetings do I have this week?"*
+Test (Microsoft 365): ask your company agent *"What meetings do I have this week?"*
 
 ## Uninstall
 

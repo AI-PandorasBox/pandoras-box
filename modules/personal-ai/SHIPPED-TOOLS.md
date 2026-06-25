@@ -162,7 +162,7 @@ which this module must never ship an executor for:
 - **run_script** and anything that shells out to operator-controlled strings.
 - **web_action_\*** (drive-mode browser automation).
 - **ms365_\*** multi-tenant mail/calendar (a public user wires their own single account;
-  left as the existing scaffold modules — not faked here).
+  handled by the dedicated company mail/calendar/files modules — not faked here).
 - **admin / orchestration / trading / media / security / sensor / project-specific / business-CRM tools**
   and all operator/agent-internal tools.
 - **ftp / any network-write**.

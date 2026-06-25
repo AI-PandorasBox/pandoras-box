@@ -2,10 +2,10 @@
 
 > **WhatsApp Relay (EXPERIMENTAL, unofficial bridge)**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials + bridge wire here; relay goes live in v0.5.x)
+> **Status:** Roadmap · Not yet available. The WhatsApp relay driver is not implemented in this release; the default conductor relay is the built-in browser/localhost-HTTP relay.
 > **Depends on:** `core` (mutually exclusive with `relay-discord` / `relay-slack` per company — one relay per tenant)
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer installs the per-tenant `whatsapp-web.js` bridge and writes `WHATSAPP_BRIDGE_DIR` + `RELAY_TYPE=whatsapp` into your company `.env`. The WhatsApp driver that consumes these + runs the QR-scan login + maintains the session ships with the v0.5.x conductor. See CHANGELOG for release status.
+> ⚠️  **ROADMAP -- not yet available.** This installer installs the per-tenant `whatsapp-web.js` bridge and writes `WHATSAPP_BRIDGE_DIR` + `RELAY_TYPE=whatsapp` into your company `.env`, but the WhatsApp driver that would run the QR-scan login and maintain the session is not implemented yet, so saving the config does not enable a WhatsApp relay. Use the default built-in browser/localhost relay today. See CHANGELOG for release status.
 
 ## ⚠️  Risk acknowledgement
 
@@ -55,9 +55,9 @@ The installer writes:
 - `WHATSAPP_BRIDGE_DIR=$INSTALL_PATH/<company-slug>/whatsapp-bridge`
 - `RELAY_TYPE=whatsapp`
 
-to `$INSTALL_PATH/<company-slug>/.env`. When the v0.5.x conductor starts, it loads the WhatsApp driver, spawns the bridge against the per-tenant bridge dir, and on first run prints a QR code to the conductor log.
+to `$INSTALL_PATH/<company-slug>/.env`. These are stored for when the WhatsApp driver ships. The WhatsApp relay driver is not implemented in this release, so the conductor will not spawn the bridge or print a QR code even after the config is saved.
 
-To complete the linked-device pairing (after v0.5.x):
+To complete the linked-device pairing (once the WhatsApp driver ships):
 
 ```
 tail -f /tmp/<log-prefix>-<company-slug>-conductor.log

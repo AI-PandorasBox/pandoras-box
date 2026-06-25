@@ -1,10 +1,9 @@
 #!/usr/bin/env bash
 # install.sh -- mail-ms365 module installer
-# Wires Microsoft 365 (Azure app) credentials into the company .env. The
-# v0.5.x conductor runtime runs the OAuth flow via the @softeria/ms-365-mcp
-# package when it first needs to read mail. v0.4 ships this as a SCAFFOLDED
-# module -- credentials get saved, but the agent surface goes live when
-# v0.5.x is installed.
+# Wires Microsoft 365 (Azure app) credentials into the company .env, then the
+# setup process wires the per-tenant mail/calendar/files agents against
+# @softeria/ms-365-mcp-server and runs the OAuth --login step. Microsoft 365
+# is the supported mail provider today; the conductor + agents ship and work.
 set -euo pipefail
 
 MODULE_NAME="mail-ms365"
@@ -21,8 +20,6 @@ LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)/lib
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
 fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
-
-stub_scaffolded_warning "$MODULE_NAME"
 
 step 1 "Checking prerequisites"
 stub_check_node || fail "Node.js prerequisite missing"
@@ -69,20 +66,17 @@ if [[ -d "$INSTALL_PATH/$COMPANY_SLUG" ]]; then
   ok "Token cache dir prepared: $TOKEN_CACHE"
 fi
 
-step 4 "Restarting conductor (if installed) -- OAuth flow runs on first need"
+step 4 "Restarting conductor (if installed) -- agent picks up the new credentials"
 if stub_check_conductor "$COMPANY_SLUG"; then
-  # NOTE: the v0.5.x conductor runs the @softeria/ms-365-mcp-server OAuth flow
-  # on first need. v0.4 stub does NOT attempt to run the flow inline because
-  # the package may not be installed in the company's node_modules yet.
+  # The mail agent reads via @softeria/ms-365-mcp-server using the cached
+  # tokens from the setup --login step. Restart so it reloads the credentials.
   pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
-  ok "Conductor restarted. It will run the OAuth flow on first need."
+  ok "Conductor restarted. The mail agent will use the updated credentials."
 else
-  ok "Credentials saved. Conductor not yet installed (v0.5.x). OAuth flow runs after v0.5.x ships."
+  ok "Credentials saved. Conductor not detected for this company yet; run setup to install the per-tenant runtimes, then complete the OAuth --login step."
 fi
-
-stub_scaffolded_warning "$MODULE_NAME"
 
 echo ""
 echo "[$MODULE_NAME] PASS"
 echo "  Mail agent for '$COMPANY_SLUG' is configured for Microsoft 365."
-echo "  After v0.5.x: ask your company agent 'What emails arrived today?'"
+echo "  Ask your company agent 'What emails arrived today?'"

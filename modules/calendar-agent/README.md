@@ -1,8 +1,8 @@
 # calendar-agent
 
-> **Per-tenant calendar task agent (v0.5.x)**
+> **Per-tenant calendar task agent**
 >
-> **Status:** Auto-installed per-tenant by `setup-company.sh`. NOT operator-selectable in the main module menu.
+> **Status:** Available now. Auto-installed per-tenant by `setup-company.sh`. NOT operator-selectable in the main module menu.
 
 The calendar task agent runs once per tenant. It polls the per-tenant `<slug>/store/jobs.db` for APPROVED jobs of `task_type='calendar'`, executes them via `@anthropic-ai/claude-agent-sdk`, and writes results back to the same DB. Operates under the tenant's service-account UID.
 
@@ -12,9 +12,9 @@ See `docs/architecture/v0.5-multi-tenant.md` for the pinned contract (env vars, 
 
 ## Provider routing
 
-- If the per-tenant `.env` has `GOOGLE_CLIENT_ID`: use Google APIs
-- If the per-tenant `.env` has `MS365_CLIENT_ID`: use Microsoft Graph
-- If both are set: prefer the most recently authenticated provider (per `.env` mtime)
+- Microsoft 365 (`MS365_CLIENT_ID` set): the supported provider today. Reads via `@softeria/ms-365-mcp-server`.
+- Google / Google Calendar (`GOOGLE_CLIENT_ID` set): **preview, not functional** in this release. No Google MCP server ships yet, so the agent cannot act on Google Calendar even when these credentials are present.
+- If both are set: Microsoft 365 is the one that works today.
 - If neither: agent logs a clear "no provider configured" error and waits
 
 ## Install

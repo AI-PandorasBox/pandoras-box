@@ -2,14 +2,14 @@
 
 > **Document Access (SharePoint / Drive)**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials wire here; agent surface ships in v0.5.x)
-> **Depends on:** `mail-ms365` or `mail-google` (provides the OAuth tokens this module reuses)
+> **Status:** Available now with Microsoft 365 (SharePoint). Google Drive is a preview (not yet functional).
+> **Depends on:** `mail-ms365` (functional) or `mail-google` (preview) — provides the OAuth tokens this module reuses
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer writes `FILES_ENABLED=true` into your company `.env` so the v0.5.x conductor will spawn the files agent when it starts. The conductor runtime itself is not in v0.4 -- expect the agent surface to go live when you install v0.5.x. See CHANGELOG for release status.
+> This installer writes `FILES_ENABLED=true` into your company `.env` so the conductor spawns the files agent. The conductor + files agent ship and run in this release.
 
 ## What It Does
 
-Enables the Files Agent to access documents in SharePoint (Microsoft 365) or Google Drive. The agent can search for, read, summarise, and create documents.
+Enables the Files Agent to access documents in SharePoint (Microsoft 365). The agent can search for, read, summarise, and create documents. Google Drive is a preview: no Google MCP server ships yet, so it is not yet functional.
 
 ## Requirements
 
@@ -36,9 +36,9 @@ You will be prompted for:
 
 ## After Installation
 
-The installer writes `FILES_ENABLED=true` to `$INSTALL_PATH/<company-slug>/.env`. When the v0.5.x conductor restarts, it picks up the flag and spawns the files task agent under the company's service account.
+The installer writes `FILES_ENABLED=true` to `$INSTALL_PATH/<company-slug>/.env`. When the conductor restarts, it picks up the flag and spawns the files task agent under the company's service account.
 
-Test (after v0.5.x): ask your company agent *"Find the latest version of [document name]"*.
+Test (Microsoft 365): ask your company agent *"Find the latest version of [document name]"*.
 
 ## Uninstall
 

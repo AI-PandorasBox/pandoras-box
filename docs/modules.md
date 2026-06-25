@@ -65,12 +65,15 @@ token per company.
 
 ## mail-google
 
-**Status:** Optional
+**Status:** Preview (not yet functional)
 
-Gmail integration via Google OAuth.
+Gmail integration via Google OAuth. **Preview only:** no Gmail MCP server ships in this
+release, so the mail agent cannot act on Gmail even after credentials are saved. Microsoft 365
+(`mail-ms365`) is the supported mail provider today.
 
-Enables the mail task agents to read, send, and search email using Google accounts. Requires
-a Google Cloud project with the Gmail API enabled and an OAuth 2.0 credential per company.
+When complete, this will enable the mail task agents to read, send, and search email using
+Google accounts. It requires a Google Cloud project with the Gmail API enabled and an OAuth 2.0
+credential per company.
 
 **Prerequisites:**
 - `core`
@@ -83,10 +86,10 @@ a Google Cloud project with the Gmail API enabled and an OAuth 2.0 credential pe
 
 ## calendar
 
-**Status:** Optional
+**Status:** Optional (Microsoft 365 supported today; Google Calendar is a preview)
 
-Calendar integration -- reads and creates events. Auto-detects MS365 or Google based on which
-mail module is installed.
+Calendar integration -- reads and creates events. Microsoft 365 is supported today; Google
+Calendar is a preview and not yet functional (no Google MCP server ships in this release).
 
 Enables the calendar task agents to read schedules, create events, and respond to meeting
 requests. Shares the OAuth token established by the mail module.
@@ -101,12 +104,14 @@ requests. Shares the OAuth token established by the mail module.
 
 ## files
 
-**Status:** Optional
+**Status:** Optional (Microsoft 365 / SharePoint supported today; Google Drive is a preview)
 
-SharePoint or Google Drive document access for reading and writing files.
+SharePoint document access for reading and writing files. Microsoft 365 (SharePoint) is
+supported today; Google Drive is a preview and not yet functional (no Google MCP server ships
+in this release).
 
-Enables the files task agents to access documents stored in SharePoint (MS365) or Google Drive.
-Uses the same OAuth token as the mail module for the same company.
+Enables the files task agents to access documents stored in SharePoint (MS365). Uses the same
+OAuth token as the mail module for the same company.
 
 **Prerequisites:**
 - `core`
@@ -205,12 +210,15 @@ Ollama is unavailable.
 
 ## relay-discord
 
-**Status:** Optional
+**Status:** Roadmap (not yet available)
 
-Discord relay -- receive messages and send replies via a Discord bot.
+Discord relay -- receive messages and send replies via a Discord bot. **Not yet available:**
+the Discord relay driver is not implemented in this release. The default conductor relay is the
+built-in browser/localhost-HTTP relay, which works out of the box.
 
-Enables conductors to receive inbound messages from a Discord server and reply through the
-same channel. Requires a Discord bot token and a server where the bot has been invited.
+When complete, this will enable conductors to receive inbound messages from a Discord server
+and reply through the same channel. It requires a Discord bot token and a server where the bot
+has been invited.
 
 **Prerequisites:**
 - `core`
@@ -223,12 +231,14 @@ same channel. Requires a Discord bot token and a server where the bot has been i
 
 ## relay-slack
 
-**Status:** Optional
+**Status:** Roadmap (not yet available)
 
-Slack relay -- receive messages and send replies via a Slack app.
+Slack relay -- receive messages and send replies via a Slack app. **Not yet available:** the
+Slack relay driver is not implemented in this release. The default conductor relay is the
+built-in browser/localhost-HTTP relay, which works out of the box.
 
-Enables conductors to receive inbound messages from Slack and reply through the same channel.
-Requires a Slack app with the appropriate OAuth scopes.
+When complete, this will enable conductors to receive inbound messages from Slack and reply
+through the same channel. It requires a Slack app with the appropriate OAuth scopes.
 
 **Prerequisites:**
 - `core`
@@ -241,13 +251,15 @@ Requires a Slack app with the appropriate OAuth scopes.
 
 ## relay-whatsapp
 
-**Status:** Optional
+**Status:** Roadmap (not yet available)
 
-WhatsApp relay via an unofficial bridge.
+WhatsApp relay via an unofficial bridge. **Not yet available:** the WhatsApp relay driver is
+not implemented in this release. The default conductor relay is the built-in browser/localhost-
+HTTP relay, which works out of the box.
 
-Enables conductors to receive and reply to WhatsApp messages using a third-party bridge. Note:
-verify compliance with WhatsApp platform terms of service before deploying this module in a
-production environment.
+When complete, this will enable conductors to receive and reply to WhatsApp messages using a
+third-party bridge. Note: verify compliance with WhatsApp platform terms of service before
+deploying this module in a production environment.
 
 **Prerequisites:**
 - `core`
@@ -607,7 +619,7 @@ Telegram bot relay: talk to your assistant from Telegram (long-poll, optional si
 
 ## voice-agent
 
-**Status:** Optional
+**Status:** Preview (unverified in this release)
 
 (see module README)
 
@@ -617,7 +629,7 @@ Telegram bot relay: talk to your assistant from Telegram (long-poll, optional si
 
 ## voice-call
 
-**Status:** Optional
+**Status:** Preview (unverified in this release)
 
 (see module README)
 

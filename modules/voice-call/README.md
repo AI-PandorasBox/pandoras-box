@@ -4,7 +4,7 @@ Per-tenant real-time voice call orchestrator. Bridges a browser-default loopback
 
 ## Status
 
-Real -- ships full runtime, browser UI, plist template. Persistent daemon (not a job poller).
+**Preview -- unverified in this release.** Ships a full runtime, browser UI, and plist template (a persistent daemon, not a job poller), but has not been verified end-to-end for this release, so treat it as a preview rather than a certified capability.
 
 ## What it does
 
@@ -16,9 +16,9 @@ browser  <-- HTTP + WSS -->  pbox-voice-call (this)  <-- WSS -->  Gemini Live
 - WSS endpoint `/call/ws` accepts PCM 16 kHz mono audio from the browser (mic capture) and emits PCM 24 kHz mono back (Gemini-synthesised speech).
 - The daemon translates between the two WSS protocols + does cost accounting per session.
 
-## v0.5.x scope
+## Scope
 
-Conversation only. **In-call tool dispatch is NOT supported in v0.5.x.** The conductor's `jobs.db` IPC is async; routing a tool call through it during a live call would introduce multi-second latency that breaks the voice UX. v0.6 will add a synchronous conductor API + in-call tool routing.
+Conversation only. **In-call tool dispatch is NOT supported in this release.** The conductor's `jobs.db` IPC is async; routing a tool call through it during a live call would introduce multi-second latency that breaks the voice UX. A future release will add a synchronous conductor API + in-call tool routing.
 
 What you can do today:
 
@@ -79,7 +79,7 @@ Both the HTTP surface and the WSS upgrade are explicitly gated to `127.0.0.1` / 
 
 - The daemon connects to Gemini Live with the tenant's `GOOGLE_API_KEY`. No other secrets are passed across the WSS.
 - The browser audio capture requires a one-time `getUserMedia` permission grant from the operator. Captured audio is sent to Google as part of the conversation -- this is the operator-acceptable trade implicit in using a managed voice service.
-- There is no transcript persistence beyond the in-browser UI by default. Add a `<tenant>/logs/voice-call-transcripts/` writer if you need durable records (not shipped in v0.5.x).
+- There is no transcript persistence beyond the in-browser UI by default. Add a `<tenant>/logs/voice-call-transcripts/` writer if you need durable records (not shipped in this release).
 - The `<tenant>/logs/audit.log` (canonical shape) records: `service_started`, `service_stopped`, `call_started`, `call_ended`, `gemini_live_setup`, `gemini_error`, `gemini_closed`. No audio bytes are written to the audit log.
 
 ## Install path

@@ -2,14 +2,14 @@
 
 > **Gmail Integration**
 >
-> **Status:** Optional · Scaffolded for v0.5.x (credentials wire here; agent surface ships in v0.5.x)
-> **Depends on:** `core` (this module is an alternative to `mail-ms365` for the same per-tenant mail agent)
+> **Status:** PREVIEW · Not yet functional. Microsoft 365 (`mail-ms365`) is the supported mail provider today.
+> **Depends on:** `core` (this module is the Gmail alternative to `mail-ms365` for the same per-tenant mail agent)
 
-> ⚠️  **SCAFFOLDED MODULE.** This installer writes `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` into your company `.env`. The OAuth flow itself runs when the v0.5.x conductor first needs to read mail. The conductor runtime is not in v0.4 -- the agent surface goes live when you install v0.5.x. See CHANGELOG for release status.
+> ⚠️  **PREVIEW -- Gmail is not functional in this release.** This installer writes `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` into your company `.env`, but no Gmail MCP server ships yet: the mail agent expects `mcp__gmail__*` tools that are not provided in this release. Saving the credentials does not make the agent able to read Gmail. For working mail today, use `mail-ms365` (Microsoft 365). Gmail support is planned for a future version.
 
 ## What It Does
 
-Connects the Mail Agent for a company to Gmail via the Google OAuth API. Enables the agent to read, search, and send email using a Google Workspace or Gmail account.
+When complete, this module will connect the Mail Agent for a company to Gmail via the Google OAuth API so the agent can read, search, and send email using a Google Workspace or Gmail account. The Gmail MCP server that backs this is not yet shipped, so the module is a preview only. Use `mail-ms365` for working mail today.
 
 ## Requirements
 
@@ -20,7 +20,7 @@ Connects the Mail Agent for a company to Gmail via the Google OAuth API. Enables
 | OAuth consent screen | "Internal" if the account is in a Google Workspace org. "External" works but tokens expire after 7 days unless the project is published. |
 | Node.js | 18+ (checked by install.sh) |
 
-Required OAuth scopes (the conductor requests these on first auth):
+Required OAuth scopes (requested once the Gmail provider is available):
 
 | Scope | Purpose |
 |-------|---------|
@@ -48,9 +48,9 @@ You will be prompted for:
 
 ## After Installation
 
-The installer writes `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` to `$INSTALL_PATH/<company-slug>/.env`. When the v0.5.x conductor starts and first needs to read mail for this company, it opens a browser to complete the OAuth flow. Tokens are cached at `$INSTALL_PATH/<company-slug>/store/google-auth/`.
+The installer writes `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` to `$INSTALL_PATH/<company-slug>/.env`. These credentials are stored for when the Gmail provider ships. Because no Gmail MCP server is included in this release, the mail agent cannot yet act on Gmail even after the credentials are saved.
 
-Test (after v0.5.x): ask your company agent *"What emails arrived today?"*
+Test: not available yet -- Gmail is a preview. For working mail today, install `mail-ms365` and ask your company agent *"What emails arrived today?"*
 
 ## Uninstall
 
@@ -63,5 +63,5 @@ Or manually: remove the `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` lines from
 ## Notes
 
 - Use a separate Google Cloud project per company tenant. Sharing one project across tenants means a single OAuth client knows about multiple tenants — undesirable for isolation.
-- Token refresh is handled automatically by the conductor (every refresh-cycle the refresh_token is exchanged for a fresh access_token).
+- Token refresh and the OAuth flow will be handled automatically once the Gmail provider ships; in this preview release no token exchange happens.
 - If you change OAuth scopes later, the operator must re-authorise (existing tokens won't have the new scope).

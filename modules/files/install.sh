@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # install.sh -- files module installer
-# Wires FILES_ENABLED=true into the company .env. The v0.5.x conductor
-# runtime reads this flag and spawns the files task agent. v0.4 ships
-# this as a SCAFFOLDED module -- credentials get saved, but the agent
-# surface goes live when v0.5.x is installed.
+# Wires FILES_ENABLED=true into the company .env. The conductor reads this
+# flag and spawns the files task agent, which ships and runs in this release.
+# Microsoft 365 (SharePoint) is functional today; Google Drive is a preview
+# (no Google MCP server ships yet).
 set -euo pipefail
 
 MODULE_NAME="files"
@@ -20,8 +20,6 @@ LIB_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")"/../.. && pwd)/lib
 step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
 fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
-
-stub_scaffolded_warning "$MODULE_NAME"
 
 step 1 "Detecting mail module + validating slug"
 stub_check_node || fail "Node.js prerequisite missing"
@@ -54,12 +52,10 @@ if stub_check_conductor "$COMPANY_SLUG"; then
   pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
   ok "Conductor restarted; files agent enabled for $COMPANY_SLUG"
 else
-  ok "Credentials saved. Conductor not yet installed (v0.5.x). Agent goes live when v0.5.x ships."
+  ok "Flag saved. Conductor not detected for this company yet; run setup to install the per-tenant runtimes."
 fi
-
-stub_scaffolded_warning "$MODULE_NAME"
 
 echo ""
 echo "[$MODULE_NAME] PASS"
 echo "  Files access enabled for '$COMPANY_SLUG'."
-echo "  Test (after v0.5.x): ask your company agent 'Find the latest version of [document name]'"
+echo "  Test (Microsoft 365): ask your company agent 'Find the latest version of [document name]'"

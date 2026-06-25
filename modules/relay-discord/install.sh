@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # install.sh -- relay-discord module installer
-# Wires Discord bot credentials into the company .env. The v0.5.x conductor
-# runtime loads the Discord driver and connects to the bot when it starts.
-# v0.4 ships this as a SCAFFOLDED module -- credentials get saved, but the
-# relay surface goes live when v0.5.x is installed.
+# ROADMAP: the Discord relay driver is not implemented in this release. This
+# wires Discord bot credentials into the company .env for when the driver
+# ships, but the conductor will not connect to Discord yet. The default relay
+# is the built-in browser/localhost-HTTP relay.
 set -euo pipefail
 
 MODULE_NAME="relay-discord"
@@ -21,7 +21,15 @@ step() { echo "[$MODULE_NAME] step $1/$TOTAL_STEPS: $2"; }
 ok()   { echo "[$MODULE_NAME] OK: $1"; }
 fail() { echo "[$MODULE_NAME] FAIL: $1"; exit 1; }
 
-stub_scaffolded_warning "$MODULE_NAME"
+echo ""
+echo "  ┌─────────────────────────────────────────────────────────────────┐"
+echo "  │  ROADMAP: $MODULE_NAME is NOT available in this release."
+echo "  │"
+echo "  │  This saves your Discord credentials, but the Discord relay driver"
+echo "  │  is not implemented yet, so no Discord relay runs. The default is"
+echo "  │  the built-in browser/localhost relay."
+echo "  └─────────────────────────────────────────────────────────────────┘"
+echo ""
 
 step 1 "Collecting Discord bot credentials"
 stub_check_node || fail "Node.js prerequisite missing"
@@ -66,17 +74,16 @@ ok "Discord credentials written (chmod 600)"
 step 3 "Restarting conductor (if installed)"
 if stub_check_conductor "$COMPANY_SLUG"; then
   pbox_service_stop_start "${LAUNCHDAEMON_PREFIX}.${COMPANY_SLUG}-conductor"
-  ok "Conductor restarted; Discord relay active for $COMPANY_SLUG"
+  ok "Conductor restarted. The Discord driver is not implemented yet, so no Discord relay runs."
 else
-  ok "Credentials saved. Conductor not yet installed (v0.5.x). Relay goes live when v0.5.x ships."
+  ok "Credentials saved for a future Discord driver. Use the built-in browser/localhost relay today."
 fi
 
 step 4 "Verify"
-echo "  After v0.5.x: send a message to your Discord channel."
-echo "  You should receive a reply from the bot within a few seconds."
-
-stub_scaffolded_warning "$MODULE_NAME"
+echo "  Not available yet: the Discord relay is roadmap."
+echo "  Use the default built-in browser/localhost relay today."
 
 echo ""
-echo "[$MODULE_NAME] PASS"
-echo "  Discord relay configured for '$COMPANY_SLUG' in channel $DISCORD_CHANNEL_ID"
+echo "[$MODULE_NAME] PASS (roadmap -- credentials saved)"
+echo "  Discord credentials saved for '$COMPANY_SLUG' (channel $DISCORD_CHANNEL_ID)."
+echo "  The Discord relay is not functional in this release."
