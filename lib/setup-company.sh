@@ -155,14 +155,10 @@ setup_company_ms365() {
     "COMPANY_NAME=$display_name"
 
   install_tenant_runtimes "$slug" "$service_user"
+  write_tenant_mcp_settings "$slug" "$service_user"
+  login_tenant_ms365 "$slug" "$service_user"
 
   check_pass "Company '$display_name' configured ($slug)."
-  echo ""
-  echo "  Next: run the Microsoft 365 authentication flow to grant access."
-  echo "  This will open a browser window for you to sign in."
-  echo ""
-  echo "  Run: node $base_dir/node_modules/@softeria/ms-365-mcp-server/dist/index.js --login --org-mode"
-  echo "  (This step will be available after you install the packages.)"
   echo ""
   press_enter_to_continue
 }
@@ -226,6 +222,7 @@ setup_company_google() {
     "COMPANY_NAME=$display_name"
 
   install_tenant_runtimes "$slug" "$service_user"
+  write_tenant_mcp_settings "$slug" "$service_user"
 
   check_pass "Company '$display_name' configured ($slug) with Google Workspace."
   echo ""

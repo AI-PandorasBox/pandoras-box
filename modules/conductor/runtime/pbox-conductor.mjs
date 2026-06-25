@@ -290,6 +290,45 @@ async function classifyTaskType (text) {
   }
 }
 
+// -- General-chat answerer (conversational, no task delegation) ---------------
+//
+// 'general' messages (status checks, knowledge questions, smalltalk) are NOT
+// background tasks -- jobs.db only accepts mail/calendar/files/voice. Answer
+// them inline and deliver straight back through the active relay.
+
+const GENERAL_SYSTEM = `You are the assistant for ${process.env.COMPANY_NAME || COMPANY_SLUG}. \
+Answer the user's message directly and concisely in plain text for a chat relay. \
+If the request would actually need email, calendar, or file actions, say you will handle it as a task.`
+
+async function answerGeneral (channelRef, text) {
+  try {
+    const { history } = loadConversation(channelRef)
+    const ctx = history.slice(-6).map(t => `${t.role}: ${t.content}`).join('\n')
+    const prompt = (ctx ? `${ctx}\nuser: ${text}` : text).slice(0, 6000)
+    const q = query({
+      prompt,
+      options: {
+        model: ANTHROPIC_MODEL,
+        systemPrompt: GENERAL_SYSTEM,
+        maxTurns: 1,
+        allowedTools: [],
+        permissionMode: 'bypassPermissions',
+      },
+    })
+    let final = ''
+    for await (const msg of q) {
+      if (msg.type === 'result' && msg.subtype === 'success') {
+        final = String(msg.result || '').trim()
+        break
+      }
+    }
+    return final || "I'm here, but I couldn't generate a reply just now."
+  } catch (err) {
+    log('warn', 'answerGeneral failed', { error: err.message })
+    return 'I hit an error answering that. Please try again.'
+  }
+}
+
 // -- Outbound delivery routing -----------------------------------------------
 //
 // Relay drivers register a `send(channelRef, text)` callback so the outbound
@@ -318,6 +357,21 @@ async function handleInbound ({ channelRef, messageId, text, source }) {
   })
 
   const conductorRef = `${channelRef}::${messageId || crypto.randomUUID()}`
+
+  // 'general' is conversational, not a delegated task. Answer inline and deliver
+  // via the relay; do NOT queue a job (jobs.db CHECK accepts only mail/calendar/
+  // files/voice -- queuing 'general' would crash the relay request).
+  if (taskType === 'general') {
+    const replyText = await answerGeneral(channelRef, cleanText)
+    appendConversation(channelRef, { role: 'assistant', content: replyText, ts: Date.now() })
+    if (activeRelay) {
+      try { await activeRelay.send(channelRef, replyText) }
+      catch (err) { log('warn', 'relay send failed (general)', { error: err.message }) }
+    }
+    auditWrite({ event: 'inbound_general', relay: source, channelRef, bytes: cleanText.length })
+    return { jobId: null, taskType, conductorRef, general: true }
+  }
+
   const jobId = insertJob({ taskType, prompt: cleanText, conductorRef })
 
   auditWrite({
