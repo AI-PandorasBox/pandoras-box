@@ -36,6 +36,10 @@ const norm = (t) => t.toLowerCase().replace(/\W+/g, ' ').trim()
 
 function ensureUndo (db) {
   db.exec('CREATE TABLE IF NOT EXISTS morpheus_undo (run TEXT, memory_id INTEGER, kept_id INTEGER, reason TEXT, at INTEGER)')
+  // _MEMORY_ARCHIVE_V1: every retired memory also gets a readable archive record (text, dates, reason, tags)
+  db.exec(`CREATE TABLE IF NOT EXISTS memory_archive (id INTEGER PRIMARY KEY AUTOINCREMENT, memory_id INTEGER NOT NULL,
+    content TEXT NOT NULL, category TEXT, created_at INTEGER, archived_at INTEGER NOT NULL, reason TEXT NOT NULL,
+    tags TEXT, kept_id INTEGER, source TEXT NOT NULL, UNIQUE (memory_id, source))`)
 }
 
 if (MODE === 'undo') {
@@ -45,6 +49,7 @@ if (MODE === 'undo') {
   ensureUndo(db)
   const ids = db.prepare('SELECT memory_id FROM morpheus_undo WHERE run=?').all(run)
   for (const r of ids) db.prepare('UPDATE memories SET invalid_at=NULL WHERE id=?').run(r.memory_id)
+  db.prepare("UPDATE memory_archive SET reason = reason || ' [RESTORED ' || date('now') || ']', tags = tags || ',restored' WHERE source=?").run(run)
   db.prepare('UPDATE morpheus_undo SET reason = reason || \' [UNDONE]\' WHERE run=?').run(run)
   console.log(`[morpheus] undo ${run}: restored ${ids.length} memories`)
   process.exit(0)
@@ -171,7 +176,14 @@ if (MODE === 'apply') {
   ensureUndo(db)
   const st = db.prepare('UPDATE memories SET invalid_at=unixepoch() WHERE id=? AND invalid_at IS NULL')
   const lg = db.prepare('INSERT INTO morpheus_undo (run, memory_id, kept_id, reason, at) VALUES (?,?,?,?,unixepoch())')
-  for (const x of plan.retire) { if (st.run(x.id).changes) lg.run(RUN, x.id, x.keep, x.reason) }
+  const ar = db.prepare(`INSERT OR IGNORE INTO memory_archive (memory_id, content, category, created_at, archived_at, reason, tags, kept_id, source)
+    SELECT id, content, category, created_at, unixepoch(), ?, ?, ?, ? FROM memories WHERE id=?`)
+  for (const x of plan.retire) {
+    if (!st.run(x.id).changes) continue
+    lg.run(RUN, x.id, x.keep, x.reason)
+    const verdict = x.reason === 'exact copy' ? 'exact-copy' : x.reason.split(':')[0].trim()
+    ar.run(`Morpheus: ${x.reason} (kept #${x.keep})`, `morpheus,${verdict},${x.category}`, x.keep, RUN, x.id)
+  }
 }
 mkdirSync(OUT, { recursive: true })
 writeFileSync(`${OUT}/${RUN}.json`, JSON.stringify(plan, null, 1))
