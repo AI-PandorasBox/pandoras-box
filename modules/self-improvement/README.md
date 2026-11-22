@@ -107,7 +107,7 @@ node runtime/morpheus-consolidate.mjs undo   --run RUN_ID            # restore e
 node runtime/morpheus-consolidate.mjs report --files DIR             # a folder of markdown memories (report only)
 ```
 
-Settings (environment): `MORPHEUS_ADAPTER` (a module exporting `makeMessageFull(system, messages, opts)`;
+Settings (environment): `MORPHEUS_DB` (the memory database; or pass `--db`), `MORPHEUS_ADAPTER` (a module exporting `makeMessageFull(system, messages, opts)`;
 without one, only exact copies are handled), `MORPHEUS_CATEGORIES` (comma list of categories to judge),
 `MORPHEUS_EMBED_MODEL`, `OLLAMA_URL`, `MORPHEUS_OUT` (where the run report goes). `--max` bounds how many
 candidate groups are judged per run (default 40), so a large backlog clears over several weeks.

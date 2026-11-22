@@ -22,12 +22,12 @@ import { randomUUID } from 'node:crypto'
 const args = process.argv.slice(2)
 const MODE = args[0] || 'report'
 const opt = (k, d) => { const i = args.indexOf(k); return i >= 0 ? args[i + 1] : d }
-const DB = opt('--db', '/opt/pandorasbox/mnemosyne/store/memory.db')
-const OUT = opt('--out', process.env.MORPHEUS_OUT || '/opt/pandorasbox/urania/store/morpheus')
+const DB = opt('--db', process.env.MORPHEUS_DB || '')
+const OUT = opt('--out', process.env.MORPHEUS_OUT || './morpheus-reports')
 const MAX = Number(opt('--max', '40'))                 // candidate groups judged per run (bounded cost)
 const OLLAMA = (process.env.OLLAMA_URL || 'http://127.0.0.1:11434') + '/api/embed'
 const EMBED_MODEL = process.env.MORPHEUS_EMBED_MODEL || 'nomic-embed-text'
-const ADAPTER = process.env.MORPHEUS_ADAPTER || '/opt/pandorasbox/shared/anthropic-claude-adapter.mjs'
+const ADAPTER = process.env.MORPHEUS_ADAPTER || ''
 // Categories worth judging (comma list). Deployments add their own, e.g. MORPHEUS_CATEGORIES=fact,decision,...
 const JUDGE_CATS = new Set((process.env.MORPHEUS_CATEGORIES || 'fact,decision,preference,project,plan,task,finance,general,zeus_instruction')
   .split(',').map(x => x.trim()).filter(Boolean))
@@ -53,6 +53,7 @@ if (MODE === 'undo') {
 // --files DIR: a file-based memory (Zeus's markdown memory). Always report-only: a person edits files.
 const FILES = opt('--files')
 if (FILES && MODE === 'apply') throw new Error('--files is report-only')
+if (!FILES && !DB) throw new Error('no memory database: pass --db PATH or set MORPHEUS_DB (or --files DIR)')
 let db = null
 let rows
 if (FILES) {
@@ -117,7 +118,7 @@ cands = cands.slice(0, MAX)
 // The judge: any module exporting makeMessageFull(system, messages, opts) -> { text, costUsd }.
 // Without one, Morpheus still retires exact copies and reports the candidate groups unjudged.
 let makeMessageFull = null
-try { ({ makeMessageFull } = await import(ADAPTER)) } catch (e) { console.error('[morpheus] no judge adapter (' + e.message.slice(0, 80) + '): exact copies only'); cands = [] }
+try { if (!ADAPTER) throw new Error('MORPHEUS_ADAPTER not set'); ({ makeMessageFull } = await import(ADAPTER)) } catch (e) { console.error('[morpheus] no judge adapter (' + e.message.slice(0, 80) + '): exact copies only'); cands = [] }
 const SYS = `You tidy an assistant's long-term memory. For each numbered group of memories decide ONE verdict:
 - "duplicate": they state the same thing; keep the clearest/most complete one, retire the others.
 - "superseded": a later memory corrects or updates an earlier one about the same thing; keep the latest, retire the older.
